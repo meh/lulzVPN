@@ -43,6 +43,8 @@ void deregister_peer (int fd);
 /* Check for non active peer and reomve them */
 void *free_non_active_peer ();
 
+peer_handler_t *get_fd_related_peer (int fd);
+
 /* Return the arg associated SSL pointer */
 SSL *get_relative_ssl (int fd);
 

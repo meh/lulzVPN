@@ -400,6 +400,7 @@ get_userlist ()
 
   int i;
   int max_fd;
+  peer_handler_t *peer;
   user_list_t *user_list;
 
   user_list = xmalloc (sizeof (user_list_t));
@@ -407,12 +408,16 @@ get_userlist ()
   user_list->count = 0;
 
   for (i = 0; i <= max_fd; i++)
-    if (is_active_peer_fd (i))
-      {
-	user_list->user[user_list->count] = get_peer_relative_peer_user (i);
-	user_list->address[user_list->count] = get_peer_relative_address (i);
-	user_list->count++;
-      }
+    {
+      peer = get_fd_related_peer (i);
+      if (peer != NULL)
+	if (peer->flags & ACTIVE_PEER)
+	  {
+	    user_list->user[user_list->count] = peer->user;
+	    user_list->address[user_list->count] = peer->address;
+	    user_list->count++;
+	  }
+    }
 
   return user_list;
 }

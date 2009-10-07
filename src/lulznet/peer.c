@@ -148,52 +148,17 @@ free_non_active_peer ()
   return NULL;
 }
 
-SSL *
-get_relative_ssl (int fd)
+peer_handler_t *
+get_fd_related_peer (int fd)
 {
+
   int i;
+
   for (i = 0; i < MAX_PEERS; i++)
     if (peer_db[i].fd == fd)
-      return peer_db[i].ssl;
+      return (peer_db + i);
 
   return NULL;
-
-}
-
-int
-get_peer_relative_address (int fd)
-{
-  int i;
-  for (i = 0; i < MAX_PEERS; i++)
-    if (peer_db[i].fd == fd)
-      return peer_db[i].address;
-
-  return 0;
-}
-
-char *
-get_peer_relative_peer_user (int fd)
-{
-  int i;
-  for (i = 0; i < MAX_PEERS; i++)
-    if (peer_db[i].fd == fd)
-      return peer_db[i].user;
-
-  return NULL;
-}
-
-network_list_t *
-get_peer_relative_network_list (int fd)
-{
-
-  int i;
-
-  for (i = 0; i < MAX_PEERS; i++)
-    if (peer_db[i].fd == fd)
-      return peer_db[i].nl;
-
-  return NULL;
-
 }
 
 int

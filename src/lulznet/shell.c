@@ -52,31 +52,33 @@ peer_list ()
   char network[16];
   char netmask[16];
 
-  network_list_t *nl;
+  peer_handler_t *peer;
 
   max_fd = get_max_peer_fd ();
 
   for (i = 3; i <= max_fd; i++)
-    if (is_active_peer_fd (i))
-      {
-	tmp = get_peer_relative_address (i);
-	inet_ntop (AF_INET, &tmp, address, 16);
-
-	printf ("%s:\n\t[*] filedescriptor: %d\n\t[*] address: %s", get_peer_relative_peer_user (i), i, address);
-	printf ("\n\t[*] available networks: %d\n", 1);
-
-	nl = get_peer_relative_network_list (i);
-
-	for (j = 0; j < nl->count; j++)
+    {
+      peer = get_fd_related_peer (i);
+      if (peer != NULL)
+	if (peer->flags & ACTIVE_PEER)
 	  {
+	    tmp = peer->address;
+	    inet_ntop (AF_INET, &tmp, address, 16);
 
-	    inet_ntop (AF_INET, &nl->network[j], network, 16);
-	    inet_ntop (AF_INET, &nl->netmask[j], netmask, 16);
+	    printf ("%s:\n\t[*] filedescriptor: %d\n\t[*] address: %s", peer->user, i, address);
+	    printf ("\n\t[*] available networks: %d\n", 1);
 
-	    printf ("\t\t[*] network:%s netmask:%s\n", network, netmask);
+	    for (j = 0; j < peer->nl->count; j++)
+	      {
+
+		inet_ntop (AF_INET, &peer->nl->network[j], network, 16);
+		inet_ntop (AF_INET, &peer->nl->netmask[j], netmask, 16);
+
+		printf ("\t\t[*] network:%s netmask:%s\n", network, netmask);
+	      }
+	    printf ("\n");
 	  }
-	printf ("\n");
-      }
+    }
 }
 
 void
@@ -100,18 +102,25 @@ tap_list ()
   char p_address[ADDRESS_LEN];
   char p_netmask[ADDRESS_LEN];
 
+  tap_handler_t *tap;
+
   max_fd = get_max_fd ();
 
   for (i = 3; i <= max_fd; i++)
-    if (is_active_tap_fd (i))
-      {
-	printf ("%s:\n\t[*] filedecriptor: %d\n", get_tap_relative_device_name (i), i);
-	n_address = get_tap_relative_address (i);
-	n_netmask = get_tap_relative_netmask (i);
-	inet_ntop (AF_INET, &n_address, p_address, ADDRESS_LEN);
-	inet_ntop (AF_INET, &n_netmask, p_netmask, ADDRESS_LEN);
-	shell_msg ("\t[*] address: %s netmask: %s\n", p_address, p_netmask);
-      }
+    {
+      tap = get_fd_related_tap (i);
+      if (tap != NULL)
+	if (tap != NULL)
+	  if (tap->flags & ACTIVE_TAP)
+	    {
+	      printf ("%s:\n\t[*] filedecriptor: %d\n", tap->device, tap->fd);
+	      n_address = tap->address;
+	      n_netmask = tap->netmask;
+	      inet_ntop (AF_INET, &n_address, p_address, ADDRESS_LEN);
+	      inet_ntop (AF_INET, &n_netmask, p_netmask, ADDRESS_LEN);
+	      shell_msg ("\t[*] address: %s netmask: %s\n", p_address, p_netmask);
+	    }
+    }
 }
 
 

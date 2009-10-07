@@ -210,10 +210,16 @@ void
 peer_disconnect (int fd)
 {
   char packet[3];
+  peer_handler_t *peer;
 
-  sprintf ((char *) packet, "%c%c", CONTROL_PACKET, CLOSE_CONNECTION);
-  xSSL_write (get_relative_ssl (fd), packet, 2, "disconnection packet");
-  deregister_peer (fd);
+  peer = get_fd_related_peer (fd);
+  if (peer != NULL)
+    {
+
+      sprintf ((char *) packet, "%c%c", CONTROL_PACKET, CLOSE_CONNECTION);
+      xSSL_write (peer->ssl, packet, 2, "disconnection packet");
+      deregister_peer (fd);
+    }
 }
 
 void *
@@ -223,21 +229,32 @@ select_loop ()
   int ret;
   fd_set read_select;
   int max_fd;
+  int max_peer_fd;
+  int max_tap_fd;
   int fd;
   int rd_len;
 
   pthread_t free_fd_t;
 
+  peer_handler_t *peer;
+  tap_handler_t *tap;
+
   int dont_close_flag = 1;
   int free_fd_flag = 0;
-
 
   while (dont_close_flag)
     {
 
       read_select = master;
 
-      max_fd = get_max_fd ();
+      max_peer_fd = get_max_peer_fd ();
+      max_tap_fd = get_max_tap_fd ();
+
+      if (max_peer_fd > max_tap_fd)
+	max_fd = max_peer_fd;
+      else
+	max_fd = max_tap_fd;
+
       ret = select (max_fd + 1, &read_select, NULL, NULL, NULL);
 
       /* We block the forwarding cycle */
@@ -250,41 +267,49 @@ select_loop ()
 	  /* 0,1 and 2 are stdin-out-err and we don't care about them */
 	  for (fd = 3; fd <= max_fd; fd++)
 	    {
-	      if (is_active_peer_fd (fd) && FD_ISSET (fd, &read_select))
-		{
-		  /* Read from it */
-		  rd_len = xSSL_read (get_relative_ssl (fd), packet_buffer, 4095, "forwarding data");
-		  debug3 ("sock_fd %d (0x%x ssl): read %d bytes packet", fd, get_relative_ssl (fd), rd_len);
-
-		  switch (packet_buffer[0])
+	      peer = get_fd_related_peer (fd);
+	      if (peer != NULL)
+		if (peer->flags & ACTIVE_PEER)
+		  if (FD_ISSET (peer->fd, &read_select))
 		    {
-		    case DATA_PACKET:
-		      forward_to_tap (packet_buffer, rd_len, fd, max_fd);
-		      break;
-		    case CONTROL_PACKET:
-		      if (packet_buffer[1] == CLOSE_CONNECTION)
+		      /* Read from it */
+		      rd_len = xSSL_read (peer->ssl, packet_buffer, 4095, "forwarding data");
+		      debug3 ("sock_fd %d (0x%x ssl): read %d bytes packet", peer->fd, peer->ssl, rd_len);
+
+		      switch (packet_buffer[0])
 			{
-			  debug3 ("control_packet: closing connection");
-			  free_fd_flag = 1;
-			  set_non_active_peer (fd);
+			case DATA_PACKET:
+			  forward_to_tap (packet_buffer, rd_len, peer->fd, max_fd);
+			  break;
+			case CONTROL_PACKET:
+			  if (packet_buffer[1] == CLOSE_CONNECTION)
+			    {
+			      debug3 ("control_packet: closing connection");
+			      free_fd_flag = 1;
+			      /* set non active */
+			      if (peer->flags & ACTIVE_PEER)
+				peer->flags ^= ACTIVE_PEER;
+			    }
+			  break;
 			}
-		      break;
 		    }
-		}
 	    }
 
 	  for (fd = 3; fd <= max_fd; fd++)
 	    {
-	      if (is_active_tap_fd (fd) && FD_ISSET (fd, &read_select))
-		{
-		  rd_len = read (fd, packet_buffer + 1, 4095);
-		  debug3 ("tap_fd %d: read %d bytes packet", fd, rd_len);
+	      tap = get_fd_related_tap (fd);
+	      if (tap != NULL)
+		if (tap->flags & ACTIVE_TAP)
+		  if (FD_ISSET (tap->fd, &read_select))
+		    {
+		      rd_len = read (tap->fd, packet_buffer + 1, 4095);
+		      debug3 ("tap_fd %d: read %d bytes packet", tap->fd, rd_len);
 
-		  /* TODO:
-		     add cool routing (packet inspection etc) */
-		  forward_to_peer (packet_buffer, rd_len, fd, max_fd);
+		      /* TODO:
+		         add cool routing (packet inspection etc) */
+		      forward_to_peer (packet_buffer, rd_len, tap->fd, max_fd);
 
-		}
+		    }
 	    }
 	}
 
@@ -307,16 +332,21 @@ forward_to_tap (char *packet, u_int packet_len, int current_fd, int max_fd)
 {
 
   int fd;
+  tap_handler_t *tap;
 
   debug3 ("data_packet");
   for (fd = 3; fd <= max_fd; fd++)
-    if (fd != current_fd && is_active_tap_fd (fd))
-      {
-	write (fd, packet + 1, packet_len - 1);
-	debug3 ("tap_fd %d: write packet", fd);
+    {
+      tap = get_fd_related_tap (fd);
+      if (tap != NULL)
+	if (tap->flags & ACTIVE_TAP)
+	  if (tap->fd != current_fd)
+	    {
+	      write (tap->fd, packet + 1, packet_len - 1);
+	      debug3 ("tap_fd %d: write packet", tap->fd);
 
-      }
-
+	    }
+    }
   dump (packet, packet_len);
 }
 
@@ -325,16 +355,20 @@ forward_to_peer (char *packet, u_int packet_len, int current_fd, int max_fd)
 {
 
   int fd;
+  peer_handler_t *peer;
 
   packet[0] = DATA_PACKET;
-  for (fd = 1; fd <= max_fd; fd++)
+  for (fd = 3; fd <= max_fd; fd++)
     {
-      if (fd != current_fd && is_active_peer_fd (fd))
-	{
-	  xSSL_write (get_relative_ssl (fd), packet, packet_len + 1, "forwarding data");
-	  debug3 ("sock_fd %d (0x%x ssl): write packet", fd, get_relative_ssl (fd), packet_len);
+      peer = get_fd_related_peer (fd);
+      if (peer != NULL)
+	if (peer->flags & ACTIVE_PEER)
+	  if (peer->fd != current_fd)
+	    {
+	      xSSL_write (peer->ssl, packet, packet_len + 1, "forwarding data");
+	      debug3 ("sock_fd %d (0x%x ssl): write packet", peer->fd, peer->ssl, packet_len);
 
-	}
+	    }
     }
 
   dump (packet, packet_len);
@@ -366,7 +400,8 @@ check_connections_queue (void *arg)
 {
 
   int i;
-  user_list_t *user_list = (user_list_t *) arg;
+  user_list_t *user_list;
+  user_list = (user_list_t *) arg;
 
   if (user_list->count == 0)
     return NULL;

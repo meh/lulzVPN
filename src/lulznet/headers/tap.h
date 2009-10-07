@@ -34,6 +34,8 @@ int tap_alloc (char *dev);
 /* search first free position in tap_db */
 int get_first_free_tap_fd ();
 
+int get_max_tap_fd ();
+
 /* Register a new fd in the tap_db structure */
 void register_tap_device (int fd, char *device, int address, int netmask);
 
@@ -42,24 +44,12 @@ void deregister_tap (int fd);
 
 void *free_non_active_tap ();
 
-/* Check if fd is registerd as tap */
-int is_active_tap_fd (int fd);
-
-/* return local address associated with a tap device */
-int get_tap_relative_address (int fd);
-
-/* return tap relative netmask */
-int get_tap_relative_netmask (int fd);
-
-/* return tap relative network interface name */
-char *get_tap_relative_device_name (int fd);
+tap_handler_t *get_fd_related_tap (int fd);
 
 /* Set address of tap device */
 int configure_tap_device (char *device, char *address, char *netmask);
 
 int add_user_routing (char *username, network_list_t * remote_nl);
-
-int configure_routing (char *net, char *netmask, char *tap_address);
 
 char *get_ip_address_default_netmask (char *address);
 

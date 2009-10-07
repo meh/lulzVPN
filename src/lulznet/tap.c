@@ -57,6 +57,19 @@ get_first_free_tap_db_position ()
   return i;
 }
 
+int
+get_max_tap_fd ()
+{
+
+  int i;
+  int max = 0;
+  for (i = 0; i < MAX_TAPS; i++)
+    if (tap_db[i].fd > max)
+      max = tap_db[i].fd;
+
+  return max;
+}
+
 void
 register_tap_device (int fd, char *device, int address, int netmask)
 {
@@ -134,55 +147,16 @@ free_non_active_tap ()
   return NULL;
 }
 
-int
-is_active_tap_fd (int fd)
-{
-  int i;
-  for (i = 0; i < MAX_TAPS; i++)
-    {
-      if (tap_db[i].fd == fd)
-	if (tap_db[i].flags & ACTIVE_TAP)
-	  {
-	    debug3 ("fd %d type tap is active", fd);
-	    return TRUE;
-	  }
-    }
-
-  return FALSE;
-}
-
-int
-get_tap_relative_address (int fd)
-{
-  int i;
-
-  for (i = 0; i < MAX_TAPS; i++)
-    if (tap_db[i].fd == fd)
-      return tap_db[i].address;
-
-  return 0;
-}
-
-int
-get_tap_relative_netmask (int fd)
+tap_handler_t *
+get_fd_related_tap (int fd)
 {
   int i;
   for (i = 0; i < MAX_TAPS; i++)
     if (tap_db[i].fd == fd)
-      return tap_db[i].netmask;
-
-  return 0;
-}
-
-char *
-get_tap_relative_device_name (int fd)
-{
-  int i;
-  for (i = 0; i < MAX_TAPS; i++)
-    if (tap_db[i].fd == fd)
-      return tap_db[i].device;
+      return (tap_db + i);
 
   return NULL;
+
 }
 
 int
