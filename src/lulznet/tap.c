@@ -253,7 +253,7 @@ get_user_allowed_networks (char *user __attribute__ ((unused)))
   int i;
   network_list_t *nl;
 
-  max_fd = get_max_fd ();
+  max_fd = get_max_tap_fd ();
   nl = malloc (sizeof (network_list_t));
   nl->count = 0;
 

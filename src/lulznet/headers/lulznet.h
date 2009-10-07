@@ -77,8 +77,6 @@
 #include "tap.h"
 #include "xfunc.h"
 
-#include "misc.h"
-
 #define VERSION "0.0.1 [+ssl]"
 #define MAX(A,B) ((A)>(B) ? (A):(B))
 

@@ -104,7 +104,7 @@ tap_list ()
 
   tap_handler_t *tap;
 
-  max_fd = get_max_fd ();
+  max_fd = get_max_tap_fd ();
 
   for (i = 3; i <= max_fd; i++)
     {
