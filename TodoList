@@ -1,0 +1,13 @@
+* finalize protocol v1
+* add cool routing
+* packet inspection
+* tap acl
+* improve server
+* optimize peer and tab db handling
+* forwarding caching
+* add tap management
+* add auth server
+* improve file parsing 
+* shell auto completion
+* reverse connection support
+* TEST TEST TEST
