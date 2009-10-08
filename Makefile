@@ -32,5 +32,6 @@ indent:
 
 clean:
 	rm src/lulznet/*.o
+	rm src/tools/*.o
 	rm ${NAME}
 	rm ug
