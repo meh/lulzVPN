@@ -17,7 +17,10 @@
  * MA 02110-1301, USA.
 */
 
-#include "headers/lulznet.h"
+#include <lulznet/lulznet.h>
+#include <lulznet/auth.h>
+#include <lulznet/log.h>
+#include <lulznet/xfunc.h>
 
 int
 do_authentication (char *username, u_char * hash)

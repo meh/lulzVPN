@@ -17,7 +17,15 @@
  * MA 02110-1301, USA.
 */
 
-#include "headers/lulznet.h"
+#include <lulznet/lulznet.h>
+#include <lulznet/types.h>
+
+#include <lulznet/config.h>
+#include <lulznet/log.h>
+#include <lulznet/networking.h>
+#include <lulznet/peer.h>
+#include <lulznet/tap.h>
+#include <lulznet/xfunc.h>
 
 int
 get_first_free_peer_db_position ()
@@ -44,7 +52,8 @@ get_max_peer_fd ()
 }
 
 void
-register_peer (int fd, SSL * ssl, char *user, int address, network_list_t * nl, char flags)
+register_peer (int fd, SSL * ssl, char *user, int address,
+	       network_list_t * nl, char flags)
 {
 
   int first_free_fd = get_first_free_peer_db_position ();
@@ -61,7 +70,8 @@ register_peer (int fd, SSL * ssl, char *user, int address, network_list_t * nl, 
   peer_db[first_free_fd].nl = nl;
 
   FD_SET (fd, &master);
-  debug2 ("Added fd %d to fd_set master (1st free fd: %d)", fd, first_free_fd);
+  debug2 ("Added fd %d to fd_set master (1st free fd: %d)", fd,
+	  first_free_fd);
 
   if (select_t != (pthread_t) NULL)
     {
@@ -119,7 +129,8 @@ deregister_peer (int fd)
 	  FD_CLR (fd, &master);
 	  close (fd);
 
-	  debug2 ("Removed fd %d from fd_set master (current fd %d)", fd, get_first_free_peer_db_position ());
+	  debug2 ("Removed fd %d from fd_set master (current fd %d)", fd,
+		  get_first_free_peer_db_position ());
 	  return;
 	}
     }

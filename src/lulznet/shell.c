@@ -17,7 +17,15 @@
  * MA 02110-1301, USA.
 */
 
-#include "headers/lulznet.h"
+#include <lulznet/lulznet.h>
+#include <lulznet/types.h>
+
+#include <lulznet/config.h>
+#include <lulznet/log.h>
+#include <lulznet/networking.h>
+#include <lulznet/peer.h>
+#include <lulznet/tap.h>
+#include <lulznet/xfunc.h>
 
 void
 peer_preconnect (sh_cmd * cmd)
@@ -65,7 +73,8 @@ peer_list ()
 	    tmp = peer->address;
 	    inet_ntop (AF_INET, &tmp, address, 16);
 
-	    printf ("%s:\n\t[*] filedescriptor: %d\n\t[*] address: %s", peer->user, i, address);
+	    printf ("%s:\n\t[*] filedescriptor: %d\n\t[*] address: %s",
+		    peer->user, i, address);
 	    printf ("\n\t[*] available networks: %d\n", 1);
 
 	    for (j = 0; j < peer->nl->count; j++)
@@ -118,7 +127,8 @@ tap_list ()
 	      n_netmask = tap->netmask;
 	      inet_ntop (AF_INET, &n_address, p_address, ADDRESS_LEN);
 	      inet_ntop (AF_INET, &n_netmask, p_netmask, ADDRESS_LEN);
-	      shell_msg ("\t[*] address: %s netmask: %s\n", p_address, p_netmask);
+	      shell_msg ("\t[*] address: %s netmask: %s\n", p_address,
+			 p_netmask);
 	    }
     }
 }

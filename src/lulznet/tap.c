@@ -17,7 +17,16 @@
  * MA 02110-1301, USA.
 */
 
-#include "headers/lulznet.h"
+#include <lulznet/lulznet.h>
+#include <lulznet/lulznet.h>
+#include <lulznet/types.h>
+
+#include <lulznet/config.h>
+#include <lulznet/log.h>
+#include <lulznet/networking.h>
+#include <lulznet/peer.h>
+#include <lulznet/tap.h>
+#include <lulznet/xfunc.h>
 
 int
 tap_alloc (char *dev)
@@ -89,7 +98,8 @@ register_tap_device (int fd, char *device, int address, int netmask)
   tap_db[first_free_fd].network = get_ip_address_network (address, netmask);
 
   FD_SET (fd, &master);
-  debug2 ("Added fd %d to fd_set master (1st free fd: %d)", fd, first_free_fd);
+  debug2 ("Added fd %d to fd_set master (1st free fd: %d)", fd,
+	  first_free_fd);
 
   if (select_t != (pthread_t) NULL)
     {
@@ -118,7 +128,8 @@ deregister_tap (int fd)
 	  FD_CLR (fd, &master);
 	  close (fd);
 
-	  debug2 ("Removed fd %d from fd_set master (current fd %d)", fd, get_first_free_tap_db_position ());
+	  debug2 ("Removed fd %d from fd_set master (current fd %d)", fd,
+		  get_first_free_tap_db_position ());
 	  return;
 	}
     }
@@ -164,7 +175,8 @@ configure_tap_device (char *device, char *address, char *netmask)
 {
   char ifconfig_command[256];
 
-  sprintf (ifconfig_command, "/sbin/ifconfig %s %s netmask %s", device, address, netmask);
+  sprintf (ifconfig_command, "/sbin/ifconfig %s %s netmask %s", device,
+	   address, netmask);
   system (ifconfig_command);
 
   return 1;
@@ -196,7 +208,8 @@ add_user_routing (char *username, network_list_t * remote_nl)
 	  inet_ntop (AF_INET, &remote_nl->network[i], network, ADDRESS_LEN);
 	  inet_ntop (AF_INET, &remote_nl->netmask[i], netmask, ADDRESS_LEN);
 
-	  sprintf (route_command, "/sbin/route add -net %s netmask %s gw %s", network, netmask, gateway);
+	  sprintf (route_command, "/sbin/route add -net %s netmask %s gw %s",
+		   network, netmask, gateway);
 	  system (route_command);
 	}
     }

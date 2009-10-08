@@ -17,7 +17,17 @@
  * MA 02110-1301, USA.
 */
 
-#include "headers/lulznet.h"
+#include <lulznet/lulznet.h>
+#include <lulznet/types.h>
+
+#include <lulznet/auth.h>
+#include <lulznet/config.h>
+#include <lulznet/log.h>
+#include <lulznet/networking.h>
+#include <lulznet/peer.h>
+#include <lulznet/protocol.h>
+#include <lulznet/tap.h>
+#include <lulznet/xfunc.h>
 
 void
 ssl_server_init ()
@@ -28,11 +38,13 @@ ssl_server_init ()
     fatal ("Failed to do SSL CTX new");
 
   debug2 ("Loading SSL certificate");
-  if (SSL_CTX_use_certificate_file (ssl_server_ctx, CERT_FILE, SSL_FILETYPE_PEM) <= 0)
+  if (SSL_CTX_use_certificate_file
+      (ssl_server_ctx, CERT_FILE, SSL_FILETYPE_PEM) <= 0)
     fatal ("Failed to load SSL certificate %s", CERT_FILE);
 
   debug2 ("Loading SSL private key");
-  if (SSL_CTX_use_PrivateKey_file (ssl_server_ctx, KEY_FILE, SSL_FILETYPE_PEM) <= 0)
+  if (SSL_CTX_use_PrivateKey_file (ssl_server_ctx, KEY_FILE, SSL_FILETYPE_PEM)
+      <= 0)
     fatal ("Failed to load SSL private key %s", KEY_FILE);
 }
 
@@ -59,7 +71,8 @@ server_loop ()
     fatal ("cannot create socket");
 
   debug1 ("listen_sock (fd %d) created", listen_sock);
-  if (setsockopt (listen_sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof (on)) == -1)
+  if (setsockopt (listen_sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof (on)) ==
+      -1)
     error ("setsockopt SO_REUSEADDR: %s", strerror (errno));
 
 
@@ -69,7 +82,9 @@ server_loop ()
   memset (&(server.sin_zero), '\0', 8);
 
   debug1 ("Binding port %d", PORT);
-  if (bind (listen_sock, (struct sockaddr *) &server, sizeof (struct sockaddr)) == -1)
+  if (bind
+      (listen_sock, (struct sockaddr *) &server,
+       sizeof (struct sockaddr)) == -1)
     fatal ("cannot binding to socket");
 
   info ("Listening");
@@ -81,7 +96,8 @@ server_loop ()
   /* @TODO while(available_connection()) else sleep && goto! */
   while (1)
     {
-      if ((peer_sock = accept (listen_sock, (struct sockaddr *) &peer, &addr_size)) == -1)
+      if ((peer_sock =
+	   accept (listen_sock, (struct sockaddr *) &peer, &addr_size)) == -1)
 	fatal ("cannot accept");
 
       send_banner (peer_sock);
@@ -95,13 +111,22 @@ server_loop ()
 	    if ((handshake_opt = server_handshake (peer_ssl)))
 	      {
 		/* All good! Now we add routing rules */
-		add_user_routing (handshake_opt->peer_username, handshake_opt->network_list);
+		add_user_routing (handshake_opt->peer_username,
+				  handshake_opt->network_list);
 
-		register_peer (peer_sock, peer_ssl, handshake_opt->peer_username, peer.sin_addr.s_addr, handshake_opt->network_list, handshake_opt->flags);
-		inet_ntop (AF_INET, &peer.sin_addr.s_addr, peer_address, ADDRESS_LEN);
-		info ("Connection accepted from %s (fd %d)", peer_address, peer_sock);
+		register_peer (peer_sock, peer_ssl,
+			       handshake_opt->peer_username,
+			       peer.sin_addr.s_addr,
+			       handshake_opt->network_list,
+			       handshake_opt->flags);
+		inet_ntop (AF_INET, &peer.sin_addr.s_addr, peer_address,
+			   ADDRESS_LEN);
+		info ("Connection accepted from %s (fd %d)", peer_address,
+		      peer_sock);
 
-		pthread_create (&connect_queue_t, NULL, check_connections_queue, handshake_opt->user_list);
+		pthread_create (&connect_queue_t, NULL,
+				check_connections_queue,
+				handshake_opt->user_list);
 		pthread_join (connect_queue_t, NULL);
 	      }
 	    else
@@ -180,12 +205,16 @@ peer_connect (int address, short port)
     if (verify_ssl_cert (peer_ssl))
       if ((handshake_opt = peer_handshake (peer_ssl)))
 	{
-	  add_user_routing (handshake_opt->peer_username, handshake_opt->network_list);
+	  add_user_routing (handshake_opt->peer_username,
+			    handshake_opt->network_list);
 
-	  register_peer (peer_sock, peer_ssl, handshake_opt->peer_username, address, handshake_opt->network_list, handshake_opt->flags);
+	  register_peer (peer_sock, peer_ssl, handshake_opt->peer_username,
+			 address, handshake_opt->network_list,
+			 handshake_opt->flags);
 	  info ("Connected");
 
-	  pthread_create (&connect_queue_t, NULL, check_connections_queue, handshake_opt->user_list);
+	  pthread_create (&connect_queue_t, NULL, check_connections_queue,
+			  handshake_opt->user_list);
 	  pthread_join (connect_queue_t, NULL);
 	}
       else
@@ -273,13 +302,17 @@ select_loop ()
 		  if (FD_ISSET (peer->fd, &read_select))
 		    {
 		      /* Read from it */
-		      rd_len = xSSL_read (peer->ssl, packet_buffer, 4095, "forwarding data");
-		      debug3 ("sock_fd %d (0x%x ssl): read %d bytes packet", peer->fd, peer->ssl, rd_len);
+		      rd_len =
+			xSSL_read (peer->ssl, packet_buffer, 4095,
+				   "forwarding data");
+		      debug3 ("sock_fd %d (0x%x ssl): read %d bytes packet",
+			      peer->fd, peer->ssl, rd_len);
 
 		      switch (packet_buffer[0])
 			{
 			case DATA_PACKET:
-			  forward_to_tap (packet_buffer, rd_len, peer->fd, max_fd);
+			  forward_to_tap (packet_buffer, rd_len, peer->fd,
+					  max_fd);
 			  break;
 			case CONTROL_PACKET:
 			  if (packet_buffer[1] == CLOSE_CONNECTION)
@@ -303,11 +336,13 @@ select_loop ()
 		  if (FD_ISSET (tap->fd, &read_select))
 		    {
 		      rd_len = read (tap->fd, packet_buffer + 1, 4095);
-		      debug3 ("tap_fd %d: read %d bytes packet", tap->fd, rd_len);
+		      debug3 ("tap_fd %d: read %d bytes packet", tap->fd,
+			      rd_len);
 
 		      /* TODO:
 		         add cool routing (packet inspection etc) */
-		      forward_to_peer (packet_buffer, rd_len, tap->fd, max_fd);
+		      forward_to_peer (packet_buffer, rd_len, tap->fd,
+				       max_fd);
 
 		    }
 	    }
@@ -365,8 +400,10 @@ forward_to_peer (char *packet, u_int packet_len, int current_fd, int max_fd)
 	if (peer->flags & ACTIVE_PEER)
 	  if (peer->fd != current_fd)
 	    {
-	      xSSL_write (peer->ssl, packet, packet_len + 1, "forwarding data");
-	      debug3 ("sock_fd %d (0x%x ssl): write packet", peer->fd, peer->ssl, packet_len);
+	      xSSL_write (peer->ssl, packet, packet_len + 1,
+			  "forwarding data");
+	      debug3 ("sock_fd %d (0x%x ssl): write packet", peer->fd,
+		      peer->ssl, packet_len);
 
 	    }
     }
@@ -383,7 +420,9 @@ verify_ssl_cert (SSL * ssl)
   if (SSL_get_verify_result (ssl) != X509_V_OK)
     {
       fingerprint = get_fingerprint_from_ctx (ssl);
-      printf ("\nCould not verify SSL servers certificate (self signed).\nFingerprint is: %s\nDo you want to continue? [y|n]: ", fingerprint);
+      printf
+	("\nCould not verify SSL servers certificate (self signed).\nFingerprint is: %s\nDo you want to continue? [y|n]: ",
+	 fingerprint);
       fflush (stdout);
       scanf ("%c%*c", &answer);
       if (answer == 'y' || answer == 'Y')

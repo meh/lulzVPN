@@ -17,7 +17,9 @@
  * MA 02110-1301, USA.
 */
 
-#include "headers/lulznet.h"
+#include <lulznet/lulznet.h>
+#include <lulznet/log.h>
+#include <lulznet/xfunc.h>
 
 void *
 xmalloc (size_t size)

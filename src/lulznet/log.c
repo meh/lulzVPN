@@ -17,8 +17,8 @@
  * MA 02110-1301, USA.
 */
 
-#include "headers/lulznet.h"
-
+#include <lulznet/lulznet.h>
+#include <lulznet/log.h>
 void
 info (char *msg, ...)
 {
