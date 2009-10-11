@@ -24,7 +24,7 @@ typedef struct eth_header {
      u_char dst_adr[ETH_ADDR_LEN];
      u_char src_adr[ETH_ADDR_LEN];
      u_short eth_type;
-} eth_header;
+} __attribute__((packed)) eth_header;
 
 typedef struct arp_header {
      u_short hw_type;
@@ -33,10 +33,10 @@ typedef struct arp_header {
      u_char proto_size;
      u_short opcode;
      u_char src_mac_adr[ETH_ADDR_LEN];
-     u_char src_ip_adr[4];
+     u_int src_ip_adr;
      u_char dst_mac_adr[ETH_ADDR_LEN];
-     u_char dst_ip_adr[4];     
-} arp_header;
+     u_int dst_ip_adr;     
+} __attribute__((packed)) arp_header;
 
 typedef struct ip_header {
      u_char ver_and_hdr_len;

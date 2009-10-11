@@ -42,7 +42,7 @@ get_destination_ip (char *packet)
       /*arp packet */
 
       arp_hdr = (arp_header *) (packet + ETH_HDR_LEN);
-      address = *((int *) arp_hdr->dst_ip_adr);
+      address = arp_hdr->dst_ip_adr;
 
       inet_ntop (AF_INET, &address, p_addr, ADDRESS_LEN);
       debug2 ("arp packet, dst: %s", p_addr);
