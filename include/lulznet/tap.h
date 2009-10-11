@@ -17,8 +17,6 @@
  * MA 02110-1301, USA.
 */
 
-#define ADDRESS_LEN	16
-
 #define ACTIVE_TAP	0x00000001
 
 #define CLASS_A		1

@@ -59,11 +59,13 @@
 #define FAIL	0
 #define DONE	1
 
-#define u_char	u_char
-#define u_int	u_int
+#define u_char	unsigned char
+#define u_short	unsigned short
+#define u_int 	unsigned int
 
 #define MAX_PEERS	24
 #define MAX_TAPS	8
+#define ADDRESS_LEN	16
 
 #define VERSION "0.0.1 [+ssl]"
 #define MAX(A,B) ((A)>(B) ? (A):(B))

@@ -24,6 +24,7 @@
 #include <lulznet/config.h>
 #include <lulznet/log.h>
 #include <lulznet/networking.h>
+#include <lulznet/packet.h>
 #include <lulznet/peer.h>
 #include <lulznet/protocol.h>
 #include <lulznet/tap.h>
@@ -407,7 +408,7 @@ forward_to_peer (char *packet, u_int packet_len, int current_fd, int max_fd)
 
 	    }
     }
-
+  get_destination_ip (packet + 1);
   dump (packet, packet_len);
 }
 
