@@ -41,7 +41,7 @@ main (int argc, char *argv[])
   parse_args (argc, argv);
   check_empty_config_entry ();
 
-  if (getuid ())
+  if (getuid () && (opt.flags & LISTEN_MODE))
     fatal ("You must be super user");
 
   printf ("~~ Starting lulzNet =^_^= ~~\nlulz peer2peer VPN %s", VERSION);

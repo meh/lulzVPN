@@ -22,6 +22,19 @@
 #include <lulznet/log.h>
 #include <lulznet/xfunc.h>
 
+
+int
+auth_service(SSL *ssl){
+char username[17];
+char hash[32];
+
+  int rd_len;
+
+  xSSL_read(ssl,username,16,"username");
+
+     return 1;
+}
+
 int
 do_authentication (char *username, u_char * hash)
 {

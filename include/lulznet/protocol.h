@@ -22,6 +22,9 @@
 #define DATA_PACKET		'\x00'
 #define CONTROL_PACKET		'\x01'
 
+#define NEW_PEER		0x01
+#define AUTH_SERVICE		0x02
+
 #define CLOSE_CONNECTION	'\x01'
 
 /* Send and recv banner */

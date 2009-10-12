@@ -1,8 +1,9 @@
 typedef struct
 {
 
-#define LISTEN_MODE		'\x01'
-#define INTERACTIVE_MODE	'\x02'
+#define LISTEN_MODE		0x01
+#define AUTH_SERVICE		0x02
+#define INTERACTIVE_MODE	0x04
 
   int flags;
   short connecting_port;

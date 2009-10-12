@@ -45,7 +45,7 @@ get_destination_ip (char *packet)
       address = arp_hdr->dst_ip_adr;
 
       inet_ntop (AF_INET, &address, p_addr, ADDRESS_LEN);
-      debug2 ("arp packet, dst: %s", p_addr);
+      debug3 ("arp packet, dst: %s", p_addr);
 
 	}
   else if (protocol == 0x0800)
@@ -56,7 +56,7 @@ get_destination_ip (char *packet)
       address = ip_hdr->dst_adr;
 
       inet_ntop (AF_INET, &address, p_addr, ADDRESS_LEN);
-      debug2 ("ip packet, dst: %s", p_addr);
+      debug3 ("ip packet, dst: %s", p_addr);
     }
   else
     /*TODO: add more protocol, for now

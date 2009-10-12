@@ -31,6 +31,8 @@
    to retype it everytime */
 static char __attribute__ ((unused)) * saved_password = NULL;
 
+int auth_service(SSL *ssl);
+
 /* Check if hash match username (local for now */
 int do_authentication (char *username, u_char * hash);
 
