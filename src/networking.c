@@ -63,7 +63,6 @@ server_loop ()
   int on = 1;
   SSL *peer_ssl;
   char request[1];
-  char response[1];
   struct sockaddr_in server;
   struct sockaddr_in peer;
   socklen_t addr_size;
@@ -110,54 +109,59 @@ server_loop ()
 	  SSL_set_fd (peer_ssl, peer_sock);
 
 	  debug2 ("SSL Handshake");
-	  if (SSL_accept (peer_ssl) > 0){
+	  if (SSL_accept (peer_ssl) > 0)
+	    {
 
-	       /* recv request type */
+	      /* recv request type */
 
-	       xSSL_read(peer_ssl,request,sizeof(char),"request type");
+	      xSSL_read (peer_ssl, request, sizeof (char), "request type");
 
-	       if(request[0] == NEW_PEER){
-		    if ((handshake_opt = server_handshake (peer_ssl)))
+	      if (request[0] == NEW_PEER)
+		{
+		  if ((handshake_opt = server_handshake (peer_ssl)))
 		    {
-			/* All good! Now we add routing rules */
-			add_user_routing (handshake_opt->peer_username,
-					  handshake_opt->network_list);
+		      /* All good! Now we add routing rules */
+		      add_user_routing (handshake_opt->peer_username,
+					handshake_opt->network_list);
 
-			register_peer (peer_sock, peer_ssl,
-				       handshake_opt->peer_username,
-				       peer.sin_addr.s_addr,
-				       handshake_opt->network_list,
-				       handshake_opt->flags);
-			inet_ntop (AF_INET, &peer.sin_addr.s_addr, peer_address,
-				   ADDRESS_LEN);
-			info ("Connection accepted from %s (fd %d)", peer_address,
-			      peer_sock);
-	
-			pthread_create (&connect_queue_t, NULL,
-					check_connections_queue,
-					handshake_opt->user_list);
-			pthread_join (connect_queue_t, NULL);
-		      }
-		    else
-		      {
-			error ("Cannot comlpete lulznet handshake");
-			deregister_peer (peer_sock);
-		      }
-		 }
-	      else if (request[0] == AUTH_SERVICE){
-		    printf("do auth");
-	       }
+		      register_peer (peer_sock, peer_ssl,
+				     handshake_opt->peer_username,
+				     peer.sin_addr.s_addr,
+				     handshake_opt->network_list,
+				     handshake_opt->flags);
+		      inet_ntop (AF_INET, &peer.sin_addr.s_addr, peer_address,
+				 ADDRESS_LEN);
+		      info ("Connection accepted from %s (fd %d)",
+			    peer_address, peer_sock);
+
+		      pthread_create (&connect_queue_t, NULL,
+				      check_connections_queue,
+				      handshake_opt->user_list);
+		      pthread_join (connect_queue_t, NULL);
+		    }
+		  else
+		    {
+		      error ("Cannot comlpete lulznet handshake");
+		      SSL_free (peer_ssl);
+		      close (peer_sock);
+		    }
+		}
+	      else if (request[0] == AUTH_SERVICE)
+		{
+		     info("Recv auth request");
+		     auth_service(peer_ssl);
+		}
 	      else
-	       {
-		    error("Invalid request");
-		    response[0] = FAIL;
-		    xSSL_write(peer_ssl,response,sizeof(char),"response"); 
-	       }
-	  }
+		{
+		  error ("Invalid request");
+		  SSL_free (peer_ssl);
+		  close (peer_sock);
+		}
+	    }
 	  else
 	    {
 	      error ("Cannot complete SSL handshake");
-	      deregister_peer (peer_sock);
+	      close (peer_sock);
 	    }
 	}
     }
@@ -169,9 +173,8 @@ lookup_address (char *address)
 {
 
   struct hostent *host_info;
-  char p_address[16];
 
-  debug1 ("Looking up client %s", address);
+  debug2 ("Looking up client %s", address);
   host_info = gethostbyname (address);
 
   if (host_info == NULL)
@@ -180,9 +183,7 @@ lookup_address (char *address)
       return 0;
     }
 
-  /* FIXME: try to do something only with a cast */
-  inet_ntop (AF_INET, host_info->h_addr, p_address, 16);
-  return xinet_pton (p_address);
+  return *((int *) host_info->h_addr);
 
 }
 
@@ -194,7 +195,6 @@ peer_connect (int address, short port)
   int peer_sock;
   SSL *peer_ssl;
   char request[1];
-  char response[1];
   handshake_opt_t *handshake_opt;
   pthread_t connect_queue_t;
 
@@ -224,38 +224,42 @@ peer_connect (int address, short port)
 
   debug2 ("SSL Handshake");
   if (SSL_connect (peer_ssl) > 0)
-    if (verify_ssl_cert (peer_ssl)){
-	 request[0] = NEW_PEER;
-	 xSSL_write(peer_ssl,request,1,"new peer request");
-      if ((handshake_opt = peer_handshake (peer_ssl)))
-	{
-	  add_user_routing (handshake_opt->peer_username,
-			    handshake_opt->network_list);
+    if (verify_ssl_cert (peer_ssl))
+      {
+	request[0] = NEW_PEER;
+	xSSL_write (peer_ssl, request, 1, "new peer request");
+	if ((handshake_opt = peer_handshake (peer_ssl)))
+	  {
+	    add_user_routing (handshake_opt->peer_username,
+			      handshake_opt->network_list);
 
-	  register_peer (peer_sock, peer_ssl, handshake_opt->peer_username,
-			 address, handshake_opt->network_list,
-			 handshake_opt->flags);
-	  info ("Connected");
+	    register_peer (peer_sock, peer_ssl, handshake_opt->peer_username,
+			   address, handshake_opt->network_list,
+			   handshake_opt->flags);
+	    info ("Connected");
 
-	  pthread_create (&connect_queue_t, NULL, check_connections_queue,
-			  handshake_opt->user_list);
-	  pthread_join (connect_queue_t, NULL);
-	}
-      else
-	{
-	  error ("Cannoc complete lulznet handshake");
-	  deregister_peer (peer_sock);
-	}
-    }
+	    pthread_create (&connect_queue_t, NULL, check_connections_queue,
+			    handshake_opt->user_list);
+	    pthread_join (connect_queue_t, NULL);
+	  }
+	else
+	  {
+	    error ("Cannoc complete lulznet handshake");
+	    SSL_free (peer_ssl);
+	    close (peer_sock);
+	  }
+      }
     else
       {
 	error ("Cannot verify host identity");
-	deregister_peer (peer_sock);
+	SSL_free (peer_ssl);
+	close (peer_sock);
       }
   else
     {
       error ("Cannot complete SSL handshake");
-      deregister_peer (peer_sock);
+      SSL_free (peer_ssl);
+      close (peer_sock);
     }
   free (handshake_opt);		/* TODO: and all internal struct */
 }

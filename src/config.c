@@ -37,8 +37,8 @@ parse_args (int argc, char **argv)
   while ((c = getopt (argc, argv, "ac:dhil:n:p:P:t:v")) != -1)
     switch (c)
       {
-	   case 'a':
-		opt.flags |= AUTH_SERVICE;
+      case 'a':
+	opt.flags |= AUTH_SERVICE;
       case 'c':
 	if (!*optarg)
 	  fatal ("You must specify an address");

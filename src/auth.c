@@ -24,15 +24,19 @@
 
 
 int
-auth_service(SSL *ssl){
-char username[17];
-char hash[32];
+auth_service (SSL * ssl)
+{
+  char username[17];
+  char hash[32];
 
   int rd_len;
 
-  xSSL_read(ssl,username,16,"username");
+  rd_len = xSSL_read (ssl, username, 16, "username");
+  username[rd_len] = '\x00';
 
-     return 1;
+  rd_len = xSSL_read (ssl, hash, 32, "hash");
+
+  return 1;
 }
 
 int

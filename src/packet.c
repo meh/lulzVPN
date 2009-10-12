@@ -47,7 +47,7 @@ get_destination_ip (char *packet)
       inet_ntop (AF_INET, &address, p_addr, ADDRESS_LEN);
       debug3 ("arp packet, dst: %s", p_addr);
 
-	}
+    }
   else if (protocol == 0x0800)
     {
       /* ip packet */
