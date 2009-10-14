@@ -20,7 +20,7 @@
 #define CONFIG_FILE	"/etc/lulznet/config"
 
 /* Struct that holds options */
-option_t opt;
+extern option_t opt;
 
 /* parse console args */
 void parse_args (int argc, char **argv);

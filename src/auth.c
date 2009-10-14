@@ -22,6 +22,7 @@
 #include <lulznet/log.h>
 #include <lulznet/xfunc.h>
 
+char *saved_password = NULL;
 
 int
 auth_service (SSL * ssl)
@@ -79,7 +80,7 @@ password_prompt ()
   char *password;
   struct termio tty, oldtty;
 
-  password = xmalloc ((MAX_PASSWORD_LEN + 1) * sizeof (char));
+  password = (char *) xmalloc ((MAX_PASSWORD_LEN + 1) * sizeof (char));
 
   ioctl (0, TCGETA, &oldtty);
 
@@ -116,7 +117,7 @@ calculate_md5 (char *string)
   const EVP_MD *md;
   u_int md_len;
 
-  u_char *hex_hash = xmalloc (MD5_DIGEST_LENGTH * sizeof (u_char));
+  u_char *hex_hash = (u_char *) xmalloc (MD5_DIGEST_LENGTH * sizeof (u_char));
 
   md = EVP_get_digestbyname ("MD5");
   EVP_MD_CTX_init (&mdctx);
@@ -149,7 +150,7 @@ get_hash (char *request_user)
   char user[MAX_USERNAME_LEN + 1];
   char *hash;
 
-  hash = xmalloc ((PW_HASH_STRING_LEN + 1) * sizeof (char));
+  hash = (char *) xmalloc ((PW_HASH_STRING_LEN + 1) * sizeof (char));
   cred = fopen (CREDENTIAL_FILE, "r");
 
   if (cred == NULL)
@@ -173,7 +174,7 @@ get_fingerprint_from_ctx (SSL * ssl)
 
   u_char digest[SHA_DIGEST_LENGTH];
   char hex[] = "0123456789ABCDEF";
-  char *fp = malloc ((EVP_MAX_MD_SIZE * 3) * sizeof (char));
+  char *fp = (char *) malloc ((EVP_MAX_MD_SIZE * 3) * sizeof (char));
   u_int len;
   u_int i;
 

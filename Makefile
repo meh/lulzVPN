@@ -1,7 +1,7 @@
 VERSION	= 0.0.1
 NAME	= lulzNet
 
-CC	= gcc
+CC	= g++
 CFLAGS	= -Wall -Wextra -pedantic -g -I ./include
 LDFLAGS	= -lpthread -lssl -lreadline -lcrypt
 
@@ -12,8 +12,8 @@ LULZNET_FILES = src/auth.c src/config.c src/main.c src/peer.c\
 UG_FILES = var/lulznet_ug.c
 
 all:lulznet ug
-	gcc ${LDFLAGS} -o ${NAME} $(LULZNET_FILES:.c=.o)
-	gcc ${LDFLAGS} -o ug $(UG_FILES:.c=.o) 
+	${CC} ${LDFLAGS} -o ${NAME} $(LULZNET_FILES:.c=.o)
+	${CC} ${LDFLAGS} -o ug $(UG_FILES:.c=.o) 
 
 
 lulznet: $(LULZNET_FILES:.c=.o)

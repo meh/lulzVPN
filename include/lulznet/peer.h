@@ -19,7 +19,7 @@
 
 #define ACTIVE_PEER	0x00000001
 
-peer_handler_t peer_db[MAX_PEERS];
+extern peer_handler_t peer_db[MAX_PEERS];
 
 /* search first free position in peer_db */
 int get_first_free_peer_db_position ();
@@ -41,7 +41,7 @@ void set_non_active_peer (int fd);
 void deregister_peer (int fd);
 
 /* Check for non active peer and reomve them */
-void *free_non_active_peer ();
+void *free_non_active_peer (void *arg __attribute__((unused)));
 
 peer_handler_t *get_fd_related_peer (int fd);
 

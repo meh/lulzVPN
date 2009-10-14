@@ -29,7 +29,7 @@
 
 /* Global var where we save password so you don't have
    to retype it everytime */
-static char __attribute__ ((unused)) * saved_password = NULL;
+extern char *saved_password;
 
 int auth_service(SSL *ssl);
 

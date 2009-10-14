@@ -27,20 +27,20 @@
 
 #define MAXLOGSIZE	512
 
-int debug_level;
-pthread_mutex_t log_mutex;
+extern int debug_level;
+extern pthread_mutex_t log_mutex;
 
 /* Call appropriate log function */
-void do_log (char *fmt, va_list args, int level);
+void do_log (const char *fmt, va_list args, int level);
 
 /* Print to stderr various messages */
-void info (char *msg, ...);
-void debug1 (char *msg, ...);
-void debug2 (char *msg, ...);
-void debug3 (char *msg, ...);
-void error (char *msg, ...);
-void fatal (char *msg, ...);
-void shell_msg (char *msg, ...);
+void info (const char *msg, ...);
+void debug1 (const char *msg, ...);
+void debug2 (const char *msg, ...);
+void debug3 (const char *msg, ...);
+void error (const char *msg, ...);
+void fatal (const char *msg, ...);
+void shell_msg (const char *msg, ...);
 
 /* Dump in ascii and hex data_buffer */
 void dump (char *data_buffer, int length);

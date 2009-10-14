@@ -24,7 +24,7 @@
 #define CLASS_C		3
 
 /* A structure that keep file descriptors information */
-tap_handler_t tap_db[MAX_TAPS];
+extern tap_handler_t tap_db[MAX_TAPS];
 
 /* Allocate a new tap device */
 int tap_alloc (char *dev);

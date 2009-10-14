@@ -34,10 +34,10 @@ main (int argc, char *argv[])
 {
 
   int address;
-  pthread_t server_t;		/* Listening thread */
+  pthread_t server_t;	/* Listening thread */
 
   set_default_options ();
-  parse_config_file (CONFIG_FILE);
+  parse_config_file ((char *) CONFIG_FILE);
   parse_args (argc, argv);
   check_empty_config_entry ();
 

@@ -59,7 +59,7 @@ xfree (void *ptr)
 }
 
 int
-xSSL_read (SSL * ssl, void *buf, int max_len, char *item)
+xSSL_read (SSL * ssl, void *buf, int max_len, const char *item)
 {
 
   char ssl_err_msg[64];
@@ -75,7 +75,7 @@ xSSL_read (SSL * ssl, void *buf, int max_len, char *item)
 }
 
 int
-xSSL_write (SSL * ssl, void *buf, int max_len, char *item)
+xSSL_write (SSL * ssl, void *buf, int max_len, const char *item)
 {
 
   char ssl_err_msg[64];

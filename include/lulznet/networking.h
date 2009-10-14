@@ -25,15 +25,15 @@
 
 /* mutex used to prevent fd_db structure's modifies
    while select() main cycle is running */
-pthread_mutex_t select_mutex;
+extern pthread_mutex_t select_mutex;
 
-pthread_t select_t;
+extern pthread_t select_t;
 
-SSL_CTX *ssl_client_ctx;
-SSL_CTX *ssl_server_ctx;
+extern SSL_CTX *ssl_client_ctx;
+extern SSL_CTX *ssl_server_ctx;
 
 /* global fd_set for select() */
-fd_set master;
+extern fd_set master;
 
 /* Initialize ssl server's context */
 void ssl_server_init ();
@@ -42,7 +42,7 @@ void ssl_server_init ();
 void ssl_client_init ();
 
 /* Main server thread, accepting connection */
-void *server_loop ();
+void *server_loop (void *arg);
 
 int lookup_address (char *address);
 
@@ -53,7 +53,7 @@ void peer_connect (int address, short port);
 void peer_disconnect (int fd);
 
 /* Main forwarding function */
-void *select_loop ();
+void *select_loop (void *arg);
 inline void forward_to_tap (char *packet, u_int packet_len, int current_fd, int max_fd);
 inline void forward_to_peer (char *packet, u_int packet_len, int current_fd, int max_fd);
 

@@ -19,8 +19,12 @@
 
 #include <lulznet/lulznet.h>
 #include <lulznet/log.h>
+
+int debug_level;
+pthread_mutex_t log_mutex;
+
 void
-info (char *msg, ...)
+info (const char *msg, ...)
 {
 
   va_list args;
@@ -31,7 +35,7 @@ info (char *msg, ...)
 }
 
 void
-debug1 (char *msg, ...)
+debug1 (const char *msg, ...)
 {
   va_list args;
 
@@ -46,7 +50,7 @@ debug1 (char *msg, ...)
 }
 
 void
-debug2 (char *msg, ...)
+debug2 (const char *msg, ...)
 {
   va_list args;
 
@@ -61,7 +65,7 @@ debug2 (char *msg, ...)
 }
 
 void
-debug3 (char *msg, ...)
+debug3 (const char *msg, ...)
 {
   va_list args;
 
@@ -76,7 +80,7 @@ debug3 (char *msg, ...)
 }
 
 void
-error (char *msg, ...)
+error (const char *msg, ...)
 {
   va_list args;
 
@@ -86,7 +90,7 @@ error (char *msg, ...)
 }
 
 void
-fatal (char *msg, ...)
+fatal (const char *msg, ...)
 {
 
   va_list args;
@@ -101,7 +105,7 @@ fatal (char *msg, ...)
 }
 
 void
-shell_msg (char *msg, ...)
+shell_msg (const char *msg, ...)
 {
   va_list args;
 
@@ -111,7 +115,7 @@ shell_msg (char *msg, ...)
 }
 
 void
-do_log (char *fmt, va_list args, int level)
+do_log (const char *fmt, va_list args, int level)
 {
   char msgbuf[MAXLOGSIZE];
   char fmtbuf[MAXLOGSIZE];

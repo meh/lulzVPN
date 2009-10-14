@@ -143,7 +143,7 @@ preparse_command (char *line)
   int tmp_len;
   int parsed_bytes;
 
-  cmd = xmalloc (sizeof (sh_cmd));
+  cmd = (sh_cmd *) xmalloc (sizeof (sh_cmd));
   line_len = strlen (line);
   parsed_bytes = 0;
 

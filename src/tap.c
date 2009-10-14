@@ -28,6 +28,8 @@
 #include <lulznet/tap.h>
 #include <lulznet/xfunc.h>
 
+tap_handler_t tap_db[MAX_TAPS];
+
 int
 tap_alloc (char *dev)
 {
@@ -84,9 +86,9 @@ register_tap_device (int fd, char *device, int address, int netmask)
 {
 
   int first_free_fd = get_first_free_tap_db_position ();
-  int class;
+  int net_class;
 
-  class = 0;
+  net_class = 0;
 
   pthread_mutex_lock (&select_mutex);
 
@@ -223,7 +225,7 @@ get_ip_address_default_netmask (char *address)
 {
 
   int first_ottect;
-  char *netmask = malloc (ADDRESS_LEN * sizeof (char));
+  char *netmask = (char *) malloc (ADDRESS_LEN * sizeof (char));
 
   sscanf (address, "%d.", &first_ottect);
 
@@ -267,7 +269,7 @@ get_user_allowed_networks (char *user __attribute__ ((unused)))
   network_list_t *nl;
 
   max_fd = get_max_tap_fd ();
-  nl = malloc (sizeof (network_list_t));
+  nl = (network_list_t *) xmalloc (sizeof (network_list_t));
   nl->count = 0;
 
   for (i = 0; i < MAX_TAPS; i++)
@@ -297,7 +299,7 @@ new_tap (char *address, char *netmask)
 {
 
   int fd;
-  char *device = xmalloc (IFNAMSIZ * sizeof (char));
+  char *device = (char *)xmalloc (IFNAMSIZ * sizeof (char));
   int n_address;
   int n_netmask;
 

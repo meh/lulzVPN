@@ -30,6 +30,14 @@
 #include <lulznet/tap.h>
 #include <lulznet/xfunc.h>
 
+SSL_CTX *ssl_client_ctx;
+SSL_CTX *ssl_server_ctx;
+
+pthread_mutex_t select_mutex;
+pthread_t select_t;
+
+fd_set master;
+
 void
 ssl_server_init ()
 {
@@ -56,7 +64,7 @@ ssl_client_init ()
 }
 
 void *
-server_loop ()
+server_loop (void *arg __attribute__((unused)))
 {
 
   int listen_sock, peer_sock;
@@ -281,7 +289,7 @@ peer_disconnect (int fd)
 }
 
 void *
-select_loop ()
+select_loop (void __attribute__((unused)) *arg)
 {
   char packet_buffer[4096];
   int ret;

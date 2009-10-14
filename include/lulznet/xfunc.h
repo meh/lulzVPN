@@ -22,7 +22,7 @@ void *xmalloc (size_t size);
 void *xrealloc (void *ptr, size_t size);
 void xfree (void *);
 
-int xSSL_read (SSL * ssl, void *buf, int max_len, char *item);
-int xSSL_write (SSL * ssl, void *buf, int max_len, char *item);
+int xSSL_read (SSL * ssl, void *buf, int max_len, const char *item);
+int xSSL_write (SSL * ssl, void *buf, int max_len, const char *item);
 
 int xinet_pton (char *address);

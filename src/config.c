@@ -25,6 +25,8 @@
 #include <lulznet/networking.h>
 #include <lulznet/xfunc.h>
 
+option_t opt;
+
 void
 parse_args (int argc, char **argv)
 {
@@ -117,19 +119,19 @@ parse_config_file (char *filename)
 	  else if (!strcmp (tmp, "user"))
 	    {
 	      fscanf (fp, "%32s", tmp);
-	      opt.username = xmalloc ((strlen (tmp) + 1) * sizeof (char));
+	      opt.username = (char *) xmalloc ((strlen (tmp) + 1) * sizeof (char));
 	      strcpy (opt.username, tmp);
 	    }
 	  else if (!strcmp (tmp, "tap_addr"))
 	    {
 	      fscanf (fp, "%32s", tmp);
-	      opt.tap_address = xmalloc ((strlen (tmp) + 1) * sizeof (char));
+	      opt.tap_address = (char *) xmalloc ((strlen (tmp) + 1) * sizeof (char));
 	      strcpy (opt.tap_address, tmp);
 	    }
 	  else if (!strcmp (tmp, "tap_netm"))
 	    {
 	      fscanf (fp, "%32s", tmp);
-	      opt.tap_netmask = xmalloc ((strlen (tmp) + 1) * sizeof (char));
+	      opt.tap_netmask = (char *) xmalloc ((strlen (tmp) + 1) * sizeof (char));
 	      strcpy (opt.tap_netmask, tmp);
 	    }
 	  else if (!strcmp (tmp, "interactive"))

@@ -27,6 +27,8 @@
 #include <lulznet/tap.h>
 #include <lulznet/xfunc.h>
 
+peer_handler_t peer_db[MAX_PEERS];
+
 int
 get_first_free_peer_db_position ()
 {
@@ -137,7 +139,7 @@ deregister_peer (int fd)
 }
 
 void *
-free_non_active_peer ()
+free_non_active_peer (void *arg __attribute__((unused)))
 {
   int i;
 

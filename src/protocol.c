@@ -68,11 +68,11 @@ server_handshake (SSL * ssl)
 {
   handshake_opt_t *hs_opt;
 
-  hs_opt = xmalloc (sizeof (handshake_opt_t));
-  hs_opt->peer_username = xmalloc ((MAX_USERNAME_LEN + 1) * sizeof (char));
+  hs_opt = (handshake_opt_t *) xmalloc (sizeof (handshake_opt_t));
+  hs_opt->peer_username = (char *) xmalloc ((MAX_USERNAME_LEN + 1) * sizeof (char));
 
-  hs_opt->user_list = xmalloc (sizeof (user_list_t));
-  hs_opt->network_list = xmalloc (sizeof (network_list_t));
+  hs_opt->user_list = (user_list_t *) xmalloc (sizeof (user_list_t));
+  hs_opt->network_list = (network_list_t *) xmalloc (sizeof (network_list_t));
 
   /*
    * PROTOCOL!1!1ONE
@@ -113,11 +113,11 @@ peer_handshake (SSL * ssl)
 
   handshake_opt_t *hs_opt;
 
-  hs_opt = xmalloc (sizeof (handshake_opt_t));
-  hs_opt->peer_username = xmalloc ((MAX_USERNAME_LEN + 1) * sizeof (char));
+  hs_opt = (handshake_opt_t *) xmalloc (sizeof (handshake_opt_t));
+  hs_opt->peer_username = (char *) xmalloc ((MAX_USERNAME_LEN + 1) * sizeof (char));
 
-  hs_opt->user_list = xmalloc (sizeof (user_list_t));
-  hs_opt->network_list = xmalloc (sizeof (network_list_t));
+  hs_opt->user_list = (user_list_t *) xmalloc (sizeof (user_list_t));
+  hs_opt->network_list = (network_list_t *) xmalloc (sizeof (network_list_t));
 
   /*
    * PROTOCOL!1!!ONE 
@@ -417,7 +417,7 @@ lulznet_recv_userlist (SSL * ssl, handshake_opt_t * hs_opt)
 	return FAIL;
 
       packet[rd_len] = '\x00';
-      hs_opt->user_list->user[i] = malloc ((rd_len + 1) * sizeof (char));
+      hs_opt->user_list->user[i] = (char *) malloc ((rd_len + 1) * sizeof (char));
       strcpy (hs_opt->user_list->user[i], packet);
 
       if (!
@@ -440,7 +440,7 @@ get_userlist ()
   peer_handler_t *peer;
   user_list_t *user_list;
 
-  user_list = xmalloc (sizeof (user_list_t));
+  user_list = (user_list_t *) xmalloc (sizeof (user_list_t));
   max_fd = get_max_peer_fd ();
   user_list->count = 0;
 
