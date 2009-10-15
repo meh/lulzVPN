@@ -101,6 +101,7 @@ parse_config_file (char *filename)
 {
   FILE *fp;
   char tmp[33];
+  char c;
 
   fp = fopen (filename, "r");
   if (fp == NULL)
@@ -110,13 +111,7 @@ parse_config_file (char *filename)
 
       while (fscanf (fp, "%32s", tmp) != -1)
 	{
-	  if (tmp[0] == '#')
-	    {
-	      /* It a comment, go to next line */
-	      fscanf (fp, "%*s\n");
-	    }
-
-	  else if (!strcmp (tmp, "user"))
+	  if (!strcmp (tmp, "user"))
 	    {
 	      fscanf (fp, "%32s", tmp);
 	      opt.username = (char *) xmalloc ((strlen (tmp) + 1) * sizeof (char));
@@ -166,8 +161,12 @@ parse_config_file (char *filename)
 	      debug_level = atoi (tmp);
 	    }
 	  else
-	    error ("Invalid option in configfile");
+	       if(!tmp[0] == '#')
+		    error ("Invalid option in configfile");
 
+	  do
+	       fscanf(fp,"%c",&c);
+	  while(c != '\n');
 	}
     }
 }
