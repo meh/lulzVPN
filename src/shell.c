@@ -54,7 +54,6 @@ peer_list ()
 {
   int i;
   int j;
-  int max_fd;
   int tmp;
   char address[16];
   char network[16];
@@ -62,50 +61,51 @@ peer_list ()
 
   peer_handler_t *peer;
 
-  max_fd = get_max_peer_fd ();
-
-  for (i = 3; i <= max_fd; i++)
+  for (i = 0; i < peer_count; i++)
     {
-      peer = get_fd_related_peer (i);
-      if (peer != NULL)
-	if (peer->flags & ACTIVE_PEER)
-	  {
-	    tmp = peer->address;
-	    inet_ntop (AF_INET, &tmp, address, 16);
+      peer = peer_db + i;
 
-	    printf ("%s:\n\t[*] filedescriptor: %d\n\t[*] address: %s",
-		    peer->user, i, address);
-	    printf ("\n\t[*] available networks: %d\n", 1);
+      tmp = peer->address;
+      inet_ntop (AF_INET, &tmp, address, 16);
 
-	    for (j = 0; j < peer->nl->count; j++)
-	      {
+      printf ("%s:\n\t[*] filedescriptor: %d\n\t[*] address: %s", peer->user, peer->fd, address);
+      printf ("\n\t[*] available networks: %d\n", 1);
 
-		inet_ntop (AF_INET, &peer->nl->network[j], network, 16);
-		inet_ntop (AF_INET, &peer->nl->netmask[j], netmask, 16);
+      for (j = 0; j < peer->nl->count; j++)
+	{
 
-		printf ("\t\t[*] network:%s netmask:%s\n", network, netmask);
-	      }
-	    printf ("\n");
-	  }
+	  inet_ntop (AF_INET, &peer->nl->network[j], network, 16);
+	  inet_ntop (AF_INET, &peer->nl->netmask[j], netmask, 16);
+
+	  printf ("\t\t[*] network:%s netmask:%s\n", network, netmask);
+	}
+      printf ("\n");
     }
 }
 
 void
 peer_kill (sh_cmd * cmd)
 {
+  peer_handler_t *peer;
   if (cmd->argc != 2)
     shell_msg ("Usage: peer kill fd");
-  else if (!(is_active_peer_fd (atoi (cmd->argv[1]))))
-    shell_msg ("Invalid fd specified");
   else
-    peer_disconnect (atoi (cmd->argv[1]));
+    {
+      peer = get_fd_related_peer (atoi (cmd->argv[1]));
+      if (peer != NULL)
+	if (peer->flags & ACTIVE_PEER)
+	  peer_disconnect (atoi (cmd->argv[1]));
+	else
+	  shell_msg ("Invalid fd specified");
+      else
+	shell_msg ("Invalid fd specified");
+    }
 }
 
 void
 tap_list ()
 {
   int i;
-  int max_fd;
   int n_address;
   int n_netmask;
   char p_address[ADDRESS_LEN];
@@ -113,23 +113,15 @@ tap_list ()
 
   tap_handler_t *tap;
 
-  max_fd = get_max_tap_fd ();
-
-  for (i = 3; i <= max_fd; i++)
+  for (i = 0; i < tap_count; i++)
     {
-      tap = get_fd_related_tap (i);
-      if (tap != NULL)
-	if (tap != NULL)
-	  if (tap->flags & ACTIVE_TAP)
-	    {
-	      printf ("%s:\n\t[*] filedecriptor: %d\n", tap->device, tap->fd);
-	      n_address = tap->address;
-	      n_netmask = tap->netmask;
-	      inet_ntop (AF_INET, &n_address, p_address, ADDRESS_LEN);
-	      inet_ntop (AF_INET, &n_netmask, p_netmask, ADDRESS_LEN);
-	      shell_msg ("\t[*] address: %s netmask: %s\n", p_address,
-			 p_netmask);
-	    }
+      tap = tap_db + i;
+      printf ("%s:\n\t[*] filedecriptor: %d\n", tap->device, tap->fd);
+      n_address = tap->address;
+      n_netmask = tap->netmask;
+      inet_ntop (AF_INET, &n_address, p_address, ADDRESS_LEN);
+      inet_ntop (AF_INET, &n_netmask, p_netmask, ADDRESS_LEN);
+      shell_msg ("\t[*] address: %s netmask: %s\n", p_address, p_netmask);
     }
 }
 
@@ -246,6 +238,5 @@ start_shell ()
 
 	  free (cmd);
 	}
-
     }
 }

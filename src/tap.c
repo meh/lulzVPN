@@ -29,6 +29,19 @@
 #include <lulznet/xfunc.h>
 
 tap_handler_t tap_db[MAX_TAPS];
+int tap_count;
+int max_tap_fd;
+
+void
+set_max_tap_fd ()
+{
+
+  int i;
+  int max_tap_fd = 0;
+  for (i = 0; i < tap_count; i++)
+    if (tap_db[i].fd > max_tap_fd)
+      max_tap_fd = tap_db[i].fd;
+}
 
 int
 tap_alloc (char *dev)
@@ -57,51 +70,28 @@ tap_alloc (char *dev)
   return fd;
 }
 
-int
-get_first_free_tap_db_position ()
-{
-  int i;
-  for (i = 0; i < MAX_TAPS; i++)
-    if (tap_db[i].fd == 0)
-      break;
-
-  return i;
-}
-
-int
-get_max_tap_fd ()
-{
-
-  int i;
-  int max = 0;
-  for (i = 0; i < MAX_TAPS; i++)
-    if (tap_db[i].fd > max)
-      max = tap_db[i].fd;
-
-  return max;
-}
-
 void
 register_tap_device (int fd, char *device, int address, int netmask)
 {
 
-  int first_free_fd = get_first_free_tap_db_position ();
   int net_class;
 
   net_class = 0;
 
   pthread_mutex_lock (&select_mutex);
 
-  tap_db[first_free_fd].fd = fd;
-  tap_db[first_free_fd].flags |= ACTIVE_TAP;
-  tap_db[first_free_fd].device = device;
-  tap_db[first_free_fd].address = address;
-  tap_db[first_free_fd].netmask = netmask;
-  tap_db[first_free_fd].network = get_ip_address_network (address, netmask);
+  tap_db[tap_count].fd = fd;
+  tap_db[tap_count].flags |= ACTIVE_TAP;
+  tap_db[tap_count].device = device;
+  tap_db[tap_count].address = address;
+  tap_db[tap_count].netmask = netmask;
+  tap_db[tap_count].network = get_ip_address_network (address, netmask);
+
+  tap_count++;
+  set_max_tap_fd ();
 
   FD_SET (fd, &master);
-  debug2 ("Added fd %d to fd_set master (1st free fd: %d)", fd,
-	  first_free_fd);
+  debug2 ("Added fd %d to fd_set master (1st free fd: %d)", fd, tap_count);
 
   if (select_t != (pthread_t) NULL)
     {
@@ -119,22 +109,31 @@ void
 deregister_tap (int fd)
 {
   int i;
+  int j;
+  int k;
 
-  for (i = 0; i < MAX_TAPS; i++)
-    {
-      if (tap_db[i].fd == fd)
-	{
-	  free (tap_db[i].device);
-	  memset (&tap_db[i], '\x00', sizeof (tap_handler_t));
+  for (i = 0; i < tap_count; i++)
+    if (tap_db[i].fd == fd)
+      {
+	free (tap_db[i].device);
+	memset (&tap_db[i], '\x00', sizeof (tap_handler_t));
 
-	  FD_CLR (fd, &master);
-	  close (fd);
+	FD_CLR (fd, &master);
+	close (fd);
 
-	  debug2 ("Removed fd %d from fd_set master (current fd %d)", fd,
-		  get_first_free_tap_db_position ());
-	  return;
-	}
-    }
+	/* rebuild tap_db */
+	/* XXX: test it (rewrite using lists) */
+	for (j = 0; j < tap_count - 1; i++)
+	  if (tap_db[j].fd == 0)
+	    for (k = j; k < tap_count - 2; k++)
+	      tap_db[k] = tap_db[k + 1];
+
+	tap_count--;
+	set_max_tap_fd ();
+
+	debug2 ("Removed fd %d from fd_set master (current fd %d)", fd, tap_count);
+	return;
+      }
 }
 
 void *
@@ -160,25 +159,12 @@ free_non_active_tap ()
   return NULL;
 }
 
-tap_handler_t *
-get_fd_related_tap (int fd)
-{
-  int i;
-  for (i = 0; i < MAX_TAPS; i++)
-    if (tap_db[i].fd == fd)
-      return (tap_db + i);
-
-  return NULL;
-
-}
-
 int
 configure_tap_device (char *device, char *address, char *netmask)
 {
   char ifconfig_command[256];
 
-  sprintf (ifconfig_command, "/sbin/ifconfig %s %s netmask %s", device,
-	   address, netmask);
+  sprintf (ifconfig_command, "/sbin/ifconfig %s %s netmask %s", device, address, netmask);
   system (ifconfig_command);
 
   return 1;
@@ -210,8 +196,7 @@ add_user_routing (char *username, network_list_t * remote_nl)
 	  inet_ntop (AF_INET, &remote_nl->network[i], network, ADDRESS_LEN);
 	  inet_ntop (AF_INET, &remote_nl->netmask[i], netmask, ADDRESS_LEN);
 
-	  sprintf (route_command, "/sbin/route add -net %s netmask %s gw %s",
-		   network, netmask, gateway);
+	  sprintf (route_command, "/sbin/route add -net %s netmask %s gw %s", network, netmask, gateway);
 	  system (route_command);
 	}
     }
@@ -264,15 +249,13 @@ network_list_t *
 get_user_allowed_networks (char *user __attribute__ ((unused)))
 {
 
-  int max_fd;
   int i;
   network_list_t *nl;
 
-  max_fd = get_max_tap_fd ();
   nl = (network_list_t *) xmalloc (sizeof (network_list_t));
   nl->count = 0;
 
-  for (i = 0; i < MAX_TAPS; i++)
+  for (i = 0; i < tap_count; i++)
     {
       if (tap_db[i].flags & ACTIVE_TAP)
 	{
@@ -299,7 +282,7 @@ new_tap (char *address, char *netmask)
 {
 
   int fd;
-  char *device = (char *)xmalloc (IFNAMSIZ * sizeof (char));
+  char *device = (char *) xmalloc (IFNAMSIZ * sizeof (char));
   int n_address;
   int n_netmask;
 

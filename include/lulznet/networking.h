@@ -54,8 +54,8 @@ void peer_disconnect (int fd);
 
 /* Main forwarding function */
 void *select_loop (void *arg);
-inline void forward_to_tap (char *packet, u_int packet_len, int current_fd, int max_fd);
-inline void forward_to_peer (char *packet, u_int packet_len, int current_fd, int max_fd);
+inline void forward_to_tap (char *packet, u_int packet_len);
+inline void forward_to_peer (char *packet, u_int packet_len);
 
 /* handle cert verification */
 int verify_ssl_cert (SSL * ssl);

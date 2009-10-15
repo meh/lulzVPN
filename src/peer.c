@@ -28,52 +28,41 @@
 #include <lulznet/xfunc.h>
 
 peer_handler_t peer_db[MAX_PEERS];
+int peer_count;
+int max_peer_fd;
 
-int
-get_first_free_peer_db_position ()
-{
-  int i;
-  for (i = 0; i < MAX_PEERS; i++)
-    if (peer_db[i].fd == 0)
-      break;
-
-  return i;
-}
-
-int
-get_max_peer_fd ()
+void
+set_max_peer_fd ()
 {
 
   int i;
-  int max = 0;
-  for (i = 0; i < MAX_PEERS; i++)
-    if (peer_db[i].fd > max)
-      max = peer_db[i].fd;
+  max_peer_fd = 0;
 
-  return max;
+  for (i = 0; i < peer_count; i++)
+    if (peer_db[i].fd > max_peer_fd)
+      max_peer_fd = peer_db[i].fd;
 }
 
 void
-register_peer (int fd, SSL * ssl, char *user, int address,
-	       network_list_t * nl, char flags)
+register_peer (int fd, SSL * ssl, char *user, int address, network_list_t * nl, char flags)
 {
-
-  int first_free_fd = get_first_free_peer_db_position ();
 
   pthread_mutex_lock (&select_mutex);
 
-  peer_db[first_free_fd].fd = fd;
-  peer_db[first_free_fd].ssl = ssl;
-  peer_db[first_free_fd].flags = flags | ACTIVE_PEER;
+  peer_db[peer_count].fd = fd;
+  peer_db[peer_count].ssl = ssl;
+  peer_db[peer_count].flags = flags | ACTIVE_PEER;
 
-  peer_db[first_free_fd].address = address;
-  peer_db[first_free_fd].user = user;
+  peer_db[peer_count].address = address;
+  peer_db[peer_count].user = user;
 
-  peer_db[first_free_fd].nl = nl;
+  peer_db[peer_count].nl = nl;
+
+  peer_count++;
+  set_max_peer_fd ();
 
   FD_SET (fd, &master);
-  debug2 ("Added fd %d to fd_set master (1st free fd: %d)", fd,
-	  first_free_fd);
+  debug2 ("Added fd %d to fd_set master (1st free fd: %d)", fd, peer_count);
 
   if (select_t != (pthread_t) NULL)
     {
@@ -86,29 +75,12 @@ register_peer (int fd, SSL * ssl, char *user, int address,
   pthread_mutex_unlock (&select_mutex);
 }
 
-int
-is_active_peer_fd (int fd)
-{
-  int i;
-  for (i = 0; i < MAX_PEERS; i++)
-    {
-      if (peer_db[i].fd == fd)
-	if (peer_db[i].flags & ACTIVE_PEER)
-	  {
-	    debug3 ("fd %d type sock is active", fd);
-	    return TRUE;
-	  }
-    }
-
-  return FALSE;
-}
-
 void
 set_non_active_peer (int fd)
 {
 
   int i;
-  for (i = 0; i < MAX_PEERS; i++)
+  for (i = 0; i < peer_count; i++)
     if (peer_db[i].fd == fd)
       peer_db[i].flags ^= ACTIVE_PEER;
 }
@@ -118,28 +90,38 @@ deregister_peer (int fd)
 {
 
   int i;
+  int j;
+  int k;
 
-  for (i = 0; i < MAX_PEERS; i++)
-    {
-      if (peer_db[i].fd == fd)
-	{
-	  SSL_free (peer_db[i].ssl);
-	  free (peer_db[i].user);
-	  free (peer_db[i].nl);
-	  memset (&peer_db[i], '\x00', sizeof (peer_handler_t));
+  for (i = 0; i < max_peer_fd; i++)
+    if (peer_db[i].fd == fd)
+      {
+	SSL_free (peer_db[i].ssl);
+	free (peer_db[i].user);
+	free (peer_db[i].nl);
+	memset (&peer_db[i], '\x00', sizeof (peer_handler_t));
 
-	  FD_CLR (fd, &master);
-	  close (fd);
+	FD_CLR (fd, &master);
+	close (fd);
 
-	  debug2 ("Removed fd %d from fd_set master (current fd %d)", fd,
-		  get_first_free_peer_db_position ());
-	  return;
-	}
-    }
+	/* rebuild peer_db */
+	/* XXX: test it (rewrite using lists) */
+	for (j = 0; j < peer_count - 1; i++)
+	  if (peer_db[j].fd == 0)
+	    for (k = j; k < peer_count - 2; k++)
+	      peer_db[k] = peer_db[k + 1];
+
+	peer_count--;
+	set_max_peer_fd ();
+
+	debug2 ("Removed fd %d from fd_set master (current fd %d)", fd, peer_count);
+
+	return;
+      }
 }
 
 void *
-free_non_active_peer (void *arg __attribute__((unused)))
+free_non_active_peer (void *arg __attribute__ ((unused)))
 {
   int i;
 
@@ -147,7 +129,7 @@ free_non_active_peer (void *arg __attribute__((unused)))
   pthread_mutex_lock (&select_mutex);
 
   debug2 ("freeing non active fd");
-  for (i = 0; i < MAX_PEERS; i++)
+  for (i = 0; i < peer_count; i++)
     if (peer_db[i].fd != 0)
       if ((!(peer_db[i].flags & ACTIVE_PEER)))
 	deregister_peer (peer_db[i].fd);
@@ -178,7 +160,7 @@ int
 user_is_connected (char *user)
 {
   int i;
-  for (i = 0; i < MAX_PEERS; i++)
+  for (i = 0; i < max_peer_fd; i++)
     if (peer_db[i].flags & ACTIVE_PEER)
       if (!strcmp (peer_db[i].user, user))
 	return TRUE;

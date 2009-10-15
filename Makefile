@@ -27,7 +27,7 @@ $(UG_FILES:.c=.o): $(UG_FILES)
 	${CC} ${CFLAGS} ${INCLUDE} -o $*.o -c $*.c
 
 indent:
-	@indent src/*.c
+	@indent -l 512 src/*.c
 	@rm src/*~
 
 clean:

@@ -167,15 +167,12 @@ lulznet_server_user_exchange (SSL * ssl, handshake_opt_t * hs_opt)
   int rd_len;
 
   debug2 ("Recving username");
-  if (!
-      (rd_len =
-       xSSL_read (ssl, hs_opt->peer_username, MAX_USERNAME_LEN, "username")))
+  if (!(rd_len = xSSL_read (ssl, hs_opt->peer_username, MAX_USERNAME_LEN, "username")))
     return FAIL;
 
   hs_opt->peer_username[rd_len] = '\x00';
 
-  if (user_is_connected (hs_opt->peer_username)
-      || (!strcmp (hs_opt->peer_username, opt.username)))
+  if (user_is_connected (hs_opt->peer_username) || (!strcmp (hs_opt->peer_username, opt.username)))
     {
       packet[0] = 0;
       xSSL_write (ssl, packet, 1, "user info");
@@ -213,10 +210,7 @@ lulznet_client_user_exchange (SSL * ssl, handshake_opt_t * hs_opt)
 
   /* And recv remote peer username */
   debug2 ("Recving username");
-  if (!
-      (rd_len =
-       xSSL_read (ssl, hs_opt->peer_username, (MAX_USERNAME_LEN),
-		  "username")))
+  if (!(rd_len = xSSL_read (ssl, hs_opt->peer_username, (MAX_USERNAME_LEN), "username")))
     return FAIL;
 
   hs_opt->peer_username[rd_len] = '\x00';
@@ -283,12 +277,13 @@ lulznet_client_auth (SSL * ssl)
   if (!xSSL_read (ssl, &auth, sizeof (char), "auth response"))
     return FAIL;
 
-  debug2 ("Server response: %s (%x)",
-	  (auth ? "auth successfull" : "auth failed"), auth);
+  debug2 ("Server response: %s (%x)", (auth ? "auth successfull" : "auth failed"), auth);
 
   if (auth == AUTHENTICATION_FAILED)
     {
       error ("Authentication failed");
+      free (saved_password);
+      saved_password = NULL;
       return FAIL;
     }
   return DONE;
@@ -299,20 +294,17 @@ lulznet_send_network (SSL * ssl, handshake_opt_t * hs_opt)
 {
 
   int i;
-  network_list_t *local_network_list =
-    get_user_allowed_networks (hs_opt->peer_username);
+  network_list_t *local_network_list = get_user_allowed_networks (hs_opt->peer_username);
 
   debug2 ("Sending available network count");
   if (local_network_list->count == 0)
     {
       debug2 ("Peer cannot access any networks");
-      xSSL_write (ssl, &local_network_list->count, sizeof (int),
-		  "network count");
+      xSSL_write (ssl, &local_network_list->count, sizeof (int), "network count");
       return FAIL;
     }
 
-  if (!xSSL_write
-      (ssl, &local_network_list->count, sizeof (int), "network count"))
+  if (!xSSL_write (ssl, &local_network_list->count, sizeof (int), "network count"))
     return FAIL;
 
   /* TODO: add max remote peer capabilities */
@@ -320,14 +312,10 @@ lulznet_send_network (SSL * ssl, handshake_opt_t * hs_opt)
   for (i = 0; i < local_network_list->count; i++)
     {
 
-      if (!xSSL_write
-	  (ssl, &local_network_list->network[i], sizeof (int),
-	   "network list"))
+      if (!xSSL_write (ssl, &local_network_list->network[i], sizeof (int), "network list"))
 	return FAIL;
 
-      if (!xSSL_write
-	  (ssl, &local_network_list->netmask[i], sizeof (int),
-	   "netmask list"))
+      if (!xSSL_write (ssl, &local_network_list->netmask[i], sizeof (int), "netmask list"))
 	return FAIL;
 
     }
@@ -343,10 +331,7 @@ lulznet_recv_network (SSL * ssl, handshake_opt_t * hs_opt)
   int rd_len;
 
   debug2 ("Recving available network count");
-  if (!
-      (rd_len =
-       xSSL_read (ssl, &hs_opt->network_list->count, sizeof (int),
-		  "network count")))
+  if (!(rd_len = xSSL_read (ssl, &hs_opt->network_list->count, sizeof (int), "network count")))
     return FAIL;
 
   if (hs_opt->network_list->count == 0)
@@ -358,16 +343,10 @@ lulznet_recv_network (SSL * ssl, handshake_opt_t * hs_opt)
   for (i = 0; i < hs_opt->network_list->count && i < MAX_TAPS; i++)
     {
 
-      if (!
-	  (rd_len =
-	   xSSL_read (ssl, &hs_opt->network_list->network[i], sizeof (int),
-		      "network list")))
+      if (!(rd_len = xSSL_read (ssl, &hs_opt->network_list->network[i], sizeof (int), "network list")))
 	return FAIL;
 
-      if (!
-	  (rd_len =
-	   xSSL_read (ssl, &hs_opt->network_list->netmask[i], sizeof (int),
-		      "netmask list")))
+      if (!(rd_len = xSSL_read (ssl, &hs_opt->network_list->netmask[i], sizeof (int), "netmask list")))
 	return FAIL;
     }
 
@@ -393,8 +372,7 @@ lulznet_send_userlist (SSL * ssl)
       if (!xSSL_write (ssl, packet, strlen (packet), "user list"))
 	return FAIL;
 
-      if (!xSSL_write
-	  (ssl, &user_list->address[i], sizeof (int), "address list"))
+      if (!xSSL_write (ssl, &user_list->address[i], sizeof (int), "address list"))
 	return FAIL;
     }
 
@@ -420,10 +398,7 @@ lulznet_recv_userlist (SSL * ssl, handshake_opt_t * hs_opt)
       hs_opt->user_list->user[i] = (char *) malloc ((rd_len + 1) * sizeof (char));
       strcpy (hs_opt->user_list->user[i], packet);
 
-      if (!
-	  (rd_len =
-	   xSSL_read (ssl, &hs_opt->user_list->address[i], sizeof (int),
-		      "address list")))
+      if (!(rd_len = xSSL_read (ssl, &hs_opt->user_list->address[i], sizeof (int), "address list")))
 	return FAIL;
 
     }
@@ -436,24 +411,19 @@ get_userlist ()
 {
 
   int i;
-  int max_fd;
   peer_handler_t *peer;
   user_list_t *user_list;
 
   user_list = (user_list_t *) xmalloc (sizeof (user_list_t));
-  max_fd = get_max_peer_fd ();
   user_list->count = 0;
 
-  for (i = 0; i <= max_fd; i++)
+  for (i = 0; i < peer_count; i++)
     {
-      peer = get_fd_related_peer (i);
-      if (peer != NULL)
-	if (peer->flags & ACTIVE_PEER)
-	  {
-	    user_list->user[user_list->count] = peer->user;
-	    user_list->address[user_list->count] = peer->address;
-	    user_list->count++;
-	  }
+      peer = peer_db + i;
+
+      user_list->user[user_list->count] = peer->user;
+      user_list->address[user_list->count] = peer->address;
+      user_list->count++;
     }
 
   return user_list;

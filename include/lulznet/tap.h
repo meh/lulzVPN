@@ -25,14 +25,13 @@
 
 /* A structure that keep file descriptors information */
 extern tap_handler_t tap_db[MAX_TAPS];
+extern int tap_count;
+extern int max_tap_fd;
 
 /* Allocate a new tap device */
 int tap_alloc (char *dev);
 
-/* search first free position in tap_db */
-int get_first_free_tap_fd ();
-
-int get_max_tap_fd ();
+void set_max_tap_fd ();
 
 /* Register a new fd in the tap_db structure */
 void register_tap_device (int fd, char *device, int address, int netmask);

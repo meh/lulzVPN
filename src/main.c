@@ -34,7 +34,7 @@ main (int argc, char *argv[])
 {
 
   int address;
-  pthread_t server_t;	/* Listening thread */
+  pthread_t server_t;		/* Listening thread */
 
   set_default_options ();
   parse_config_file ((char *) CONFIG_FILE);
@@ -84,7 +84,12 @@ lulznet_init ()
   int sysctl_newlen;
 
   memset (peer_db, '\x00', MAX_PEERS * sizeof (peer_handler_t));
+  peer_count = 0;
+  max_peer_fd = 0;
+
   memset (tap_db, '\x00', MAX_TAPS * sizeof (tap_handler_t));
+  tap_count = 0;
+  max_tap_fd = 0;
   FD_ZERO (&master);
 
   memset (&select_t, '\x00', sizeof (pthread_t));
@@ -133,16 +138,16 @@ void
 exit_lulznet ()
 {
 
-  int fd;
-  int maxfd;
+  int i;
+  peer_handler_t *peer;
 
   info ("Closing lulznet");
 
-  maxfd = get_max_peer_fd ();
-
-  for (fd = 3; fd <= maxfd; fd++)
-    if (is_active_peer_fd (fd))
-      peer_disconnect (fd);
+  for (i = 0; i < peer_count; i++)
+    {
+      peer = peer_db + i;
+      peer_disconnect (peer->fd);
+    }
 
   printf ("\n");
 
