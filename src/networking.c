@@ -33,10 +33,8 @@
 SSL_CTX *ssl_client_ctx;
 SSL_CTX *ssl_server_ctx;
 
-pthread_mutex_t select_mutex;
-pthread_t select_t;
-
 fd_set master;
+pthread_t select_t;
 
 void
 ssl_server_init ()
@@ -68,13 +66,15 @@ server_loop (void *arg __attribute__ ((unused)))
   int listen_sock, peer_sock;
   int on = 1;
   SSL *peer_ssl;
+  char peer_address[ADDRESS_LEN];
   char request[1];
   struct sockaddr_in server;
   struct sockaddr_in peer;
   socklen_t addr_size;
-  char peer_address[ADDRESS_LEN];
   pthread_t connect_queue_t;
-  handshake_opt_t *handshake_opt;
+  hs_opt_t *hs_opt;
+  net_ls_t *tmp_local_nl;
+  peer_handler_t *new_peer;
 
   if ((listen_sock = socket (PF_INET, SOCK_STREAM, 0)) == -1)
     fatal ("cannot create socket");
@@ -115,21 +115,26 @@ server_loop (void *arg __attribute__ ((unused)))
 	    {
 
 	      /* recv request type */
-
 	      xSSL_read (peer_ssl, request, sizeof (char), "request type");
 
 	      if (request[0] == NEW_PEER)
 		{
-		  if ((handshake_opt = server_handshake (peer_ssl)))
+		  if ((hs_opt = server_handshake (peer_ssl)))
 		    {
-		      /* All good! Now we add routing rules */
-		      add_user_routing (handshake_opt->peer_username, handshake_opt->network_list);
 
-		      register_peer (peer_sock, peer_ssl, handshake_opt->peer_username, peer.sin_addr.s_addr, handshake_opt->network_list, handshake_opt->flags);
+		      pthread_mutex_lock (&peer_db_mutex);
+		      new_peer = register_peer (peer_sock, peer_ssl, hs_opt->peer_username, peer.sin_addr.s_addr, hs_opt->net_ls);
+
 		      inet_ntop (AF_INET, &peer.sin_addr.s_addr, peer_address, ADDRESS_LEN);
 		      info ("Connection accepted from %s (fd %d)", peer_address, peer_sock);
 
-		      pthread_create (&connect_queue_t, NULL, check_connections_queue, handshake_opt->user_list);
+		      /* Set routing *//* free it */
+		      tmp_local_nl = get_user_allowed_networks (hs_opt->peer_username);
+		      set_routing (new_peer, ADD_ROUTING);
+
+		      pthread_mutex_unlock (&peer_db_mutex);
+
+		      pthread_create (&connect_queue_t, NULL, check_connections_queue, hs_opt->user_ls);
 		      pthread_join (connect_queue_t, NULL);
 		    }
 		  else
@@ -158,7 +163,7 @@ server_loop (void *arg __attribute__ ((unused)))
 	    }
 	}
     }
-  free (handshake_opt);
+  free (hs_opt);
 }
 
 int
@@ -188,8 +193,10 @@ peer_connect (int address, short port)
   int peer_sock;
   SSL *peer_ssl;
   char request[1];
-  handshake_opt_t *handshake_opt;
+  hs_opt_t *hs_opt;
+  net_ls_t *tmp_local_nl;
   pthread_t connect_queue_t;
+  peer_handler_t *new_peer;
 
   if ((peer_sock = socket (AF_INET, SOCK_STREAM, 0)) == -1)
     {
@@ -221,17 +228,21 @@ peer_connect (int address, short port)
       {
 	request[0] = NEW_PEER;
 	xSSL_write (peer_ssl, request, 1, "new peer request");
-	if ((handshake_opt = peer_handshake (peer_ssl)))
+	if ((hs_opt = peer_handshake (peer_ssl)))
 	  {
-	    add_user_routing (handshake_opt->peer_username, handshake_opt->network_list);
+	    pthread_mutex_lock (&peer_db_mutex);
 
-	    register_peer (peer_sock, peer_ssl, handshake_opt->peer_username, address, handshake_opt->network_list, handshake_opt->flags);
+	    new_peer = register_peer (peer_sock, peer_ssl, hs_opt->peer_username, address, hs_opt->net_ls);
 
-	    /* TODO: and all internal struct */
-	    free (handshake_opt);
+	    free (hs_opt);
 	    info ("Connected");
 
-	    pthread_create (&connect_queue_t, NULL, check_connections_queue, handshake_opt->user_list);
+	    tmp_local_nl = get_user_allowed_networks (hs_opt->peer_username);
+	    set_routing (new_peer, ADD_ROUTING);
+
+	    pthread_mutex_unlock (&peer_db_mutex);
+
+	    pthread_create (&connect_queue_t, NULL, check_connections_queue, hs_opt->user_ls);
 	    pthread_join (connect_queue_t, NULL);
 
 	  }
@@ -257,22 +268,26 @@ peer_connect (int address, short port)
 }
 
 void
-peer_disconnect (int fd)
+disassociation_request (int fd)
 {
 
   char packet[3];
   peer_handler_t *peer;
 
-  peer = get_fd_related_peer (fd);
-  if (peer != NULL)
-    {
+  pthread_mutex_lock (&peer_db_mutex);
 
-      sprintf ((char *) packet, "%c%c", CONTROL_PACKET, CLOSE_CONNECTION);
-      xSSL_write (peer->ssl, packet, 2, "disconnection packet");
-      deregister_peer (fd);
-    }
+  peer = get_fd_related_peer (fd);
+
+  sprintf ((char *) packet, "%c%c", CONTROL_PACKET, CLOSE_CONNECTION);
+  xSSL_write (peer->ssl, packet, 2, "disconnection packet");
+
+  set_routing (peer, DEL_ROUTING);
+  deregister_peer (fd);
+
+  pthread_mutex_unlock (&peer_db_mutex);
 }
 
+/* TODO: add cool routing */
 void *
 select_loop (void __attribute__ ((unused)) * arg)
 {
@@ -304,7 +319,7 @@ select_loop (void __attribute__ ((unused)) * arg)
       ret = select (max_fd + 1, &read_select, NULL, NULL, NULL);
 
       /* We block the forwarding cycle */
-      pthread_mutex_lock (&select_mutex);
+      pthread_mutex_lock (&peer_db_mutex);
 
       if (ret == -1)
 	fatal ("Select error");
@@ -314,30 +329,35 @@ select_loop (void __attribute__ ((unused)) * arg)
 	  for (i = 0; i < peer_count; i++)
 	    {
 	      peer = peer_db + i;
-	      if (peer->flags & ACTIVE_PEER)
-		if (FD_ISSET (peer->fd, &read_select))
-		  {
-		    /* Read from it */
-		    debug3 ("sock_fd %d (0x%x ssl): read %d bytes packet", peer->fd, peer->ssl, rd_len);
-		    rd_len = xSSL_read (peer->ssl, packet_buffer, 4095, "forwarding data");
+	      if (FD_ISSET (peer->fd, &read_select))
+		{
+		  /* Read from it */
+		  debug3 ("sock_fd %d (0x%x ssl): read %d bytes packet", peer->fd, peer->ssl, rd_len);
+		  rd_len = xSSL_read (peer->ssl, packet_buffer, 4095, "forwarding data");
 
-		    switch (packet_buffer[0])
-		      {
-		      case DATA_PACKET:
-			forward_to_tap (packet_buffer, rd_len);
-			break;
-		      case CONTROL_PACKET:
-			if (packet_buffer[1] == CLOSE_CONNECTION)
-			  {
-			    debug3 ("control_packet: closing connection");
-			    free_fd_flag = 1;
-			    /* set non active */
-			    if (peer->flags & ACTIVE_PEER)
-			      peer->flags ^= ACTIVE_PEER;
-			  }
-			break;
-		      }
-		  }
+		  if (rd_len == 0)
+		    deregister_peer (peer->fd);
+		  else
+		    {
+
+		      switch (packet_buffer[0])
+			{
+			case DATA_PACKET:
+			  forward_to_tap (packet_buffer, rd_len);
+			  break;
+			case CONTROL_PACKET:
+			  if (packet_buffer[1] == CLOSE_CONNECTION)
+			    {
+			      debug3 ("control_packet: closing connection");
+			      free_fd_flag = 1;
+			      peer->state = CLOSING;
+			    }
+			  else
+			    error ("Unknow control flag");
+			  break;
+			}
+		    }
+		}
 	    }
 
 	  for (i = 0; i < tap_count; i++)
@@ -347,15 +367,13 @@ select_loop (void __attribute__ ((unused)) * arg)
 		{
 		  debug3 ("tap_fd %d: read %d bytes packet", tap->fd, rd_len);
 		  rd_len = read (tap->fd, packet_buffer + 1, 4095);
-
-		  /* TODO:
-		     add cool routing (packet inspection etc) */
 		  forward_to_peer (packet_buffer, rd_len);
 		}
 	    }
 	}
+
       /* When the cycle is end functions can modify the fd_db structure */
-      pthread_mutex_unlock (&select_mutex);
+      pthread_mutex_unlock (&peer_db_mutex);
 
       if (free_fd_flag)
 	{
@@ -397,8 +415,12 @@ forward_to_peer (char *packet, u_int packet_len)
   for (i = 0; i < peer_count; i++)
     {
       peer = peer_db + i;
-      debug3 ("sock_fd %d (0x%x ssl): write packet", peer->fd, peer->ssl, packet_len);
-      xSSL_write (peer->ssl, packet, packet_len + 1, "forwarding data");
+      if (peer->state == ACTIVE)
+	{
+	  debug3 ("sock_fd %d (0x%x ssl): write packet", peer->fd, peer->ssl, packet_len);
+	  if (!xSSL_write (peer->ssl, packet, packet_len + 1, "forwarding data"))
+	    deregister_peer (peer->fd);
+	}
     }
 
   get_destination_ip (packet + 1);
@@ -434,17 +456,17 @@ check_connections_queue (void *arg)
 {
 
   int i;
-  user_list_t *user_list;
-  user_list = (user_list_t *) arg;
+  user_ls_t *user_ls;
+  user_ls = (user_ls_t *) arg;
 
-  if (user_list->count == 0)
+  if (user_ls->count == 0)
     return NULL;
 
-  for (i = 0; i < user_list->count; i++)
+  for (i = 0; i < user_ls->count; i++)
 
     /* check if we're connected to peer */
-    if (!user_is_connected (user_list->user[i]))
-      peer_connect (user_list->address[i], PORT);
+    if (!user_is_connected (user_ls->user[i]))
+      peer_connect (user_ls->address[i], PORT);
 
   return NULL;
 }

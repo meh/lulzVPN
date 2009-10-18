@@ -19,6 +19,9 @@
 
 #define ACTIVE_TAP	0x00000001
 
+#define ADD_ROUTING 	0x01
+#define DEL_ROUTING	0x02
+
 #define CLASS_A		1
 #define CLASS_B		2
 #define CLASS_C		3
@@ -31,6 +34,7 @@ extern int max_tap_fd;
 /* Allocate a new tap device */
 int tap_alloc (char *dev);
 
+/* set global var max_tap_fd to proper value */
 void set_max_tap_fd ();
 
 /* Register a new fd in the tap_db structure */
@@ -46,12 +50,12 @@ tap_handler_t *get_fd_related_tap (int fd);
 /* Set address of tap device */
 int configure_tap_device (char *device, char *address, char *netmask);
 
-int add_user_routing (char *username, network_list_t * remote_nl);
+void set_routing (peer_handler_t *peer, char op);
 
 char *get_ip_address_default_netmask (char *address);
 
 int get_ip_address_network (int address, int netmask);
 
-network_list_t *get_user_allowed_networks (char *user __attribute__ ((unused)));
+net_ls_t *get_user_allowed_networks (char *user);
 
 int new_tap (char *address, char *netmask);

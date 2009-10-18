@@ -32,21 +32,22 @@ void send_banner (int fd);
 void recv_banner (int fd);
 
 /* peer and server handshake */
-handshake_opt_t *peer_handshake (SSL * ssl);
-handshake_opt_t *server_handshake (SSL * ssl);
+hs_opt_t *peer_handshake (SSL * ssl);
+hs_opt_t *server_handshake (SSL * ssl);
 
-int lulznet_server_user_exchange (SSL * ssl, handshake_opt_t * hs_opt);
-int lulznet_client_user_exchange (SSL * ssl, handshake_opt_t * hs_opt);
-
-int lulznet_server_auth (SSL * ssl, handshake_opt_t * hs_opt);
+/* Authentication */
+int lulznet_server_user_exchange (SSL * ssl, hs_opt_t * hs_opt);
+int lulznet_client_user_exchange (SSL * ssl, hs_opt_t * hs_opt);
+int lulznet_server_auth (SSL * ssl, hs_opt_t * hs_opt);
 int lulznet_client_auth (SSL * ssl);
 
-int lulznet_send_network (SSL * ssl, handshake_opt_t * hs_opt);
-int lulznet_recv_network (SSL * ssl, handshake_opt_t * hs_opt);
+/* Networks exchange */
+int lulznet_send_network (SSL * ssl, hs_opt_t * hs_opt);
+int lulznet_recv_network (SSL * ssl, hs_opt_t * hs_opt);
 
+/* User exchange */
 int lulznet_send_userlist (SSL * ssl);
-int lulznet_recv_userlist (SSL * ssl, handshake_opt_t * hs_opt);
-
+int lulznet_recv_userlist (SSL * ssl, hs_opt_t * hs_opt);
 
 /* Return a list with all the users connected */
-user_list_t *get_userlist ();
+user_ls_t *get_userlist ();

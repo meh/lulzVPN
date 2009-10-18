@@ -28,6 +28,8 @@
 #include <lulznet/xfunc.h>
 
 peer_handler_t peer_db[MAX_PEERS];
+pthread_mutex_t peer_db_mutex;
+
 int peer_count;
 int max_peer_fd;
 
@@ -43,15 +45,13 @@ set_max_peer_fd ()
       max_peer_fd = peer_db[i].fd;
 }
 
-void
-register_peer (int fd, SSL * ssl, char *user, int address, network_list_t * nl, char flags)
+peer_handler_t *
+register_peer (int fd, SSL * ssl, char *user, int address, net_ls_t * nl)
 {
-
-  pthread_mutex_lock (&select_mutex);
 
   peer_db[peer_count].fd = fd;
   peer_db[peer_count].ssl = ssl;
-  peer_db[peer_count].flags = flags | ACTIVE_PEER;
+  peer_db[peer_count].state = ACTIVE;
 
   peer_db[peer_count].address = address;
   peer_db[peer_count].user = user;
@@ -72,17 +72,7 @@ register_peer (int fd, SSL * ssl, char *user, int address, network_list_t * nl, 
 	pthread_create (&select_t, NULL, select_loop, NULL);
     }
 
-  pthread_mutex_unlock (&select_mutex);
-}
-
-void
-set_non_active_peer (int fd)
-{
-
-  int i;
-  for (i = 0; i < peer_count; i++)
-    if (peer_db[i].fd == fd)
-      peer_db[i].flags ^= ACTIVE_PEER;
+  return peer_db + peer_count - 1;
 }
 
 void
@@ -126,18 +116,20 @@ free_non_active_peer (void *arg __attribute__ ((unused)))
   int i;
 
   /* wait until select_loop ends its cycle */
-  pthread_mutex_lock (&select_mutex);
+  pthread_mutex_lock (&peer_db_mutex);
 
   debug2 ("freeing non active fd");
   for (i = 0; i < peer_count; i++)
     if (peer_db[i].fd != 0)
-      if ((!(peer_db[i].flags & ACTIVE_PEER)))
-	deregister_peer (peer_db[i].fd);
-
+      if (peer_db[i].state == CLOSING)
+	{
+	  set_routing (peer_db + i, DEL_ROUTING);
+	  deregister_peer (peer_db[i].fd);
+	}
 
   /* restart select thread and unlock mutex */
   pthread_cancel (select_t);
-  pthread_mutex_unlock (&select_mutex);
+  pthread_mutex_unlock (&peer_db_mutex);
   pthread_create (&select_t, NULL, select_loop, NULL);
 
   return NULL;
@@ -161,7 +153,7 @@ user_is_connected (char *user)
 {
   int i;
   for (i = 0; i < max_peer_fd; i++)
-    if (peer_db[i].flags & ACTIVE_PEER)
+    if (peer_db[i].state == ACTIVE)
       if (!strcmp (peer_db[i].user, user))
 	return TRUE;
 

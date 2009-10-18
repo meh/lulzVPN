@@ -38,6 +38,9 @@ peer_preconnect (sh_cmd * cmd)
   else if (cmd->argc == 1)
     {
       address = lookup_address (cmd->argv[0]);
+      if (address == 0)
+	return;
+
       peer_connect (address, 7890);
     }
   else
@@ -93,8 +96,8 @@ peer_kill (sh_cmd * cmd)
     {
       peer = get_fd_related_peer (atoi (cmd->argv[1]));
       if (peer != NULL)
-	if (peer->flags & ACTIVE_PEER)
-	  peer_disconnect (atoi (cmd->argv[1]));
+	if (peer->state == ACTIVE)
+	  disassociation_request (atoi (cmd->argv[1]));
 	else
 	  shell_msg ("Invalid fd specified");
       else
@@ -224,7 +227,6 @@ start_shell ()
   sh_cmd *cmd;
 
   printf ("\n");
-  sleep (1);
   while (TRUE)
     {
       line = readline ("[lulznet] ");

@@ -78,7 +78,7 @@ register_tap_device (int fd, char *device, int address, int netmask)
 
   net_class = 0;
 
-  pthread_mutex_lock (&select_mutex);
+  pthread_mutex_lock (&peer_db_mutex);
 
   tap_db[tap_count].fd = fd;
   tap_db[tap_count].flags |= ACTIVE_TAP;
@@ -101,7 +101,7 @@ register_tap_device (int fd, char *device, int address, int netmask)
 	pthread_create (&select_t, NULL, select_loop, NULL);
     }
 
-  pthread_mutex_unlock (&select_mutex);
+  pthread_mutex_unlock (&peer_db_mutex);
 }
 
 
@@ -143,7 +143,7 @@ free_non_active_tap ()
   int i;
 
   /* wait until select_loop ends its cycle */
-  pthread_mutex_lock (&select_mutex);
+  pthread_mutex_lock (&peer_db_mutex);
 
   for (i = 0; i < MAX_TAPS; i++)
     if (tap_db[i].fd != 0)
@@ -153,7 +153,7 @@ free_non_active_tap ()
 
   /* restart select thread and unlock mutex */
   pthread_cancel (select_t);
-  pthread_mutex_unlock (&select_mutex);
+  pthread_mutex_unlock (&peer_db_mutex);
   pthread_create (&select_t, NULL, select_loop, NULL);
 
   return NULL;
@@ -171,8 +171,8 @@ configure_tap_device (char *device, char *address, char *netmask)
 
 }
 
-int
-add_user_routing (char *username, network_list_t * remote_nl)
+void
+set_routing (peer_handler_t * peer, char op)
 {
   char route_command[256];
 
@@ -180,29 +180,36 @@ add_user_routing (char *username, network_list_t * remote_nl)
   char network[ADDRESS_LEN];
   char netmask[ADDRESS_LEN];
 
-  network_list_t *nl;
+  net_ls_t *local_nl;
+  net_ls_t *remote_nl;
+
+  local_nl = get_user_allowed_networks (peer->user);
+  remote_nl = peer->nl;
 
   int i;
   int j;
 
-  nl = get_user_allowed_networks (username);	/* TODO: avoid to call function two times */
-
-  for (i = 0; i < nl->count; i++)
+  for (i = 0; i < local_nl->count; i++)
     {
 
-      inet_ntop (AF_INET, &nl->address[i], gateway, ADDRESS_LEN);
+      inet_ntop (AF_INET, &local_nl->address[i], gateway, ADDRESS_LEN);
+
       for (j = 0; j < remote_nl->count; j++)
 	{
-	  inet_ntop (AF_INET, &remote_nl->network[i], network, ADDRESS_LEN);
-	  inet_ntop (AF_INET, &remote_nl->netmask[i], netmask, ADDRESS_LEN);
+	  printf ("#1 count=%d (0x%x)\n", remote_nl->count, (int) &remote_nl->count);
+	  inet_ntop (AF_INET, &remote_nl->network[j], network, ADDRESS_LEN);
+	  inet_ntop (AF_INET, &remote_nl->netmask[j], netmask, ADDRESS_LEN);
 
-	  sprintf (route_command, "/sbin/route add -net %s netmask %s gw %s", network, netmask, gateway);
+	  if (op == ADD_ROUTING)
+	    sprintf (route_command, "/sbin/route add -net %s netmask %s gw %s", network, netmask, gateway);
+	  else
+	    sprintf (route_command, "/sbin/route del -net %s netmask %s gw %s", network, netmask, gateway);
+
 	  system (route_command);
+	  printf ("#2 count=%d (0x%x)\n", remote_nl->count, (int) &remote_nl->count);
 	}
     }
 
-
-  return 1;
 }
 
 char *
@@ -245,33 +252,30 @@ get_ip_address_network (int address, int netmask)
   return net;
 }
 
-network_list_t *
+net_ls_t *
 get_user_allowed_networks (char *user __attribute__ ((unused)))
 {
 
   int i;
-  network_list_t *nl;
+  net_ls_t *nl;
 
-  nl = (network_list_t *) xmalloc (sizeof (network_list_t));
+  nl = (net_ls_t *) xmalloc (sizeof (net_ls_t));
   nl->count = 0;
 
   for (i = 0; i < tap_count; i++)
     {
-      if (tap_db[i].flags & ACTIVE_TAP)
-	{
-	  /* TODO:add acl check 
-	     for now all users are allowed to connect to all network
-	     for (j = 0; tap_db[i].allowed_users[j] != NULL; j++)
-	     {
-	     if (!strcmp (tap_db[i].allowed_users[j], user))
-	     { 
-	   */
-	  nl->device[nl->count] = tap_db[i].device;
-	  nl->address[nl->count] = tap_db[i].address;
-	  nl->network[nl->count] = tap_db[i].network;
-	  nl->netmask[nl->count] = tap_db[i].netmask;
-	  nl->count++;
-	}
+      /* TODO:add acl check 
+         for now all users are allowed to connect to all network
+         for (j = 0; tap_db[i].allowed_users[j] != NULL; j++)
+         {
+         if (!strcmp (tap_db[i].allowed_users[j], user))
+         { 
+       */
+      nl->device[nl->count] = tap_db[i].device;
+      nl->address[nl->count] = tap_db[i].address;
+      nl->network[nl->count] = tap_db[i].network;
+      nl->netmask[nl->count] = tap_db[i].netmask;
+      nl->count++;
     }
 
   return nl;

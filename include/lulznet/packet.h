@@ -20,12 +20,14 @@
 #define ETH_ADDR_LEN 6
 #define ETH_HDR_LEN  14
 
+/* MAC header */
 typedef struct eth_header {
      u_char dst_adr[ETH_ADDR_LEN];
      u_char src_adr[ETH_ADDR_LEN];
      u_short eth_type;
 } __attribute__((packed)) eth_header;
 
+/* arp header */
 typedef struct arp_header {
      u_short hw_type;
      u_short proto_type;
@@ -38,6 +40,7 @@ typedef struct arp_header {
      u_int dst_ip_adr;     
 } __attribute__((packed)) arp_header;
 
+/* ip header */
 typedef struct ip_header {
      u_char ver_and_hdr_len;
      u_char tos;
@@ -51,4 +54,5 @@ typedef struct ip_header {
      u_int dst_adr;
 } ip_header;
 
+/* return int network ordered address of the packet dest */
 u_int get_destination_ip(char *packet);

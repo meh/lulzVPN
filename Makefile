@@ -28,10 +28,10 @@ $(UG_FILES:.c=.o): $(UG_FILES)
 
 indent:
 	@indent -l 512 src/*.c
-	@rm src/*~
+	@rm -f src/*~
 
 clean:
-	rm src/*.o
-	rm var/*.o
+	rm -f src/*.o
+	rm -f var/*.o
 	rm ${NAME}
 	rm ug

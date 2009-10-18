@@ -21,19 +21,20 @@ typedef struct
   int address[MAX_PEERS];
 
   int count;
-} user_list_t;
+} user_ls_t;
 
 typedef struct
 {
 
   /* XXX: fix remote bof */
+  int count;
+
   char *device[MAX_TAPS];
   int address[MAX_TAPS];
   int network[MAX_TAPS];
   int netmask[MAX_TAPS];
 
-  int count;
-} network_list_t;
+} net_ls_t;
 
 /* This struct holds remote peers informations */
 typedef struct
@@ -42,15 +43,15 @@ typedef struct
   int fd;
   SSL *ssl;
 
-  /* Various flags (active etc) */
-  char flags;
+  /* peer state (active, closing, ...) */
+  char state;
 
   /* remote peer username and address */
   char *user;
   int address;
 
   /* peer's lulz device info */
-  network_list_t *nl;
+  net_ls_t *nl;
 
 } peer_handler_t;
 
@@ -71,12 +72,11 @@ typedef struct
 
 typedef struct
 {
-  char flags;
   char *peer_username;
 
-  user_list_t *user_list;
-  network_list_t *network_list;
-} handshake_opt_t;
+  user_ls_t *user_ls;
+  net_ls_t *net_ls;
+} hs_opt_t;
 
 typedef struct
 {
@@ -84,3 +84,4 @@ typedef struct
   char argv[4][128];
   int argc;
 } sh_cmd;
+

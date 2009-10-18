@@ -23,17 +23,15 @@
 #define CERT_FILE	"/etc/lulznet/cert.pem"
 #define KEY_FILE	"/etc/lulznet/key"
 
-/* mutex used to prevent fd_db structure's modifies
-   while select() main cycle is running */
-extern pthread_mutex_t select_mutex;
-
-extern pthread_t select_t;
-
 extern SSL_CTX *ssl_client_ctx;
 extern SSL_CTX *ssl_server_ctx;
 
 /* global fd_set for select() */
 extern fd_set master;
+
+/* mutex used to prevent fd_db structure's modifies
+   while select() main cycle is running */
+extern pthread_t select_t;
 
 /* Initialize ssl server's context */
 void ssl_server_init ();
@@ -44,13 +42,14 @@ void ssl_client_init ();
 /* Main server thread, accepting connection */
 void *server_loop (void *arg);
 
+/* return a int network ordered address from a string */
 int lookup_address (char *address);
 
-/* Function to connect to a peer */
+/* Function for connecting to a peer */
 void peer_connect (int address, short port);
 
-/* Function to disconnect from a peer */
-void peer_disconnect (int fd);
+/* Function for disconnecting from a peer */
+void disassociation_request (int fd);
 
 /* Main forwarding function */
 void *select_loop (void *arg);

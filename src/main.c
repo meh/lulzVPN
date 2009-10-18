@@ -93,7 +93,7 @@ lulznet_init ()
   FD_ZERO (&master);
 
   memset (&select_t, '\x00', sizeof (pthread_t));
-  pthread_mutex_init (&select_mutex, NULL);
+  pthread_mutex_init (&peer_db_mutex, NULL);
 
   SSL_load_error_strings ();
   SSLeay_add_ssl_algorithms ();
@@ -146,7 +146,7 @@ exit_lulznet ()
   for (i = 0; i < peer_count; i++)
     {
       peer = peer_db + i;
-      peer_disconnect (peer->fd);
+      disassociation_request (peer->fd);
     }
 
   printf ("\n");

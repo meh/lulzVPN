@@ -160,13 +160,12 @@ parse_config_file (char *filename)
 	      fscanf (fp, "%32s", tmp);
 	      debug_level = atoi (tmp);
 	    }
-	  else
-	       if(!tmp[0] == '#')
-		    error ("Invalid option in configfile");
+	  else if (!tmp[0] == '#')
+	    error ("Invalid option in configfile");
 
 	  do
-	       fscanf(fp,"%c",&c);
-	  while(c != '\n');
+	    fscanf (fp, "%c", &c);
+	  while (c != '\n');
 	}
     }
 }
