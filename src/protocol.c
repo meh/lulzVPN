@@ -221,16 +221,16 @@ int
 lulznet_server_auth (SSL * ssl, hs_opt_t * hs_opt)
 {
 
-  char hex_hash[16];
+  u_char hex_hash[16];
   char auth;
+
   /* Recv hash */
   debug2 ("Recving hash");
   if (!xSSL_read (ssl, hex_hash, 16, "hash"))
     return FAIL;
 
   /* Do authentication checking if hash match local credential file's hash */
-  /* TODO: avoid cast */
-  if (do_authentication (hs_opt->peer_username, (u_char *) hex_hash))
+  if (do_authentication (hs_opt->peer_username, hex_hash)) 
     {
       auth = AUTHENTICATION_SUCCESSFULL;
       debug2 ("Sending auth response (successfull)");

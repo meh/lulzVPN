@@ -48,6 +48,8 @@ int lookup_address (char *address);
 /* Function for connecting to a peer */
 void peer_connect (int address, short port);
 
+int auth_request (int address, short port, char *username, u_char *hash);
+
 /* Function for disconnecting from a peer */
 void disassociation_request (int fd);
 

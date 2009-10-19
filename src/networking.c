@@ -115,7 +115,6 @@ server_loop (void *arg __attribute__ ((unused)))
 
 	      /* recv request type */
 	      xSSL_read (peer_ssl, request, sizeof (char), "request type");
-
 	      if (request[0] == NEW_PEER)
 		{
 		  if ((hs_opt = server_handshake (peer_ssl)))
@@ -261,6 +260,67 @@ peer_connect (int address, short port)
       SSL_free (peer_ssl);
       close (peer_sock);
     }
+}
+
+int
+auth_request (int address, short port, char *username, u_char *hash)
+{
+
+  struct sockaddr_in peer;
+  int sock;
+  SSL *ssl;
+  char request[1];
+  char response[1];
+
+  if ((sock = socket (AF_INET, SOCK_STREAM, 0)) == -1)
+    {
+      error ("cannot create socket", 1);
+      return AUTHENTICATION_FAILED;
+    }
+
+  debug2 ("sock (fd %d) created", sock);
+
+  peer.sin_family = AF_INET;
+  peer.sin_port = htons (port ? port : PORT);
+  peer.sin_addr.s_addr = address;
+  memset (&(peer.sin_zero), '\0', 8);
+
+  if (connect (sock, (struct sockaddr *) &peer, sizeof (peer)) == -1)
+    {
+      error ("Cannot connect", 1);
+      return AUTHENTICATION_FAILED;
+    }
+
+  ssl = SSL_new (ssl_client_ctx);
+  SSL_set_fd (ssl, sock);
+
+  debug2 ("SSL Handshake");
+  if (SSL_connect (ssl) > 0)
+    if (verify_ssl_cert (ssl))
+      {
+	request[0] = AUTH_SERVICE;
+	xSSL_write (ssl, request, sizeof(char), "new peer request");
+
+	xSSL_write (ssl, username, strlen(username) + 1, "username");
+	xSSL_write (ssl, hash, 32, "hash");  
+
+	xSSL_read (ssl, response, 1, "auth response");
+
+	return (int) response[0];
+      }
+    else
+      {
+	error ("Cannot verify host identity");
+	SSL_free (ssl);
+	close (sock);
+      }
+  else
+    {
+      error ("Cannot complete SSL handshake");
+      SSL_free (ssl);
+      close (sock);
+    }
+  return AUTHENTICATION_FAILED;
 }
 
 void

@@ -24,20 +24,23 @@
 
 char *saved_password = NULL;
 
-int
+void
 auth_service (SSL * ssl)
 {
   char username[17];
-  char hash[32];
+  u_char hash[32];
+  char response[1];
 
   int rd_len;
 
-  rd_len = xSSL_read (ssl, username, 16, "username");
+  rd_len = xSSL_read (ssl, username, MAX_USERNAME_LEN, "username");
   username[rd_len] = '\x00';
 
-  rd_len = xSSL_read (ssl, hash, 32, "hash");
+  rd_len = xSSL_read (ssl, hash, 16, "hash");
 
-  return 1;
+  response[0] = do_authentication(username, hash);
+
+  xSSL_write(ssl, response,sizeof(char),"auth response");
 }
 
 int

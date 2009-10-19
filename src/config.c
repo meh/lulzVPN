@@ -39,8 +39,6 @@ parse_args (int argc, char **argv)
   while ((c = getopt (argc, argv, "ac:dhil:n:p:P:t:v")) != -1)
     switch (c)
       {
-      case 'a':
-	opt.flags |= AUTH_SERVICE;
       case 'c':
 	if (!*optarg)
 	  fatal ("You must specify an address");
@@ -116,6 +114,12 @@ parse_config_file (char *filename)
 	      fscanf (fp, "%32s", tmp);
 	      opt.username = (char *) xmalloc ((strlen (tmp) + 1) * sizeof (char));
 	      strcpy (opt.username, tmp);
+	    }
+	  else if (!strcmp (tmp, "auth_srv_addr"))
+	    {
+	      fscanf (fp, "%32s", tmp);
+	      opt.auth_server_address = (char *) xmalloc ((strlen (tmp) + 1) * sizeof (char));
+	      strcpy (opt.auth_server_address, tmp);
 	    }
 	  else if (!strcmp (tmp, "tap_addr"))
 	    {

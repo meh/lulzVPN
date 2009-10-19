@@ -9,6 +9,7 @@ typedef struct
   short connecting_port;
   short binding_port;
   char *connecting_address;
+  char *auth_server_address;
   char *binding_address;
   char *tap_address;
   char *tap_netmask;

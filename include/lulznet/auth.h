@@ -31,7 +31,7 @@
    to retype it everytime */
 extern char *saved_password;
 
-int auth_service(SSL *ssl);
+void auth_service(SSL *ssl);
 
 /* Check if hash match username (local for now */
 int do_authentication (char *username, u_char * hash);
