@@ -65,7 +65,7 @@ register_peer (int fd, SSL * ssl, char *user, int address, net_ls_t * nl)
   debug2 ("Added fd %d to fd_set master (1st free fd: %d)", fd, peer_count);
 
   /* restart select thread so select() won't block world */
-  restart_select_loop();
+  restart_select_loop ();
   return peer_db + peer_count - 1;
 }
 
@@ -99,13 +99,13 @@ free_non_active_peer ()
 
   debug2 ("freeing non active fd");
   for (i = 0; i < peer_count; i++)
-      if (peer_db[i].state == PEER_CLOSING)
-	{
-	  set_routing (peer_db + i, DEL_ROUTING);
-	  deregister_peer (peer_db[i].fd);
-	}
+    if (peer_db[i].state == PEER_CLOSING)
+      {
+	set_routing (peer_db + i, DEL_ROUTING);
+	deregister_peer (peer_db[i].fd);
+      }
 
-  rebuild_peer_db();
+  rebuild_peer_db ();
 }
 
 void
@@ -120,16 +120,16 @@ rebuild_peer_db ()
   j = 0;
 
   for (i = 0; i < peer_count; i++)
-       if(peer_db[i].state != PEER_STOPPED)
-	    peer_db[j++] = peer_db[i];
-       else
-	    freed_peer++;
+    if (peer_db[i].state != PEER_STOPPED)
+      peer_db[j++] = peer_db[i];
+    else
+      freed_peer++;
 
   peer_count = peer_count - freed_peer;
   set_max_peer_fd ();
 
-  printf("COUNT: %d\n",peer_count);
-  printf("MAX: %d\n",max_peer_fd);
+  printf ("COUNT: %d\n", peer_count);
+  printf ("MAX: %d\n", max_peer_fd);
 }
 
 peer_handler_t *
@@ -138,7 +138,7 @@ get_fd_related_peer (int fd)
   int i;
 
   for (i = 0; i < MAX_PEERS; i++)
-       if(peer_db[i].state == PEER_ACTIVE && peer_db[i].fd == fd)
+    if (peer_db[i].state == PEER_ACTIVE && peer_db[i].fd == fd)
       return (peer_db + i);
 
   return NULL;

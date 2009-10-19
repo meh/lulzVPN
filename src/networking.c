@@ -326,36 +326,36 @@ select_loop (void __attribute__ ((unused)) * arg)
 	  for (i = 0; i < peer_count; i++)
 	    {
 	      peer = peer_db + i;
-	      if(peer->state == PEER_ACTIVE)
-	      if (FD_ISSET (peer->fd, &read_select))
-		{
-		  /* Read from it */
-		  debug3 ("sock_fd %d (0x%x ssl): read %d bytes packet", peer->fd, peer->ssl, rd_len);
-		  rd_len = xSSL_read (peer->ssl, packet_buffer, 4095, "forwarding data");
+	      if (peer->state == PEER_ACTIVE)
+		if (FD_ISSET (peer->fd, &read_select))
+		  {
+		    /* Read from it */
+		    debug3 ("sock_fd %d (0x%x ssl): read %d bytes packet", peer->fd, peer->ssl, rd_len);
+		    rd_len = xSSL_read (peer->ssl, packet_buffer, 4095, "forwarding data");
 
-		  if (rd_len == 0)
-		    deregister_peer (peer->fd);
-		  else
-		    {
+		    if (rd_len == 0)
+		      deregister_peer (peer->fd);
+		    else
+		      {
 
-		      switch (packet_buffer[0])
-			{
-			case DATA_PACKET:
-			  forward_to_tap (packet_buffer, rd_len);
-			  break;
-			case CONTROL_PACKET:
-			  if (packet_buffer[1] == CLOSE_CONNECTION)
-			    {
-			      debug3 ("control_packet: closing connection");
-			      free_fd_flag = 1;
-			      peer->state = PEER_CLOSING;
-			    }
-			  else
-			    error ("Unknow control flag");
-			  break;
-			}
-		    }
-		}
+			switch (packet_buffer[0])
+			  {
+			  case DATA_PACKET:
+			    forward_to_tap (packet_buffer, rd_len);
+			    break;
+			  case CONTROL_PACKET:
+			    if (packet_buffer[1] == CLOSE_CONNECTION)
+			      {
+				debug3 ("control_packet: closing connection");
+				free_fd_flag = 1;
+				peer->state = PEER_CLOSING;
+			      }
+			    else
+			      error ("Unknow control flag");
+			    break;
+			  }
+		      }
+		  }
 	    }
 
 	  for (i = 0; i < tap_count; i++)
@@ -371,7 +371,7 @@ select_loop (void __attribute__ ((unused)) * arg)
 	}
 
       if (free_fd_flag)
-	  free_non_active_peer (NULL);
+	free_non_active_peer (NULL);
 
       /* When the cycle is end functions can modify the fd_db structure */
       pthread_mutex_unlock (&peer_db_mutex);
@@ -381,9 +381,10 @@ select_loop (void __attribute__ ((unused)) * arg)
 }
 
 void
-restart_select_loop(){
+restart_select_loop ()
+{
 
-     debug2("Restarting select()");
+  debug2 ("Restarting select()");
   if (select_t != (pthread_t) NULL)
     {
       if (pthread_cancel (select_t))
@@ -392,6 +393,7 @@ restart_select_loop(){
 	pthread_create (&select_t, NULL, select_loop, NULL);
     }
 }
+
 inline void
 forward_to_tap (char *packet, u_int packet_len)
 {

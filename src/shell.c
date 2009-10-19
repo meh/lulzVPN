@@ -96,10 +96,11 @@ peer_kill (sh_cmd * cmd)
     {
       peer = get_fd_related_peer (atoi (cmd->argv[1]));
       if (peer != NULL)
-	if (peer->state == PEER_ACTIVE){
-	  disassociation_request (atoi (cmd->argv[1]));
-	  rebuild_peer_db();
-	}
+	if (peer->state == PEER_ACTIVE)
+	  {
+	    disassociation_request (atoi (cmd->argv[1]));
+	    rebuild_peer_db ();
+	  }
 	else
 	  shell_msg ("Invalid fd specified");
       else
