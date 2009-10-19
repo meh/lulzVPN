@@ -3,7 +3,7 @@ typedef struct
 
 #define LISTEN_MODE		0x01
 #define AUTH_SERVICE		0x02
-#define INTERACTIVE_MODE	0x04
+#define INTERPEER_ACTIVE_MODE	0x04
 
   int flags;
   short connecting_port;

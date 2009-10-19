@@ -55,6 +55,7 @@ void disassociation_request (int fd);
 void *select_loop (void *arg);
 inline void forward_to_tap (char *packet, u_int packet_len);
 inline void forward_to_peer (char *packet, u_int packet_len);
+void restart_select_loop();
 
 /* handle cert verification */
 int verify_ssl_cert (SSL * ssl);

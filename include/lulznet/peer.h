@@ -17,8 +17,9 @@
  * MA 02110-1301, USA.
 */
 
-#define ACTIVE	0x01
-#define CLOSING	0x02
+#define PEER_ACTIVE	1
+#define PEER_CLOSING	2
+#define PEER_STOPPED	4
 
 extern peer_handler_t peer_db[MAX_PEERS];
 extern pthread_mutex_t peer_db_mutex;
@@ -37,7 +38,10 @@ peer_handler_t *register_peer (int fd, SSL * ssl, char *user, int address, net_l
 void deregister_peer (int fd);
 
 /* Check for non active peer and reomve them */
-void *free_non_active_peer (void *arg __attribute__((unused)));
+void free_non_active_peer ();
+
+/* Delete empty entry */
+void rebuild_peer_db ();
 
 /* return the peer associated with an fd */
 peer_handler_t *get_fd_related_peer (int fd);

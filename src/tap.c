@@ -81,7 +81,7 @@ register_tap_device (int fd, char *device, int address, int netmask)
   pthread_mutex_lock (&peer_db_mutex);
 
   tap_db[tap_count].fd = fd;
-  tap_db[tap_count].flags |= ACTIVE_TAP;
+  tap_db[tap_count].flags |= PEER_ACTIVE_TAP;
   tap_db[tap_count].device = device;
   tap_db[tap_count].address = address;
   tap_db[tap_count].netmask = netmask;
@@ -147,7 +147,7 @@ free_non_active_tap ()
 
   for (i = 0; i < MAX_TAPS; i++)
     if (tap_db[i].fd != 0)
-      if ((!(tap_db[i].flags & ACTIVE_TAP)))
+      if ((!(tap_db[i].flags & PEER_ACTIVE_TAP)))
 
 	deregister_tap (tap_db[i].fd);
 
@@ -183,11 +183,12 @@ set_routing (peer_handler_t * peer, char op)
   net_ls_t *local_nl;
   net_ls_t *remote_nl;
 
+  int i;
+  int j;
+
   local_nl = get_user_allowed_networks (peer->user);
   remote_nl = peer->nl;
 
-  int i;
-  int j;
 
   for (i = 0; i < local_nl->count; i++)
     {
@@ -196,7 +197,6 @@ set_routing (peer_handler_t * peer, char op)
 
       for (j = 0; j < remote_nl->count; j++)
 	{
-	  printf ("#1 count=%d (0x%x)\n", remote_nl->count, (int) &remote_nl->count);
 	  inet_ntop (AF_INET, &remote_nl->network[j], network, ADDRESS_LEN);
 	  inet_ntop (AF_INET, &remote_nl->netmask[j], netmask, ADDRESS_LEN);
 
@@ -206,7 +206,6 @@ set_routing (peer_handler_t * peer, char op)
 	    sprintf (route_command, "/sbin/route del -net %s netmask %s gw %s", network, netmask, gateway);
 
 	  system (route_command);
-	  printf ("#2 count=%d (0x%x)\n", remote_nl->count, (int) &remote_nl->count);
 	}
     }
 

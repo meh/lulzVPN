@@ -51,7 +51,7 @@ register_peer (int fd, SSL * ssl, char *user, int address, net_ls_t * nl)
 
   peer_db[peer_count].fd = fd;
   peer_db[peer_count].ssl = ssl;
-  peer_db[peer_count].state = ACTIVE;
+  peer_db[peer_count].state = PEER_ACTIVE;
 
   peer_db[peer_count].address = address;
   peer_db[peer_count].user = user;
@@ -64,14 +64,8 @@ register_peer (int fd, SSL * ssl, char *user, int address, net_ls_t * nl)
   FD_SET (fd, &master);
   debug2 ("Added fd %d to fd_set master (1st free fd: %d)", fd, peer_count);
 
-  if (select_t != (pthread_t) NULL)
-    {
-      if (pthread_cancel (select_t))
-	fatal ("Cannot cancel select thread");
-      else
-	pthread_create (&select_t, NULL, select_loop, NULL);
-    }
-
+  /* restart select thread so select() won't block world */
+  restart_select_loop();
   return peer_db + peer_count - 1;
 }
 
@@ -80,8 +74,6 @@ deregister_peer (int fd)
 {
 
   int i;
-  int j;
-  int k;
 
   for (i = 0; i < max_peer_fd; i++)
     if (peer_db[i].fd == fd)
@@ -89,60 +81,64 @@ deregister_peer (int fd)
 	SSL_free (peer_db[i].ssl);
 	free (peer_db[i].user);
 	free (peer_db[i].nl);
-	memset (&peer_db[i], '\x00', sizeof (peer_handler_t));
+	peer_db[i].state = PEER_STOPPED;
 
 	FD_CLR (fd, &master);
 	close (fd);
 
-	/* rebuild peer_db */
-	/* XXX: test it (rewrite using lists) */
-	for (j = 0; j < peer_count - 1; i++)
-	  if (peer_db[j].fd == 0)
-	    for (k = j; k < peer_count - 2; k++)
-	      peer_db[k] = peer_db[k + 1];
-
-	peer_count--;
-	set_max_peer_fd ();
-
 	debug2 ("Removed fd %d from fd_set master (current fd %d)", fd, peer_count);
-
 	return;
       }
 }
 
-void *
-free_non_active_peer (void *arg __attribute__ ((unused)))
+void
+free_non_active_peer ()
 {
-  int i;
 
-  /* wait until select_loop ends its cycle */
-  pthread_mutex_lock (&peer_db_mutex);
+  int i;
 
   debug2 ("freeing non active fd");
   for (i = 0; i < peer_count; i++)
-    if (peer_db[i].fd != 0)
-      if (peer_db[i].state == CLOSING)
+      if (peer_db[i].state == PEER_CLOSING)
 	{
 	  set_routing (peer_db + i, DEL_ROUTING);
 	  deregister_peer (peer_db[i].fd);
 	}
 
-  /* restart select thread and unlock mutex */
-  pthread_cancel (select_t);
-  pthread_mutex_unlock (&peer_db_mutex);
-  pthread_create (&select_t, NULL, select_loop, NULL);
+  rebuild_peer_db();
+}
 
-  return NULL;
+void
+rebuild_peer_db ()
+{
+
+  int i;
+  int j;
+  int freed_peer;
+
+  freed_peer = 0;
+  j = 0;
+
+  for (i = 0; i < peer_count; i++)
+       if(peer_db[i].state != PEER_STOPPED)
+	    peer_db[j++] = peer_db[i];
+       else
+	    freed_peer++;
+
+  peer_count = peer_count - freed_peer;
+  set_max_peer_fd ();
+
+  printf("COUNT: %d\n",peer_count);
+  printf("MAX: %d\n",max_peer_fd);
 }
 
 peer_handler_t *
 get_fd_related_peer (int fd)
 {
-
   int i;
 
   for (i = 0; i < MAX_PEERS; i++)
-    if (peer_db[i].fd == fd)
+       if(peer_db[i].state == PEER_ACTIVE && peer_db[i].fd == fd)
       return (peer_db + i);
 
   return NULL;
@@ -151,9 +147,11 @@ get_fd_related_peer (int fd)
 int
 user_is_connected (char *user)
 {
+
   int i;
+
   for (i = 0; i < max_peer_fd; i++)
-    if (peer_db[i].state == ACTIVE)
+    if (peer_db[i].state == PEER_ACTIVE)
       if (!strcmp (peer_db[i].user, user))
 	return TRUE;
 

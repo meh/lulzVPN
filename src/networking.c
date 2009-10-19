@@ -73,7 +73,6 @@ server_loop (void *arg __attribute__ ((unused)))
   socklen_t addr_size;
   pthread_t connect_queue_t;
   hs_opt_t *hs_opt;
-  net_ls_t *tmp_local_nl;
   peer_handler_t *new_peer;
 
   if ((listen_sock = socket (PF_INET, SOCK_STREAM, 0)) == -1)
@@ -123,13 +122,12 @@ server_loop (void *arg __attribute__ ((unused)))
 		    {
 
 		      pthread_mutex_lock (&peer_db_mutex);
-		      new_peer = register_peer (peer_sock, peer_ssl, hs_opt->peer_username, peer.sin_addr.s_addr, hs_opt->net_ls);
 
+		      new_peer = register_peer (peer_sock, peer_ssl, hs_opt->peer_username, peer.sin_addr.s_addr, hs_opt->net_ls);
 		      inet_ntop (AF_INET, &peer.sin_addr.s_addr, peer_address, ADDRESS_LEN);
 		      info ("Connection accepted from %s (fd %d)", peer_address, peer_sock);
 
-		      /* Set routing *//* free it */
-		      tmp_local_nl = get_user_allowed_networks (hs_opt->peer_username);
+		      /* Set routing */
 		      set_routing (new_peer, ADD_ROUTING);
 
 		      pthread_mutex_unlock (&peer_db_mutex);
@@ -194,7 +192,6 @@ peer_connect (int address, short port)
   SSL *peer_ssl;
   char request[1];
   hs_opt_t *hs_opt;
-  net_ls_t *tmp_local_nl;
   pthread_t connect_queue_t;
   peer_handler_t *new_peer;
 
@@ -237,7 +234,6 @@ peer_connect (int address, short port)
 	    free (hs_opt);
 	    info ("Connected");
 
-	    tmp_local_nl = get_user_allowed_networks (hs_opt->peer_username);
 	    set_routing (new_peer, ADD_ROUTING);
 
 	    pthread_mutex_unlock (&peer_db_mutex);
@@ -248,7 +244,7 @@ peer_connect (int address, short port)
 	  }
 	else
 	  {
-	    error ("Cannoc complete lulznet handshake");
+	    error ("Cannot complete lulznet handshake");
 	    SSL_free (peer_ssl);
 	    close (peer_sock);
 	  }
@@ -298,29 +294,30 @@ select_loop (void __attribute__ ((unused)) * arg)
   int rd_len;
   int i;
 
-  pthread_t free_fd_t;
-
   peer_handler_t *peer;
   tap_handler_t *tap;
 
   int dont_close_flag = 1;
-  int free_fd_flag = 0;
+  int free_fd_flag;
 
   while (dont_close_flag)
     {
 
+      pthread_mutex_lock (&peer_db_mutex);
+
       read_select = master;
+      free_fd_flag = 0;
 
       if (max_peer_fd > max_tap_fd)
 	max_fd = max_peer_fd;
       else
 	max_fd = max_tap_fd;
 
+      pthread_mutex_unlock (&peer_db_mutex);
+
       ret = select (max_fd + 1, &read_select, NULL, NULL, NULL);
 
-      /* We block the forwarding cycle */
       pthread_mutex_lock (&peer_db_mutex);
-
       if (ret == -1)
 	fatal ("Select error");
       else
@@ -329,6 +326,7 @@ select_loop (void __attribute__ ((unused)) * arg)
 	  for (i = 0; i < peer_count; i++)
 	    {
 	      peer = peer_db + i;
+	      if(peer->state == PEER_ACTIVE)
 	      if (FD_ISSET (peer->fd, &read_select))
 		{
 		  /* Read from it */
@@ -350,7 +348,7 @@ select_loop (void __attribute__ ((unused)) * arg)
 			    {
 			      debug3 ("control_packet: closing connection");
 			      free_fd_flag = 1;
-			      peer->state = CLOSING;
+			      peer->state = PEER_CLOSING;
 			    }
 			  else
 			    error ("Unknow control flag");
@@ -372,20 +370,28 @@ select_loop (void __attribute__ ((unused)) * arg)
 	    }
 	}
 
+      if (free_fd_flag)
+	  free_non_active_peer (NULL);
+
       /* When the cycle is end functions can modify the fd_db structure */
       pthread_mutex_unlock (&peer_db_mutex);
 
-      if (free_fd_flag)
-	{
-	  pthread_create (&free_fd_t, NULL, free_non_active_peer, NULL);
-	  /* TODO: check this */
-	  pthread_join (free_fd_t, NULL);
-
-	}
     }
   return NULL;
 }
 
+void
+restart_select_loop(){
+
+     debug2("Restarting select()");
+  if (select_t != (pthread_t) NULL)
+    {
+      if (pthread_cancel (select_t))
+	fatal ("Cannot cancel select thread");
+      else
+	pthread_create (&select_t, NULL, select_loop, NULL);
+    }
+}
 inline void
 forward_to_tap (char *packet, u_int packet_len)
 {
@@ -415,7 +421,7 @@ forward_to_peer (char *packet, u_int packet_len)
   for (i = 0; i < peer_count; i++)
     {
       peer = peer_db + i;
-      if (peer->state == ACTIVE)
+      if (peer->state == PEER_ACTIVE)
 	{
 	  debug3 ("sock_fd %d (0x%x ssl): write packet", peer->fd, peer->ssl, packet_len);
 	  if (!xSSL_write (peer->ssl, packet, packet_len + 1, "forwarding data"))

@@ -65,7 +65,7 @@ main (int argc, char *argv[])
 
   pthread_create (&select_t, NULL, select_loop, NULL);
 
-  if (opt.flags & INTERACTIVE_MODE)
+  if (opt.flags & INTERPEER_ACTIVE_MODE)
     start_shell ();
   else
     debug1 ("Non interactive mode");

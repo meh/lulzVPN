@@ -1,7 +1,7 @@
 VERSION	= 0.0.1
 NAME	= lulzNet
 
-CC	= g++
+CC	= gcc
 CFLAGS	= -Wall -Wextra -pedantic -g -I ./include
 LDFLAGS	= -lpthread -lssl -lreadline -lcrypt
 

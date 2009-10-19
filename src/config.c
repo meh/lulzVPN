@@ -54,7 +54,7 @@ parse_args (int argc, char **argv)
 	help ();
 	break;
       case 'i':
-	opt.flags |= INTERACTIVE_MODE;
+	opt.flags |= INTERPEER_ACTIVE_MODE;
 	break;
       case 'l':
 	opt.username = optarg;
@@ -133,11 +133,11 @@ parse_config_file (char *filename)
 	    {
 	      fscanf (fp, "%32s", tmp);
 	      if (!strcmp (tmp, "yes"))
-		opt.flags |= INTERACTIVE_MODE;
+		opt.flags |= INTERPEER_ACTIVE_MODE;
 	      else if (!strcmp (tmp, "no"))
 		{
-		  if (opt.flags & INTERACTIVE_MODE)
-		    opt.flags ^= INTERACTIVE_MODE;
+		  if (opt.flags & INTERPEER_ACTIVE_MODE)
+		    opt.flags ^= INTERPEER_ACTIVE_MODE;
 		}
 	      else
 		error ("Invalid option");
