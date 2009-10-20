@@ -18,7 +18,6 @@
 */
 
 #include <lulznet/lulznet.h>
-#include <lulznet/types.h>
 
 #include <lulznet/auth.h>
 #include <lulznet/config.h>
@@ -87,12 +86,12 @@ server_loop (void *arg __attribute__ ((unused)))
   server.sin_addr.s_addr = INADDR_ANY;	/*(server_opt->binding_address); */
   memset (&(server.sin_zero), '\0', 8);
 
-  debug1 ("Binding port %d", PORT);
+  debug2 ("Binding port %d", PORT);
   if (bind (listen_sock, (struct sockaddr *) &server, sizeof (struct sockaddr)) == -1)
     fatal ("cannot binding to socket");
 
-  info ("Listening");
-  if (listen (listen_sock, MAX_PEERS) == -1)
+  debug1 ("Listening");
+  if (listen (listen_sock, MAX_ACCEPTED_PEERS_CONNECTIONS) == -1)
     fatal ("cannot listen");
 
   addr_size = sizeof (struct sockaddr_in);
@@ -119,7 +118,7 @@ server_loop (void *arg __attribute__ ((unused)))
 
 		  pthread_mutex_lock (&peer_db_mutex);
 
-		  new_peer = register_peer (peer_sock, peer_ssl, hs_opt->peer_username, peer.sin_addr.s_addr, hs_opt->net_ls);
+		  new_peer = register_peer (peer_sock, peer_ssl, hs_opt->peer_username, peer.sin_addr.s_addr, hs_opt->net_ls, INCOMING_CONNECTION);
 		  inet_ntop (AF_INET, &peer.sin_addr.s_addr, peer_address, ADDRESS_LEN);
 		  info ("Connection accepted from %s (fd %d)", peer_address, peer_sock);
 
@@ -186,6 +185,13 @@ peer_connect (int address, short port)
   pthread_t connect_queue_t;
   peer_handler_t *new_peer;
 
+
+  /* check if are there any free peer_handler_t */
+  if(connections_to_peer == MAX_CONNECTIONS_TO_PEER){
+       error("Exceded max connections to peer");
+       return;
+  }
+
   if ((peer_sock = socket (AF_INET, SOCK_STREAM, 0)) == -1)
     {
       error ("cannot create socket", 1);
@@ -220,7 +226,7 @@ peer_connect (int address, short port)
 	  {
 	    pthread_mutex_lock (&peer_db_mutex);
 
-	    new_peer = register_peer (peer_sock, peer_ssl, hs_opt->peer_username, address, hs_opt->net_ls);
+	    new_peer = register_peer (peer_sock, peer_ssl, hs_opt->peer_username, address, hs_opt->net_ls, OUTGOING_CONNECTION);
 
 	    free (hs_opt);
 	    info ("Connected");
@@ -434,7 +440,7 @@ verify_ssl_cert (SSL * ssl)
   if (SSL_get_verify_result (ssl) != X509_V_OK)
     {
       fingerprint = get_fingerprint_from_ctx (ssl);
-      printf ("\nCould not verify SSL servers certificate (self signed).\nFingerprint is: %s\nDo you want to continue? [y|n]: ", fingerprint);
+      printf ("\nCould not verify SSL servers certificate (self signed).\nFingerprint is: %s\nDo you want to continue? [y|n]: y", fingerprint);
       fflush (stdout);
 
       /* FIXME: faggot scanf (doesn't work at the second time :| ) */

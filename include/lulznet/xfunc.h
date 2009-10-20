@@ -17,6 +17,9 @@
  * MA 02110-1301, USA.
 */
 
+#ifndef _LNET_XFUNC_H
+#define _LNET_XFUNC_H
+
 /* safe function, with error handling */
 
 void *xmalloc (size_t size);
@@ -27,3 +30,5 @@ int xSSL_read (SSL * ssl, void *buf, int max_len, const char *item);
 int xSSL_write (SSL * ssl, void *buf, int max_len, const char *item);
 
 int xinet_pton (char *address);
+
+#endif

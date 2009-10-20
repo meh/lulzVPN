@@ -18,7 +18,6 @@
 */
 
 #include <lulznet/lulznet.h>
-#include <lulznet/types.h>
 
 #include <lulznet/config.h>
 #include <lulznet/log.h>
@@ -32,7 +31,6 @@ parse_args (int argc, char **argv)
 {
   int c;
   char optopt = '\x00';
-
 
   opterr = 0;
 
@@ -106,7 +104,6 @@ parse_config_file (char *filename)
     error ("Cannot open config file %s", filename);
   else
     {
-
       while (fscanf (fp, "%32s", tmp) != -1)
 	{
 	  if (!strcmp (tmp, "user"))

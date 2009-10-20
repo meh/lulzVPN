@@ -17,6 +17,9 @@
  * MA 02110-1301, USA.
 */
 
+#ifndef _LNET_NETWORKING_H
+#define _LNET_NETWORKING_H
+
 /* Default listening port */
 #define PORT			7890
 
@@ -62,3 +65,5 @@ int verify_ssl_cert (SSL * ssl);
 
 /* check if we have to connect to another peer after handshake */
 void *check_connections_queue (void *arg);
+
+#endif

@@ -17,6 +17,9 @@
  * MA 02110-1301, USA.
 */
 
+#ifndef _LNET_PACKET_H
+#define _LNET_PACKET_H
+
 #define ETH_ADDR_LEN 6
 #define ETH_HDR_LEN  14
 
@@ -56,3 +59,5 @@ typedef struct ip_header {
 
 /* return int network ordered address of the packet dest */
 u_int get_destination_ip(char *packet);
+
+#endif

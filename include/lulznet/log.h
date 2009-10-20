@@ -17,6 +17,9 @@
  * MA 02110-1301, USA.
 */
 
+#ifndef _LNET_LOG_H
+#define _LNET_LOG_H
+
 #define INFO		1
 #define DEBUG_1		2
 #define DEBUG_2		3
@@ -44,3 +47,5 @@ void shell_msg (const char *msg, ...);
 
 /* Dump in ascii and hex data_buffer */
 void dump (char *data_buffer, int length);
+
+#endif

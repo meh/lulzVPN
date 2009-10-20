@@ -17,6 +17,16 @@
  * MA 02110-1301, USA.
 */
 
+#ifndef _LNET_SHELL_H
+#define _LNET_SHELL_H
+
+typedef struct
+{
+  char command[33];
+  char argv[4][128];
+  int argc;
+} sh_cmd;
+
 void peer_preconnect (sh_cmd * cmd);
 void peer_list ();
 void peer_kill (sh_cmd * cmd);
@@ -28,3 +38,5 @@ sh_cmd *preparse_command (char *line);
 void parse_command (sh_cmd * cmd);
 
 void start_shell ();
+
+#endif

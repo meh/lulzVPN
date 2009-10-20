@@ -18,13 +18,13 @@
 */
 
 #include <lulznet/lulznet.h>
-#include <lulznet/types.h>
 
 #include <lulznet/config.h>
 #include <lulznet/log.h>
 #include <lulznet/networking.h>
 #include <lulznet/peer.h>
 #include <lulznet/tap.h>
+#include <lulznet/shell.h>
 #include <lulznet/xfunc.h>
 
 void

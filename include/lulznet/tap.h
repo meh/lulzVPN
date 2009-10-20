@@ -16,6 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
 */
+#ifndef _LNET_TAP_H
+#define _LNET_TAP_H
 
 #define PEER_ACTIVE_TAP	0x00000001
 
@@ -25,6 +27,20 @@
 #define CLASS_A		1
 #define CLASS_B		2
 #define CLASS_C		3
+
+typedef struct
+{
+  int fd;
+  char flags;
+  char *device;
+  int address;
+  int netmask;
+  int network;
+
+  char *allowed_users[MAX_PEERS];
+  int allowed_users_count;
+
+} tap_handler_t;
 
 /* A structure that keep file descriptors information */
 extern tap_handler_t tap_db[MAX_TAPS];
@@ -59,3 +75,5 @@ int get_ip_address_network (int address, int netmask);
 net_ls_t *get_user_allowed_networks (char *user);
 
 int new_tap (char *address, char *netmask);
+
+#endif

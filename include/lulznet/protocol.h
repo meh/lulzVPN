@@ -19,6 +19,9 @@
 
 /* TODO: dinamic alloc && mem leak fix */
 
+#ifndef _LNET_PROTOCOL_H
+#define _LNET_PROTOCOL_H
+
 #define DATA_PACKET		'\x00'
 #define CONTROL_PACKET		'\x01'
 
@@ -26,6 +29,35 @@
 #define AUTH_SERVICE		0x02
 
 #define CLOSE_CONNECTION	'\x01'
+
+typedef struct
+{
+  char *user[MAX_PEERS];
+  int address[MAX_PEERS];
+
+  int count;
+} user_ls_t;
+
+typedef struct
+{
+
+  /* XXX: fix remote bof */
+  int count;
+
+  char *device[MAX_TAPS];
+  int address[MAX_TAPS];
+  int network[MAX_TAPS];
+  int netmask[MAX_TAPS];
+
+} net_ls_t;
+
+typedef struct
+{
+  char *peer_username;
+
+  user_ls_t *user_ls;
+  net_ls_t *net_ls;
+} hs_opt_t;
 
 /* Send and recv banner */
 void send_banner (int fd);
@@ -51,3 +83,5 @@ int lulznet_recv_userlist (SSL * ssl, hs_opt_t * hs_opt);
 
 /* Return a list with all the users connected */
 user_ls_t *get_userlist ();
+
+#endif

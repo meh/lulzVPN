@@ -18,8 +18,6 @@
 */
 
 #include <lulznet/lulznet.h>
-#include <lulznet/lulznet.h>
-#include <lulznet/types.h>
 
 #include <lulznet/config.h>
 #include <lulznet/log.h>
@@ -122,7 +120,6 @@ deregister_tap (int fd)
 	close (fd);
 
 	/* rebuild tap_db */
-	/* XXX: test it (rewrite using lists) */
 	for (j = 0; j < tap_count - 1; i++)
 	  if (tap_db[j].fd == 0)
 	    for (k = j; k < tap_count - 2; k++)
@@ -220,7 +217,7 @@ get_ip_address_default_netmask (char *address)
 
   sscanf (address, "%d.", &first_ottect);
 
-  /* TODO: it's only a draft */
+  /* XXX: it's only a draft */
   if (first_ottect < 128)
     sprintf (netmask, "255.0.0.0");
   else if (first_ottect < 192)
@@ -240,6 +237,7 @@ get_ip_address_network (int address, int netmask)
   int o1, o2, o3;
   int net;
 
+  /* XXX: it's only a draft */
   netmask = 0;
   inet_ntop (AF_INET, &address, p_address, ADDRESS_LEN);
 

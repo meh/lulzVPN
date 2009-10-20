@@ -18,7 +18,6 @@
 */
 
 #include <lulznet/lulznet.h>
-#include <lulznet/types.h>
 
 #include <lulznet/config.h>
 #include <lulznet/log.h>
@@ -37,14 +36,16 @@ main (int argc, char *argv[])
   pthread_t server_t;		/* Listening thread */
 
   set_default_options ();
+
   parse_config_file ((char *) CONFIG_FILE);
   parse_args (argc, argv);
+
   check_empty_config_entry ();
 
-  if (getuid () && (opt.flags & LISTEN_MODE))
+  if (getuid ())
     fatal ("You must be super user");
 
-  printf ("~~ Starting lulzNet =^_^= ~~\nlulz peer2peer VPN %s", VERSION);
+  printf ("~~ Starting lulzNet =^_^= ~~\nLulz peer2peer Virtual Priv8 Net\nVersion: %s", VERSION);
   fflush (stdout);
 
   lulznet_init ();
@@ -55,7 +56,7 @@ main (int argc, char *argv[])
   if (opt.flags & LISTEN_MODE)
     pthread_create (&server_t, NULL, server_loop, NULL);
   else
-    debug1 ("Not listening");
+    debug2 ("Not listening");
 
   if (opt.connecting_address != NULL)
     {
@@ -68,7 +69,7 @@ main (int argc, char *argv[])
   if (opt.flags & INTERPEER_ACTIVE_MODE)
     start_shell ();
   else
-    debug1 ("Non interactive mode");
+    debug2 ("Non interactive mode");
 
   pthread_join (select_t, NULL);
   pthread_join (server_t, NULL);
@@ -85,6 +86,7 @@ lulznet_init ()
 
   memset (peer_db, '\x00', MAX_PEERS * sizeof (peer_handler_t));
   peer_count = 0;
+  connections_to_peer = 0;
   max_peer_fd = 0;
 
   memset (tap_db, '\x00', MAX_TAPS * sizeof (tap_handler_t));

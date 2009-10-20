@@ -7,7 +7,7 @@
  * (at your option) any later version.
  *
  * lulzNet is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * but WITH ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
@@ -18,7 +18,6 @@
 */
 
 #include <lulznet/lulznet.h>
-#include <lulznet/types.h>
 
 #include <lulznet/config.h>
 #include <lulznet/log.h>
@@ -31,6 +30,7 @@ peer_handler_t peer_db[MAX_PEERS];
 pthread_mutex_t peer_db_mutex;
 
 int peer_count;
+int connections_to_peer;
 int max_peer_fd;
 
 void
@@ -46,12 +46,17 @@ set_max_peer_fd ()
 }
 
 peer_handler_t *
-register_peer (int fd, SSL * ssl, char *user, int address, net_ls_t * nl)
+register_peer (int fd, SSL * ssl, char *user, int address, net_ls_t * nl, char type)
 {
 
   peer_db[peer_count].fd = fd;
   peer_db[peer_count].ssl = ssl;
+
   peer_db[peer_count].state = PEER_ACTIVE;
+  peer_db[peer_count].type = type;
+  
+  if(type == OUTGOING_CONNECTION)
+       connections_to_peer++;
 
   peer_db[peer_count].address = address;
   peer_db[peer_count].user = user;
@@ -82,6 +87,9 @@ deregister_peer (int fd)
 	free (peer_db[i].user);
 	free (peer_db[i].nl);
 	peer_db[i].state = PEER_STOPPED;
+
+	if(peer_db[i].type == OUTGOING_CONNECTION)
+	     connections_to_peer--;
 
 	FD_CLR (fd, &master);
 	close (fd);

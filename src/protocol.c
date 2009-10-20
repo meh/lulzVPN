@@ -20,7 +20,6 @@
 /* TODO: mutex to client connect/disconnect*/
 
 #include <lulznet/lulznet.h>
-#include <lulznet/types.h>
 
 #include <lulznet/auth.h>
 #include <lulznet/config.h>

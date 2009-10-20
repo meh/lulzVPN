@@ -17,6 +17,26 @@
  * MA 02110-1301, USA.
 */
 
+#ifndef _LNET_CONFIG_H
+#define _LNET_CONFIG_H
+
+typedef struct
+{
+
+#define LISTEN_MODE		0x01
+#define AUTH_SERVICE		0x02
+#define INTERPEER_ACTIVE_MODE	0x04
+
+  int flags;
+  short connecting_port;
+  short binding_port;
+  char *connecting_address;
+  char *binding_address;
+  char *tap_address;
+  char *tap_netmask;
+  char *username;
+} option_t;
+
 #define CONFIG_FILE	"/etc/lulznet/config"
 
 /* Struct that holds options */
@@ -33,3 +53,5 @@ void set_default_options ();
 
 /* check if something configuration is missing */
 void check_empty_config_entry ();
+
+#endif

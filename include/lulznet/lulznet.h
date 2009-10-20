@@ -53,6 +53,9 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+#ifndef _LNET_LULZNET_H
+#define _LNET_LULZNET_H
+
 #define FALSE	0
 #define TRUE	1
 
@@ -63,7 +66,10 @@
 #define u_short	unsigned short
 #define u_int 	unsigned int
 
-#define MAX_PEERS	24
+#define MAX_ACCEPTED_PEERS_CONNECTIONS	4
+#define	MAX_CONNECTIONS_TO_PEER		4
+#define MAX_PEERS 			8 
+
 #define MAX_TAPS	8
 #define ADDRESS_LEN	16
 
@@ -81,3 +87,5 @@ void exit_lulznet ();
 
 /* Don't close lulznet with signal */
 void sigint_handler (int signal __attribute__ ((unused)));
+
+#endif

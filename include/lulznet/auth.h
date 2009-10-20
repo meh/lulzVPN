@@ -17,6 +17,9 @@
  * MA 02110-1301, USA.
 */
 
+#ifndef _LNET_AUTH_H
+#define _LNET_AUTH_H
+
 /* This is where lulznet saves users credentials */
 #define CREDENTIAL_FILE "/etc/lulznet/credential"
 
@@ -51,3 +54,5 @@ char *get_hash (char *request_user);
 
 /* return a string with ssl'peer certificate fingerprint */
 char *get_fingerprint_from_ctx (SSL * ssl);
+
+#endif

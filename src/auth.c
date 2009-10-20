@@ -34,6 +34,8 @@ do_authentication (char *username, u_char * hash)
   int response;
   int i;
 
+  response = FALSE;
+
   if ((local_hash = get_hash (username)) != NULL)
     {
       for (i = 0; i < MD5_DIGEST_LENGTH; i++)
@@ -42,18 +44,13 @@ do_authentication (char *username, u_char * hash)
       if (!strcmp (str_hash, local_hash))
 	response = TRUE;
       else
-	{
 	  error ("Wrong password");
-	  response = FALSE;
-	}
     }
   else
-    {
       error ("Cannot find user");
-      response = FALSE;
-    }
 
   free (local_hash);
+
   return response;
 }
 
@@ -116,12 +113,21 @@ calculate_md5 (char *string)
 int
 get_user_credential (FILE * fp, char *username, char *hash)
 {
-  int len;
+     char tmp[50];
+     int i;
 
-  fscanf (fp, "%16s %32s", username, hash);
+     i = 0;
 
-  if (!(len = strlen (username)))
-    return 0;
+  if(fscanf (fp, "%49s", tmp) == -1)
+       return 0;
+
+  while(tmp[i] != ':' && i < MAX_USERNAME_LEN){
+       username[i] = tmp[i];
+       i++;
+  }
+  username[i] = '\x00';
+
+  strncpy(hash, tmp+i+1,32);
 
   return 1;
 }
