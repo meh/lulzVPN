@@ -24,25 +24,6 @@
 
 char *saved_password = NULL;
 
-void
-auth_service (SSL * ssl)
-{
-  char username[17];
-  u_char hash[32];
-  char response[1];
-
-  int rd_len;
-
-  rd_len = xSSL_read (ssl, username, MAX_USERNAME_LEN, "username");
-  username[rd_len] = '\x00';
-
-  rd_len = xSSL_read (ssl, hash, 16, "hash");
-
-  response[0] = do_authentication(username, hash);
-
-  xSSL_write(ssl, response,sizeof(char),"auth response");
-}
-
 int
 do_authentication (char *username, u_char * hash)
 {

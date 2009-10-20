@@ -115,12 +115,6 @@ parse_config_file (char *filename)
 	      opt.username = (char *) xmalloc ((strlen (tmp) + 1) * sizeof (char));
 	      strcpy (opt.username, tmp);
 	    }
-	  else if (!strcmp (tmp, "auth_srv_addr"))
-	    {
-	      fscanf (fp, "%32s", tmp);
-	      opt.auth_server_address = (char *) xmalloc ((strlen (tmp) + 1) * sizeof (char));
-	      strcpy (opt.auth_server_address, tmp);
-	    }
 	  else if (!strcmp (tmp, "tap_addr"))
 	    {
 	      fscanf (fp, "%32s", tmp);

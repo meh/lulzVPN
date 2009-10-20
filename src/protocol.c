@@ -230,7 +230,7 @@ lulznet_server_auth (SSL * ssl, hs_opt_t * hs_opt)
     return FAIL;
 
   /* Do authentication checking if hash match local credential file's hash */
-  if (do_authentication (hs_opt->peer_username, hex_hash)) 
+  if (do_authentication (hs_opt->peer_username, hex_hash))
     {
       auth = AUTHENTICATION_SUCCESSFULL;
       debug2 ("Sending auth response (successfull)");
