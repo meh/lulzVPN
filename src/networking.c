@@ -187,10 +187,11 @@ peer_connect (int address, short port)
 
 
   /* check if are there any free peer_handler_t */
-  if(connections_to_peer == MAX_CONNECTIONS_TO_PEER){
-       error("Exceded max connections to peer");
-       return;
-  }
+  if (connections_to_peer == MAX_CONNECTIONS_TO_PEER)
+    {
+      error ("Exceded max connections to peer");
+      return;
+    }
 
   if ((peer_sock = socket (AF_INET, SOCK_STREAM, 0)) == -1)
     {
@@ -271,7 +272,7 @@ disassociation_request (int fd)
 
   peer = get_fd_related_peer (fd);
 
-  sprintf ((char *) packet, "%c%c", CONTROL_PACKET, CLOSE_CONNECTION);
+  sprintf (packet, "%c%c", CONTROL_PACKET, CLOSE_CONNECTION);
   xSSL_write (peer->ssl, packet, 2, "disconnection packet");
 
   set_routing (peer, DEL_ROUTING);
@@ -368,7 +369,7 @@ select_loop (void __attribute__ ((unused)) * arg)
 	}
 
       if (free_fd_flag)
-	free_non_active_peer (NULL);
+	free_non_active_peer ();
 
       /* When the cycle is end functions can modify the fd_db structure */
       pthread_mutex_unlock (&peer_db_mutex);

@@ -36,7 +36,6 @@ int max_peer_fd;
 void
 set_max_peer_fd ()
 {
-
   int i;
   max_peer_fd = 0;
 
@@ -48,15 +47,14 @@ set_max_peer_fd ()
 peer_handler_t *
 register_peer (int fd, SSL * ssl, char *user, int address, net_ls_t * nl, char type)
 {
-
   peer_db[peer_count].fd = fd;
   peer_db[peer_count].ssl = ssl;
 
   peer_db[peer_count].state = PEER_ACTIVE;
   peer_db[peer_count].type = type;
-  
-  if(type == OUTGOING_CONNECTION)
-       connections_to_peer++;
+
+  if (type == OUTGOING_CONNECTION)
+    connections_to_peer++;
 
   peer_db[peer_count].address = address;
   peer_db[peer_count].user = user;
@@ -77,7 +75,6 @@ register_peer (int fd, SSL * ssl, char *user, int address, net_ls_t * nl, char t
 void
 deregister_peer (int fd)
 {
-
   int i;
 
   for (i = 0; i < max_peer_fd; i++)
@@ -88,8 +85,8 @@ deregister_peer (int fd)
 	free (peer_db[i].nl);
 	peer_db[i].state = PEER_STOPPED;
 
-	if(peer_db[i].type == OUTGOING_CONNECTION)
-	     connections_to_peer--;
+	if (peer_db[i].type == OUTGOING_CONNECTION)
+	  connections_to_peer--;
 
 	FD_CLR (fd, &master);
 	close (fd);
@@ -102,7 +99,6 @@ deregister_peer (int fd)
 void
 free_non_active_peer ()
 {
-
   int i;
 
   debug2 ("freeing non active fd");
@@ -119,7 +115,6 @@ free_non_active_peer ()
 void
 rebuild_peer_db ()
 {
-
   int i;
   int j;
   int freed_peer;
@@ -133,11 +128,8 @@ rebuild_peer_db ()
     else
       freed_peer++;
 
-  peer_count = peer_count - freed_peer;
+  peer_count -= freed_peer;
   set_max_peer_fd ();
-
-  printf ("COUNT: %d\n", peer_count);
-  printf ("MAX: %d\n", max_peer_fd);
 }
 
 peer_handler_t *
@@ -155,7 +147,6 @@ get_fd_related_peer (int fd)
 int
 user_is_connected (char *user)
 {
-
   int i;
 
   for (i = 0; i < max_peer_fd; i++)

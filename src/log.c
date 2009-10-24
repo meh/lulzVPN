@@ -136,7 +136,7 @@ do_log (const char *fmt, va_list args, int level)
       snprintf (fmtbuf, sizeof (fmtbuf), "\n[err] %s", fmt);
       break;
     case FATAL:
-      snprintf (fmtbuf, sizeof (fmtbuf), "\n[ftl] %s\n", fmt);
+      snprintf (fmtbuf, sizeof (fmtbuf), "\n[ftl] %s", fmt);
       break;
     case SHELL_MSG:
       snprintf (fmtbuf, sizeof (fmtbuf), "%s\n", fmt);

@@ -28,7 +28,7 @@ main (int argc, char *argv[])
 
   for (i = 0; i < md_len; i++)
       sprintf (digest + (i * 2), "%02x", md_value[i]);
-  printf ("%s %s\n", argv[1], digest);
+  printf ("%s:%s\n", argv[1], digest);
 
   return 0;
 }

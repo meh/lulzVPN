@@ -101,67 +101,67 @@ parse_config_file (char *filename)
 
   fp = fopen (filename, "r");
   if (fp == NULL)
-    error ("Cannot open config file %s", filename);
+    fatal ("Cannot open config file %s", filename);
   else
     {
       while (fscanf (fp, "%32s", tmp) != -1)
-	{
-	  if (!strcmp (tmp, "user"))
-	    {
-	      fscanf (fp, "%32s", tmp);
-	      opt.username = (char *) xmalloc ((strlen (tmp) + 1) * sizeof (char));
-	      strcpy (opt.username, tmp);
-	    }
-	  else if (!strcmp (tmp, "tap_addr"))
-	    {
-	      fscanf (fp, "%32s", tmp);
-	      opt.tap_address = (char *) xmalloc ((strlen (tmp) + 1) * sizeof (char));
-	      strcpy (opt.tap_address, tmp);
-	    }
-	  else if (!strcmp (tmp, "tap_netm"))
-	    {
-	      fscanf (fp, "%32s", tmp);
-	      opt.tap_netmask = (char *) xmalloc ((strlen (tmp) + 1) * sizeof (char));
-	      strcpy (opt.tap_netmask, tmp);
-	    }
-	  else if (!strcmp (tmp, "interactive"))
-	    {
-	      fscanf (fp, "%32s", tmp);
-	      if (!strcmp (tmp, "yes"))
-		opt.flags |= INTERPEER_ACTIVE_MODE;
-	      else if (!strcmp (tmp, "no"))
 		{
-		  if (opt.flags & INTERPEER_ACTIVE_MODE)
-		    opt.flags ^= INTERPEER_ACTIVE_MODE;
+		  if (!strcmp (tmp, "user"))
+		    {
+		      fscanf (fp, "%32s", tmp);
+		      opt.username = (char *) xmalloc ((strlen (tmp) + 1) * sizeof (char));
+		      strcpy (opt.username, tmp);
+		    }
+		  else if (!strcmp (tmp, "tap_addr"))
+		    {
+		      fscanf (fp, "%32s", tmp);
+		      opt.tap_address = (char *) xmalloc ((strlen (tmp) + 1) * sizeof (char));
+		      strcpy (opt.tap_address, tmp);
+		    }
+		  else if (!strcmp (tmp, "tap_netm"))
+		    {
+		      fscanf (fp, "%32s", tmp);
+		      opt.tap_netmask = (char *) xmalloc ((strlen (tmp) + 1) * sizeof (char));
+		      strcpy (opt.tap_netmask, tmp);
+		    }
+		  else if (!strcmp (tmp, "interactive"))
+		    {
+		      fscanf (fp, "%32s", tmp);
+		      if (!strcmp (tmp, "yes"))
+			opt.flags |= INTERPEER_ACTIVE_MODE;
+		      else if (!strcmp (tmp, "no"))
+			{
+			  if (opt.flags & INTERPEER_ACTIVE_MODE)
+			    opt.flags ^= INTERPEER_ACTIVE_MODE;
+			}
+		      else
+			error ("Invalid option");
+		    }
+		  else if (!strcmp (tmp, "listening"))
+		    {
+		      fscanf (fp, "%32s", tmp);
+		      if (!strcmp (tmp, "yes"))
+			opt.flags |= '\x01';
+		      else if (!strcmp (tmp, "no"))
+			{
+			  if (opt.flags & LISTEN_MODE)
+			    opt.flags ^= LISTEN_MODE;
+			}
+		      else
+			error ("Invalid option");
+		    }
+		  else if (!strcmp (tmp, "debug"))
+		    {
+		      fscanf (fp, "%32s", tmp);
+		      debug_level = atoi (tmp);
+		    }
+		  else if (!tmp[0] == '#')
+		    error ("Invalid option in configfile");
+		  
+		  do
+		    fscanf (fp, "%c", &c);
+		  while (c != '\n');
 		}
-	      else
-		error ("Invalid option");
-	    }
-	  else if (!strcmp (tmp, "listening"))
-	    {
-	      fscanf (fp, "%32s", tmp);
-	      if (!strcmp (tmp, "yes"))
-		opt.flags |= '\x01';
-	      else if (!strcmp (tmp, "no"))
-		{
-		  if (opt.flags & LISTEN_MODE)
-		    opt.flags ^= LISTEN_MODE;
-		}
-	      else
-		error ("Invalid option");
-	    }
-	  else if (!strcmp (tmp, "debug"))
-	    {
-	      fscanf (fp, "%32s", tmp);
-	      debug_level = atoi (tmp);
-	    }
-	  else if (!tmp[0] == '#')
-	    error ("Invalid option in configfile");
-
-	  do
-	    fscanf (fp, "%c", &c);
-	  while (c != '\n');
-	}
     }
 }
 

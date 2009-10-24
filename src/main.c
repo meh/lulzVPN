@@ -35,18 +35,17 @@ main (int argc, char *argv[])
   int address;
   pthread_t server_t;		/* Listening thread */
 
-  set_default_options ();
+  printf ("~~ Starting lulzNet =^_^= ~~\nLulz peer2peer Virtual Priv8 Net\nVersion: %s", VERSION);
+  fflush (stdout);
 
+  set_default_options ();
   parse_config_file ((char *) CONFIG_FILE);
   parse_args (argc, argv);
-
   check_empty_config_entry ();
 
   if (getuid ())
     fatal ("You must be super user");
 
-  printf ("~~ Starting lulzNet =^_^= ~~\nLulz peer2peer Virtual Priv8 Net\nVersion: %s", VERSION);
-  fflush (stdout);
 
   lulznet_init ();
 
@@ -151,8 +150,7 @@ exit_lulznet ()
       disassociation_request (peer->fd);
     }
 
-  printf ("\n");
-
+  fprintf(stderr,"\n");
   exit (0);
 }
 
