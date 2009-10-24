@@ -35,6 +35,9 @@ SSL_CTX *ssl_server_ctx;
 fd_set master;
 pthread_t select_t;
 
+route_entry route_table[512];
+int route_entries_count;
+
 void
 ssl_server_init ()
 {
@@ -44,11 +47,13 @@ ssl_server_init ()
     fatal ("Failed to do SSL CTX new");
 
   debug2 ("Loading SSL certificate");
-  if (SSL_CTX_use_certificate_file (ssl_server_ctx, CERT_FILE, SSL_FILETYPE_PEM) <= 0)
+  if (SSL_CTX_use_certificate_file
+      (ssl_server_ctx, CERT_FILE, SSL_FILETYPE_PEM) <= 0)
     fatal ("Failed to load SSL certificate %s", CERT_FILE);
 
   debug2 ("Loading SSL private key");
-  if (SSL_CTX_use_PrivateKey_file (ssl_server_ctx, KEY_FILE, SSL_FILETYPE_PEM) <= 0)
+  if (SSL_CTX_use_PrivateKey_file (ssl_server_ctx, KEY_FILE, SSL_FILETYPE_PEM)
+      <= 0)
     fatal ("Failed to load SSL private key %s", KEY_FILE);
 }
 
@@ -78,7 +83,8 @@ server_loop (void *arg __attribute__ ((unused)))
     fatal ("cannot create socket");
 
   debug1 ("listen_sock (fd %d) created", listen_sock);
-  if (setsockopt (listen_sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof (on)) == -1)
+  if (setsockopt (listen_sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof (on)) ==
+      -1)
     error ("setsockopt SO_REUSEADDR: %s", strerror (errno));
 
   server.sin_family = AF_INET;
@@ -87,7 +93,9 @@ server_loop (void *arg __attribute__ ((unused)))
   memset (&(server.sin_zero), '\0', 8);
 
   debug2 ("Binding port %d", PORT);
-  if (bind (listen_sock, (struct sockaddr *) &server, sizeof (struct sockaddr)) == -1)
+  if (bind
+      (listen_sock, (struct sockaddr *) &server,
+       sizeof (struct sockaddr)) == -1)
     fatal ("cannot binding to socket");
 
   debug1 ("Listening");
@@ -99,7 +107,8 @@ server_loop (void *arg __attribute__ ((unused)))
   /* @TODO while(available_connection()) else sleep && goto! */
   while (1)
     {
-      if ((peer_sock = accept (listen_sock, (struct sockaddr *) &peer, &addr_size)) == -1)
+      if ((peer_sock =
+	   accept (listen_sock, (struct sockaddr *) &peer, &addr_size)) == -1)
 	fatal ("cannot accept");
 
       send_banner (peer_sock);
@@ -118,16 +127,22 @@ server_loop (void *arg __attribute__ ((unused)))
 
 		  pthread_mutex_lock (&peer_db_mutex);
 
-		  new_peer = register_peer (peer_sock, peer_ssl, hs_opt->peer_username, peer.sin_addr.s_addr, hs_opt->net_ls, INCOMING_CONNECTION);
-		  inet_ntop (AF_INET, &peer.sin_addr.s_addr, peer_address, ADDRESS_LEN);
-		  info ("Connection accepted from %s (fd %d)", peer_address, peer_sock);
+		  new_peer =
+		    register_peer (peer_sock, peer_ssl, hs_opt->peer_username,
+				   peer.sin_addr.s_addr, hs_opt->net_ls,
+				   INCOMING_CONNECTION);
+		  inet_ntop (AF_INET, &peer.sin_addr.s_addr, peer_address,
+			     ADDRESS_LEN);
+		  info ("Connection accepted from %s (fd %d)", peer_address,
+			peer_sock);
 
 		  /* Set routing */
 		  set_routing (new_peer, ADD_ROUTING);
 
 		  pthread_mutex_unlock (&peer_db_mutex);
 
-		  pthread_create (&connect_queue_t, NULL, check_connections_queue, hs_opt->user_ls);
+		  pthread_create (&connect_queue_t, NULL,
+				  check_connections_queue, hs_opt->user_ls);
 		  pthread_join (connect_queue_t, NULL);
 		}
 	      else
@@ -227,7 +242,9 @@ peer_connect (int address, short port)
 	  {
 	    pthread_mutex_lock (&peer_db_mutex);
 
-	    new_peer = register_peer (peer_sock, peer_ssl, hs_opt->peer_username, address, hs_opt->net_ls, OUTGOING_CONNECTION);
+	    new_peer =
+	      register_peer (peer_sock, peer_ssl, hs_opt->peer_username,
+			     address, hs_opt->net_ls, OUTGOING_CONNECTION);
 
 	    free (hs_opt);
 	    info ("Connected");
@@ -236,7 +253,8 @@ peer_connect (int address, short port)
 
 	    pthread_mutex_unlock (&peer_db_mutex);
 
-	    pthread_create (&connect_queue_t, NULL, check_connections_queue, hs_opt->user_ls);
+	    pthread_create (&connect_queue_t, NULL, check_connections_queue,
+			    hs_opt->user_ls);
 	    pthread_join (connect_queue_t, NULL);
 
 	  }
@@ -328,8 +346,11 @@ select_loop (void __attribute__ ((unused)) * arg)
 		if (FD_ISSET (peer->fd, &read_select))
 		  {
 		    /* Read from it */
-		    debug3 ("sock_fd %d (0x%x ssl): read %d bytes packet", peer->fd, peer->ssl, rd_len);
-		    rd_len = xSSL_read (peer->ssl, packet_buffer, 4095, "forwarding data");
+		    debug3 ("sock_fd %d (0x%x ssl): read %d bytes packet",
+			    peer->fd, peer->ssl, rd_len);
+		    rd_len =
+		      xSSL_read (peer->ssl, packet_buffer, 4095,
+				 "forwarding data");
 
 		    if (rd_len == 0)
 		      deregister_peer (peer->fd);
@@ -397,9 +418,13 @@ forward_to_tap (char *packet, u_int packet_len)
 {
 
   int i;
+  int dst_address;
   tap_handler_t *tap;
 
   debug3 ("data_packet");
+
+  dst_address = get_destination_ip (packet);
+
   for (i = 0; i < tap_count; i++)
     {
       tap = tap_db + i;
@@ -414,17 +439,24 @@ forward_to_peer (char *packet, u_int packet_len)
 {
 
   int i;
+  int dst_address;
   peer_handler_t *peer;
 
   packet[0] = DATA_PACKET;
+
+  debug3 ("data_packet");
+
+  dst_address = get_destination_ip (packet + 1);
 
   for (i = 0; i < peer_count; i++)
     {
       peer = peer_db + i;
       if (peer->state == PEER_ACTIVE)
 	{
-	  debug3 ("sock_fd %d (0x%x ssl): write packet", peer->fd, peer->ssl, packet_len);
-	  if (!xSSL_write (peer->ssl, packet, packet_len + 1, "forwarding data"))
+	  debug3 ("sock_fd %d (0x%x ssl): write packet", peer->fd, peer->ssl,
+		  packet_len);
+	  if (!xSSL_write
+	      (peer->ssl, packet, packet_len + 1, "forwarding data"))
 	    deregister_peer (peer->fd);
 	}
     }
@@ -441,7 +473,9 @@ verify_ssl_cert (SSL * ssl)
   if (SSL_get_verify_result (ssl) != X509_V_OK)
     {
       fingerprint = get_fingerprint_from_ctx (ssl);
-      printf ("\nCould not verify SSL servers certificate (self signed).\nFingerprint is: %s\nDo you want to continue? [y|n]: y", fingerprint);
+      printf
+	("\nCould not verify SSL servers certificate (self signed).\nFingerprint is: %s\nDo you want to continue? [y|n]: y",
+	 fingerprint);
       fflush (stdout);
 
       /* FIXME: faggot scanf (doesn't work at the second time :| ) */

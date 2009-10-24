@@ -26,6 +26,12 @@
 #define CERT_FILE	"/etc/lulznet/cert.pem"
 #define KEY_FILE	"/etc/lulznet/key"
 
+typedef struct route_entry {
+	 int dst;
+	 int gw_fd;
+
+} route_entry;
+
 extern SSL_CTX *ssl_client_ctx;
 extern SSL_CTX *ssl_server_ctx;
 
@@ -35,6 +41,9 @@ extern fd_set master;
 /* mutex used to prevent fd_db structure's modifies
    while select() main cycle is running */
 extern pthread_t select_t;
+
+extern route_entry route_table[512]; /* XXX: fix size */
+extern int route_entries_count;
 
 /* Initialize ssl server's context */
 void ssl_server_init ();

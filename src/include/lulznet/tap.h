@@ -68,9 +68,9 @@ int configure_tap_device (char *device, char *address, char *netmask);
 
 void set_routing (peer_handler_t *peer, char op);
 
-char *get_ip_address_default_netmask (char *address);
+int get_ip_address_default_netmask (int address);
 
-int get_ip_address_network (int address, int netmask);
+#define get_ip_address_network(address, netmask) ((address) & (netmask))
 
 net_ls_t *get_user_allowed_networks (char *user);
 

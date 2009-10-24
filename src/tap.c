@@ -128,7 +128,8 @@ deregister_tap (int fd)
 	tap_count--;
 	set_max_tap_fd ();
 
-	debug2 ("Removed fd %d from fd_set master (current fd %d)", fd, tap_count);
+	debug2 ("Removed fd %d from fd_set master (current fd %d)", fd,
+		tap_count);
 	return;
       }
 }
@@ -161,11 +162,11 @@ configure_tap_device (char *device, char *address, char *netmask)
 {
   char ifconfig_command[256];
 
-  sprintf (ifconfig_command, "/sbin/ifconfig %s %s netmask %s", device, address, netmask);
+  sprintf (ifconfig_command, "/sbin/ifconfig %s %s netmask %s", device,
+	   address, netmask);
   system (ifconfig_command);
 
   return 1;
-
 }
 
 void
@@ -186,7 +187,6 @@ set_routing (peer_handler_t * peer, char op)
   local_nl = get_user_allowed_networks (peer->user);
   remote_nl = peer->nl;
 
-
   for (i = 0; i < local_nl->count; i++)
     {
 
@@ -198,55 +198,35 @@ set_routing (peer_handler_t * peer, char op)
 	  inet_ntop (AF_INET, &remote_nl->netmask[j], netmask, ADDRESS_LEN);
 
 	  if (op == ADD_ROUTING)
-	    sprintf (route_command, "/sbin/route add -net %s netmask %s gw %s", network, netmask, gateway);
+	    sprintf (route_command,
+		     "/sbin/route add -net %s netmask %s gw %s", network,
+		     netmask, gateway);
 	  else
-	    sprintf (route_command, "/sbin/route del -net %s netmask %s gw %s", network, netmask, gateway);
+	    sprintf (route_command,
+		     "/sbin/route del -net %s netmask %s gw %s", network,
+		     netmask, gateway);
 
 	  system (route_command);
 	}
     }
-
-}
-
-char *
-get_ip_address_default_netmask (char *address)
-{
-
-  int first_ottect;
-  char *netmask = (char *) malloc (ADDRESS_LEN * sizeof (char));
-
-  sscanf (address, "%d.", &first_ottect);
-
-  /* XXX: it's only a draft */
-  if (first_ottect < 128)
-    sprintf (netmask, "255.0.0.0");
-  else if (first_ottect < 192)
-    sprintf (netmask, "255.255.0.0");
-  else
-    sprintf (netmask, "255.255.255.0");
-
-  return netmask;
 }
 
 int
-get_ip_address_network (int address, int netmask)
+get_ip_address_default_netmask (int address)
 {
+  u_char *c_addr;
+  int netmask;
 
-  char p_address[ADDRESS_LEN];
-  char p_network[ADDRESS_LEN];
-  int o1, o2, o3;
-  int net;
+  c_addr = (u_char *) & address;
 
-  /* XXX: it's only a draft */
-  netmask = 0;
-  inet_ntop (AF_INET, &address, p_address, ADDRESS_LEN);
+  if (c_addr[0] < (u_char) 128)
+    netmask = 0xff000000;
+  else if (c_addr[0] < (u_char) 192)
+    netmask = 0xffff0000;
+  else
+    netmask = 0xffffff00;
 
-  sscanf (p_address, "%d.%d.%d", &o1, &o2, &o3);
-  sprintf (p_network, "%d.%d.%d.0", o1, o2, o3);
-
-  net = xinet_pton (p_network);
-
-  return net;
+  return netmask;
 }
 
 net_ls_t *
@@ -261,13 +241,7 @@ get_user_allowed_networks (char *user __attribute__ ((unused)))
 
   for (i = 0; i < tap_count; i++)
     {
-      /* TODO:add acl check 
-         for now all users are allowed to connect to all network
-         for (j = 0; tap_db[i].allowed_users[j] != NULL; j++)
-         {
-         if (!strcmp (tap_db[i].allowed_users[j], user))
-         { 
-       */
+      /* TODO:add acl check */ 
       nl->device[nl->count] = tap_db[i].device;
       nl->address[nl->count] = tap_db[i].address;
       nl->network[nl->count] = tap_db[i].network;
@@ -287,14 +261,19 @@ new_tap (char *address, char *netmask)
   int n_address;
   int n_netmask;
 
+  n_address = xinet_pton (address);
+
   if (netmask == NULL)
-    netmask = get_ip_address_default_netmask (address);
+    {
+      n_netmask = get_ip_address_default_netmask (n_address);
+      netmask = xmalloc (ADDRESS_LEN * sizeof (char));
+      inet_ntop (AF_INET, &n_netmask, netmask, ADDRESS_LEN);
+    }
+  else
+    n_netmask = xinet_pton (netmask);
 
   fd = tap_alloc (device);
   configure_tap_device (device, address, netmask);
-
-  n_address = xinet_pton (address);
-  n_netmask = xinet_pton (netmask);
 
   register_tap_device (fd, device, n_address, n_netmask);
 

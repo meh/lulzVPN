@@ -69,16 +69,17 @@ peer_list ()
       peer = peer_db + i;
 
       tmp = peer->address;
-      inet_ntop (AF_INET, &tmp, address, 16);
+      inet_ntop (AF_INET, &tmp, address, ADDRESS_LEN);
 
-      printf ("%s:\n\t[*] filedescriptor: %d\n\t[*] address: %s", peer->user, peer->fd, address);
+      printf ("%s:\n\t[*] filedescriptor: %d\n\t[*] address: %s", peer->user,
+	      peer->fd, address);
       printf ("\n\t[*] available networks: %d\n", 1);
 
       for (j = 0; j < peer->nl->count; j++)
 	{
 
-	  inet_ntop (AF_INET, &peer->nl->network[j], network, 16);
-	  inet_ntop (AF_INET, &peer->nl->netmask[j], netmask, 16);
+	  inet_ntop (AF_INET, &peer->nl->network[j], network, ADDRESS_LEN);
+	  inet_ntop (AF_INET, &peer->nl->netmask[j], netmask, ADDRESS_LEN);
 
 	  printf ("\t\t[*] network:%s netmask:%s\n", network, netmask);
 	}

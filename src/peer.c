@@ -45,7 +45,8 @@ set_max_peer_fd ()
 }
 
 peer_handler_t *
-register_peer (int fd, SSL * ssl, char *user, int address, net_ls_t * nl, char type)
+register_peer (int fd, SSL * ssl, char *user, int address, net_ls_t * nl,
+	       char type)
 {
   peer_db[peer_count].fd = fd;
   peer_db[peer_count].ssl = ssl;
@@ -91,7 +92,8 @@ deregister_peer (int fd)
 	FD_CLR (fd, &master);
 	close (fd);
 
-	debug2 ("Removed fd %d from fd_set master (current fd %d)", fd, peer_count);
+	debug2 ("Removed fd %d from fd_set master (current fd %d)", fd,
+		peer_count);
 	return;
       }
 }
