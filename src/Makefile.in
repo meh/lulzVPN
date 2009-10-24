@@ -1,0 +1,47 @@
+# @configure_input@
+
+# Package-related substitution variables
+package	= @PACKAGE_NAME@
+version	= @PACKAGE_VERSION@
+
+srcdir	= @srcdir@
+VPATH	= @srcdir@
+
+CC	= gcc
+CFLAGS	= -Wall -Wextra -pedantic -g -I $(srcdir)/include
+LDFLAGS	= -lpthread -lssl -lreadline
+
+source	= $(srcdir)/auth.c\
+	  $(srcdir)/config.c\
+	  $(srcdir)/main.c\
+	  $(srcdir)/peer.c\
+	  $(srcdir)/shell.c\
+	  $(srcdir)/xfunc.c\
+	  $(srcdir)/log.c\
+	  $(srcdir)/networking.c\
+	  $(srcdir)/protocol.c\
+	  $(srcdir)/tap.c\
+	  $(srcdir)/packet.c
+
+all:lulznet 
+	${CC} ${LDFLAGS} -o ${package} $(source:.c=.o)
+      
+lulznet: $(source:.c=.o)
+
+$(source:.c=.o): $(source)
+	${CC} -c ${CFLAGS} -o $*.o $*.c
+
+indent:
+	@indent -l 512 $(srcdir)/*.c
+	@rm -f $(srcdir)/*~
+
+clean:
+	rm -f $(srcdir)/*.o
+	rm ${package}
+
+Makefile: Makefile.in ../config.status
+	cd .. && ./config.status $@
+
+../config.status: ../configure
+	cd .. && ./config.status --recheck
+
