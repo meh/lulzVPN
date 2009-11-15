@@ -18,15 +18,14 @@
 */
 
 #include <lulznet/lulznet.h>
+
+#include <lulznet/config.h>
 #include <lulznet/log.h>
 
-int debug_level;
-pthread_mutex_t log_mutex;
+pthread_mutex_t Log::mutex;
 
-void
-info (const char *msg, ...)
+void Log::info (const char *msg, ...)
 {
-
   va_list args;
 
   va_start (args, msg);
@@ -34,53 +33,43 @@ info (const char *msg, ...)
   va_end (args);
 }
 
-void
-debug1 (const char *msg, ...)
+void Log::debug1 (const char *msg, ...)
 {
   va_list args;
 
-  if (debug_level < 1)
-    {
-      return;
-    }
+  if (options.debug_level () < 1)
+    return;
 
   va_start (args, msg);
   do_log (msg, args, DEBUG_1);
   va_end (args);
 }
 
-void
-debug2 (const char *msg, ...)
+void Log::debug2 (const char *msg, ...)
 {
   va_list args;
 
-  if (debug_level < 2)
-    {
-      return;
-    }
+  if (options.debug_level () < 2)
+    return;
 
   va_start (args, msg);
   do_log (msg, args, DEBUG_2);
   va_end (args);
 }
 
-void
-debug3 (const char *msg, ...)
+void Log::debug3 (const char *msg, ...)
 {
   va_list args;
 
-  if (debug_level < 3)
-    {
-      return;
-    }
+  if (options.debug_level () < 3)
+    return;
 
   va_start (args, msg);
   do_log (msg, args, DEBUG_3);
   va_end (args);
 }
 
-void
-error (const char *msg, ...)
+void Log::error (const char *msg, ...)
 {
   va_list args;
 
@@ -89,10 +78,8 @@ error (const char *msg, ...)
   va_end (args);
 }
 
-void
-fatal (const char *msg, ...)
+void Log::fatal (const char *msg, ...)
 {
-
   va_list args;
 
   va_start (args, msg);
@@ -104,69 +91,53 @@ fatal (const char *msg, ...)
   exit (1);
 }
 
-void
-shell_msg (const char *msg, ...)
-{
-  va_list args;
-
-  va_start (args, msg);
-  do_log (msg, args, SHELL_MSG);
-  va_end (args);
-}
-
-void
-do_log (const char *fmt, va_list args, int level)
+void Log::do_log (const char *fmt, va_list args, int level)
 {
   char msgbuf[MAXLOGSIZE];
   char fmtbuf[MAXLOGSIZE];
-
-  pthread_mutex_lock (&log_mutex);
+  pthread_mutex_lock (&mutex);
 
   switch (level)
     {
     case INFO:
-      snprintf (fmtbuf, sizeof (fmtbuf), "\n[inf] %s", fmt);
+      snprintf (fmtbuf, sizeof (fmtbuf), "[inf] %s\n", fmt);
       break;
     case DEBUG_1:
     case DEBUG_2:
     case DEBUG_3:
-      snprintf (fmtbuf, sizeof (fmtbuf), "\n[dbg] %s", fmt);
+      snprintf (fmtbuf, sizeof (fmtbuf), "[dbg] %s\n", fmt);
       break;
     case ERROR:
-      snprintf (fmtbuf, sizeof (fmtbuf), "\n[err] %s", fmt);
+      snprintf (fmtbuf, sizeof (fmtbuf), "[err] %s\n", fmt);
       break;
     case FATAL:
-      snprintf (fmtbuf, sizeof (fmtbuf), "\n[ftl] %s", fmt);
+      snprintf (fmtbuf, sizeof (fmtbuf), "[ftl] %s\n", fmt);
       break;
-    case SHELL_MSG:
-      snprintf (fmtbuf, sizeof (fmtbuf), "%s\n", fmt);
     }
 
   vsnprintf (msgbuf, sizeof (msgbuf), fmtbuf, args);
   fprintf (stderr, "%s", msgbuf);
   fflush (stderr);
 
-  /* if specified log file print to it 
+  /* if specified log file print to it
      if(opt.log_fp != NULL)
      fprintf(opt.log_fp,"%s",msgbuf");
    */
 
-  pthread_mutex_unlock (&log_mutex);
+  pthread_mutex_unlock (&mutex);
 
 }
 
-void
-dump (char *data_buffer, int length)
+void Log::dump (char *data_buffer, int length)
 {
   char byte;
-  int i, j;
+  int i;
+  int j;
 
-  if (debug_level < 4)
-    {
-      return;
-    }
+  if (options.debug_level () < 4)
+    return;
 
-  pthread_mutex_lock (&log_mutex);
+  pthread_mutex_lock (&mutex);
 
   fprintf (stderr, "\n");
 
@@ -175,23 +146,22 @@ dump (char *data_buffer, int length)
       byte = data_buffer[i];
       fprintf (stderr, "%02x ", data_buffer[i]);
       if (((i % 16) == 15) || (i == length - 1))
-	{
-	  for (j = 0; j < 15 - (i % 16); j++)
-	    fprintf (stderr, "   ");
-	  fprintf (stderr, "| ");
-	  for (j = (i - (i % 16)); j <= i; j++)
-	    {
-	      byte = data_buffer[j];
-	      if ((byte > 31) && (byte < 127))
-		fprintf (stderr, "%c", byte);
-	      else
-		fprintf (stderr, ".");
-	    }
-	  fprintf (stderr, "\n");
-	}
+        {
+          for (j = 0; j < 15 - (i % 16); j++)
+            fprintf (stderr, "   ");
+          fprintf (stderr, "| ");
+          for (j = (i - (i % 16)); j <= i; j++)
+            {
+              byte = data_buffer[j];
+              if ((byte > 31) && (byte < 127))
+                fprintf (stderr, "%c", byte);
+              else
+                fprintf (stderr, ".");
+            }
+          fprintf (stderr, "\n");
+        }
 
     }
 
-  pthread_mutex_unlock (&log_mutex);
-
+  pthread_mutex_unlock (&mutex);
 }

@@ -16,42 +16,56 @@
    * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
    * MA 02110-1301, USA.
    */
+#include <iostream>
+#include <string>
 
 #ifndef _LNET_CONFIG_H
 #define _LNET_CONFIG_H
 
-typedef struct
-{
+#define CONFIG_FILE "/etc/lulznet/config"
 
 #define LISTEN_MODE 0x01
 #define AUTH_SERVICE 0x02
 #define INTERPEER_ACTIVE_MODE 0x04
 
-  int flags;
-  short connecting_port;
-  short binding_port;
-  char *connecting_address;
-  char *binding_address;
-  char *tap_address;
-  char *tap_netmask;
-  char *username;
-} option_t;
+class Config
+{
 
-#define CONFIG_FILE "/etc/lulznet/config"
+private:
+  int _flags;
+  short _connecting_port;
+  short _binding_port;
+  std::string _connecting_address;
+  std::string _binding_address;
+  std::string _tap_address;
+  std::string _tap_netmask;
+  std::string _username;
+  int _debug_level;
 
-/* Struct that holds options */
-extern option_t opt;
+public:
+  Config ();
+  int flags ();
+  short connecting_port ();
+  short binding_port ();
+  std::string connecting_address ();
+  std::string binding_address ();
+  std::string tap_address ();
+  std::string tap_netmask ();
+  std::string username ();
+  int debug_level ();
 
-/* parse console args */
-void parse_args (int argc, char **argv);
+public:
+  /* parse console args */
+  void parse_args (int argc, char **argv);
+  /* parse config file */
+  void parse_config_file (char *filename);
+  /* initialize struct opt */
+  void set_default_options ();
+  /* check if something configuration is missing */
+  void check_empty_config_entry ();
 
-/* parse config file */
-void parse_config_file (char *filename);
+};
 
-/* initialize struct opt */
-void set_default_options ();
-
-/* check if something configuration is missing */
-void check_empty_config_entry ();
+extern Config options;
 
 #endif

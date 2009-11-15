@@ -17,6 +17,9 @@
  * MA 02110-1301, USA.
 */
 
+#include <iostream>
+#include <string>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -68,7 +71,7 @@
 
 #define MAX_ACCEPTED_PEERS_CONNECTIONS	4
 #define	MAX_CONNECTIONS_TO_PEER		4
-#define MAX_PEERS 			8 
+#define MAX_PEERS 			8
 
 #define MAX_TAPS	8
 #define ADDRESS_LEN	16

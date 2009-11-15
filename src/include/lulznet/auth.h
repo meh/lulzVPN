@@ -30,29 +30,42 @@
 #define MAX_PASSWORD_LEN	32
 #define PW_HASH_STRING_LEN	32
 
+namespace Auth
+{
+
 /* Global var where we save password so you don't have
    to retype it everytime */
-extern char *saved_password;
+extern std::string saved_password;
 
 /* Check if hash match username (local for now */
-int do_authentication (char *username, u_char * hash);
+int do_authentication (std::string username, u_char * hash);
 
 /* Ask for password (disable echo */
-char *password_prompt ();
+std::string password_prompt ();
 
 /* Check if there's a saved password, else ask for a password */
-char *get_password ();
+std::string get_password ();
 
-/* return string's md5 */
-u_char *calculate_md5 (char *string);
+namespace File
+{
 
 /* Function to return a line of the credential file */
-int get_user_credential (FILE * fp, char *username, char *hash);
+int get_user_credential (FILE * fp, std::string * username,
+                         std::string * hash);
 
 /* Parse each line of credential file to get username and hash */
-char *get_hash (char *request_user);
+std::string get_hash (std::string request_user);
+}
+
+namespace Crypt
+{
+
+/* return string's md5 */
+u_char *calculate_md5 (std::string string);
 
 /* return a string with ssl'peer certificate fingerprint */
 char *get_fingerprint_from_ctx (SSL * ssl);
+}
+}
 
 #endif

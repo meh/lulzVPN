@@ -4,7 +4,7 @@ have_ssl=no
 
 AC_PREREQ([2.63])
 AC_INIT([lulznet], [0.0.1])
-AC_CONFIG_SRCDIR([src/main.c])
+AC_CONFIG_SRCDIR([src/main.cpp])
 AC_CONFIG_HEADERS([src/include/lulznet/_config.h])
 AC_PROG_CC
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h netdb.h netinet/in.h stdlib.h string.h sys/ioctl.h sys/socket.h sys/time.h termio.h unistd.h])

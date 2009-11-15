@@ -21,13 +21,11 @@
 #include <lulznet/log.h>
 #include <lulznet/packet.h>
 
-u_int
-get_destination_ip (char *packet)
+u_int PacketInspection::get_destination_ip (char *packet)
 {
   eth_header *eth_hdr;
   arp_header *arp_hdr;
   ip_header *ip_hdr;
-
   u_int address;
   u_short protocol;
 
@@ -45,7 +43,7 @@ get_destination_ip (char *packet)
       address = arp_hdr->dst_ip_adr;
 
       inet_ntop (AF_INET, &address, p_addr, ADDRESS_LEN);
-      debug3 ("arp packet, dst: %s", p_addr);
+      Log::debug3 ("arp packet, dst: %s", p_addr);
 
     }
   else if (protocol == 0x0800)
@@ -56,7 +54,7 @@ get_destination_ip (char *packet)
       address = ip_hdr->dst_adr;
 
       inet_ntop (AF_INET, &address, p_addr, ADDRESS_LEN);
-      debug3 ("ip packet, dst: %s", p_addr);
+      Log::debug3 ("ip packet, dst: %s", p_addr);
     }
   else
     /*TODO: add more protocol, for now

@@ -21,11 +21,6 @@
 #define _LNET_XFUNC_H
 
 /* safe function, with error handling */
-
-void *xmalloc (size_t size);
-void *xrealloc (void *ptr, size_t size);
-void xfree (void *);
-
 int xSSL_read (SSL * ssl, void *buf, int max_len, const char *item);
 int xSSL_write (SSL * ssl, void *buf, int max_len, const char *item);
 

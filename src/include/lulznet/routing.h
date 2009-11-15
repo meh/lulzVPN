@@ -1,5 +1,5 @@
 /*
- * "shell.h" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
+ * "networking.h" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
  * lulzNet is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,30 +16,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
 */
+#ifndef _LNET_ROUTING_H
+#define _LNET_ROUTING_H
 
-#ifndef _LNET_SHELL_H
-#define _LNET_SHELL_H
-
-namespace Shell
+typedef struct route_entry
 {
+  int dst;
+  int gw_fd;
 
-typedef struct
-{
-  std::string command;
-  std::string argv[4];
-  int argc;
-} Cmd;
+} route_entry;
 
-void peer_preconnect (Cmd * cmd);
-void peer_list ();
-void peer_kill (Cmd * cmd);
+extern route_entry route_table[512];	/* XXX: fix size */
+extern int route_entries_count;
 
-void tap_list ();
-
-/* Parsing command stuff */
-Cmd *preparse_command (std::string line);
-void parse_command (Cmd * cmd);
-
-void start ();
-}
 #endif

@@ -7,32 +7,32 @@ version	= @PACKAGE_VERSION@
 srcdir	= @srcdir@
 VPATH	= @srcdir@
 
-CC	= gcc
+CC	= g++
 CFLAGS	= -Wall -Wextra -pedantic -g -I $(srcdir)/include
 LDFLAGS	= -lpthread -lssl -lreadline
 
-source	= $(srcdir)/auth.c\
-	  $(srcdir)/config.c\
-	  $(srcdir)/main.c\
-	  $(srcdir)/peer.c\
-	  $(srcdir)/shell.c\
-	  $(srcdir)/xfunc.c\
-	  $(srcdir)/log.c\
-	  $(srcdir)/networking.c\
-	  $(srcdir)/protocol.c\
-	  $(srcdir)/tap.c\
-	  $(srcdir)/packet.c
+source	= $(srcdir)/auth.cpp\
+	  $(srcdir)/config.cpp\
+	  $(srcdir)/main.cpp\
+	  $(srcdir)/peer.cpp\
+	  $(srcdir)/routing.cpp\
+	  $(srcdir)/shell.cpp\
+	  $(srcdir)/xfunc.cpp\
+	  $(srcdir)/log.cpp\
+	  $(srcdir)/networking.cpp\
+	  $(srcdir)/protocol.cpp\
+	  $(srcdir)/tap.cpp\
 
 all:lulznet 
-	${CC} ${LDFLAGS} -o ${package} $(source:.c=.o)
+	${CC} ${LDFLAGS} -o ${package} $(source:.cpp=.o)
       
-lulznet: $(source:.c=.o)
+lulznet: $(source:.cpp=.o)
 
-$(source:.c=.o): $(source)
-	${CC} -c ${CFLAGS} -o $*.o $*.c
+$(source:.cpp=.o): $(source)
+	${CC} -c ${CFLAGS} -o $*.o $*.cpp
 
 indent:
-	@indent -l 512 $(srcdir)/*.c
+	@indent -l 512 $(srcdir)/*.cpp
 	@rm -f $(srcdir)/*~
 
 clean:

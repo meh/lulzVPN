@@ -17,6 +17,8 @@
  * MA 02110-1301, USA.
 */
 
+#include "peer.h"
+
 #ifndef _LNET_NETWORKING_H
 #define _LNET_NETWORKING_H
 
@@ -26,53 +28,57 @@
 #define CERT_FILE	"/etc/lulznet/cert.pem"
 #define KEY_FILE	"/etc/lulznet/key"
 
-typedef struct route_entry {
-	 int dst;
-	 int gw_fd;
+namespace Network
+{
 
-} route_entry;
-
-extern SSL_CTX *ssl_client_ctx;
-extern SSL_CTX *ssl_server_ctx;
-
-/* global fd_set for select() */
 extern fd_set master;
+
+namespace Client
+{
+
+extern SSL_CTX *ssl_ctx;
+/* Initialize ssl client's context */
+void ssl_init ();
+
+/* Function for connecting to a peer */
+void peer_connect (int address, short port);
+
+}
+
+namespace Server
+{
+
+extern SSL_CTX *ssl_ctx;
 
 /* mutex used to prevent fd_db structure's modifies
    while select() main cycle is running */
 extern pthread_t select_t;
 
-extern route_entry route_table[512]; /* XXX: fix size */
-extern int route_entries_count;
-
 /* Initialize ssl server's context */
-void ssl_server_init ();
-
-/* Initialize ssl client's context */
-void ssl_client_init ();
+void ssl_init ();
 
 /* Main server thread, accepting connection */
 void *server_loop (void *arg);
 
-/* return a int network ordered address from a string */
-int lookup_address (char *address);
-
-/* Function for connecting to a peer */
-void peer_connect (int address, short port);
-
-/* Function for disconnecting from a peer */
-void disassociation_request (int fd);
-
 /* Main forwarding function */
 void *select_loop (void *arg);
-inline void forward_to_tap (char *packet, u_int packet_len);
-inline void forward_to_peer (char *packet, u_int packet_len);
-void restart_select_loop();
+inline void forward_to_tap (Packet * packet);
+inline void forward_to_peer (Packet * packet);
+void restart_select_loop ();
+
+}
+
+/* return a int network ordered address from a string */
+int lookup_address (std::string address);
+
+/* Function for disconnecting from a peer */
+void disassociation_request (Peers::Peer *peer);
 
 /* handle cert verification */
 int verify_ssl_cert (SSL * ssl);
 
 /* check if we have to connect to another peer after handshake */
 void *check_connections_queue (void *arg);
+}
 
 #endif

@@ -22,46 +22,44 @@
 #include <lulznet/log.h>
 #include <lulznet/xfunc.h>
 
-char *saved_password = NULL;
+std::string Auth::saved_password;
 
 int
-do_authentication (char *username, u_char * hash)
+Auth::do_authentication (std::string username, u_char * hash)
 {
-
-  char str_hash[PW_HASH_STRING_LEN + 1];
-  char *local_hash;
-
+  std::string str_hash;
+  std::string local_hash;
+  char tmp[3];
   int response;
   int i;
 
   response = FALSE;
 
-  if ((local_hash = get_hash (username)) != NULL)
+  local_hash = File::get_hash (username);
+  if (!local_hash.empty ())
     {
       for (i = 0; i < MD5_DIGEST_LENGTH; i++)
-	sprintf (str_hash + (i * 2), "%02x", hash[i]);
-
-      if (!strcmp (str_hash, local_hash))
-	response = TRUE;
+        {
+          sprintf (tmp, "%02x", hash[i]);
+          str_hash.append (tmp);
+        }
+      if (!str_hash.compare (local_hash))
+        response = TRUE;
       else
-	error ("Wrong password");
+        Log::error ("Wrong password");
     }
   else
-    error ("Cannot find user");
-
-  free (local_hash);
+    Log::error ("Cannot find user");
 
   return response;
 }
 
-char *
-password_prompt ()
+std::string
+Auth::password_prompt ()
 {
 
-  char *password;
+  std::string password;
   struct termio tty, oldtty;
-
-  password = (char *) xmalloc ((MAX_PASSWORD_LEN + 1) * sizeof (char));
 
   ioctl (0, TCGETA, &oldtty);
 
@@ -72,103 +70,89 @@ password_prompt ()
 
   ioctl (0, TCSETA, &tty);
 
-  printf ("\nPassword: ");
-  scanf ("%32s", password);
+  std::cout << std::endl << "Password: ";
+  std::cin >> password;
 
   ioctl (0, TCSETA, &oldtty);
 
   return password;
 }
 
-char *
-get_password ()
+std::string
+Auth::get_password ()
 {
-  /* Global pw var */
-  if (saved_password == NULL)
+  if (saved_password.empty ())
     saved_password = password_prompt ();
 
   return saved_password;
 }
 
-u_char *
-calculate_md5 (char *string)
+int
+Auth::File::get_user_credential (FILE * fp, std::string * username, std::string * hash)
+{
+  char tmp[50];
+  int i;
+
+  if (fscanf (fp, "%49s", tmp) == -1)
+    return 0;
+
+  for (i = 0; tmp[i] != ':' && i < MAX_USERNAME_LEN; i++)
+    username->append (1, tmp[i]);
+
+  hash->assign (tmp + i + 1, PW_HASH_STRING_LEN);
+  return 1;
+}
+
+std::string
+Auth::File::get_hash (std::string request_user)
 {
 
+  FILE *cred;
+  std::string user;
+  std::string hash;
+
+  cred = fopen (CREDENTIAL_FILE, "r");
+
+  if (cred == NULL)
+    Log::error ("Cannot open credential file %s", CREDENTIAL_FILE);
+  else
+    while (get_user_credential (cred, &user, &hash))
+      if (!user.compare (request_user))
+        return hash;
+      else
+        user.clear ();
+
+  return NULL;
+}
+
+u_char *
+Auth::Crypt::calculate_md5 (std::string string)
+{
   EVP_MD_CTX mdctx;
   const EVP_MD *md;
   u_int md_len;
+  u_char *hex_hash;
 
-  u_char *hex_hash = (u_char *) xmalloc (MD5_DIGEST_LENGTH * sizeof (u_char));
+  hex_hash = new u_char[MD5_DIGEST_LENGTH];
 
   md = EVP_get_digestbyname ("MD5");
   EVP_MD_CTX_init (&mdctx);
   EVP_DigestInit_ex (&mdctx, md, NULL);
-  EVP_DigestUpdate (&mdctx, string, strlen (string));
+  EVP_DigestUpdate (&mdctx, string.c_str (), string.length ());
   EVP_DigestFinal_ex (&mdctx, hex_hash, &md_len);
   EVP_MD_CTX_cleanup (&mdctx);
 
   return hex_hash;
 }
 
-int
-get_user_credential (FILE * fp, char *username, char *hash)
-{
-  char tmp[50];
-  int i;
-
-  i = 0;
-
-  if (fscanf (fp, "%49s", tmp) == -1)
-    return 0;
-
-  while (tmp[i] != ':' && i < MAX_USERNAME_LEN)
-    {
-      username[i] = tmp[i];
-      i++;
-    }
-  username[i] = '\x00';
-
-  strncpy (hash, tmp + i + 1, 32);
-
-  return 1;
-}
-
 char *
-get_hash (char *request_user)
+Auth::Crypt::get_fingerprint_from_ctx (SSL * ssl)
 {
-
-  FILE *cred;
-  char user[MAX_USERNAME_LEN + 1];
-  char *hash;
-
-  hash = (char *) xmalloc ((PW_HASH_STRING_LEN + 1) * sizeof (char));
-  cred = fopen (CREDENTIAL_FILE, "r");
-
-  if (cred == NULL)
-    {
-      error ("Cannot open credential file %s", CREDENTIAL_FILE);
-      return NULL;
-    }
-
-  while (get_user_credential (cred, user, hash))
-    {
-      if (!strcmp (user, request_user))
-	return hash;
-    }
-
-  return NULL;
-}
-
-char *
-get_fingerprint_from_ctx (SSL * ssl)
-{
-
   u_char digest[SHA_DIGEST_LENGTH];
   char hex[] = "0123456789ABCDEF";
-  char *fp = (char *) malloc ((EVP_MAX_MD_SIZE * 3) * sizeof (char));
+  char *fp = new char[EVP_MAX_MD_SIZE * 3];
   u_int len;
   u_int i;
-
   X509 *cert;
 
   cert = SSL_get_peer_certificate (ssl);

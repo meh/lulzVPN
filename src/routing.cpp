@@ -1,5 +1,5 @@
 /*
- * "shell.h" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
+ * "routing.c" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
  * lulzNet is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,29 +17,25 @@
  * MA 02110-1301, USA.
 */
 
-#ifndef _LNET_SHELL_H
-#define _LNET_SHELL_H
+#include <lulznet/lulznet.h>
 
-namespace Shell
+#include <lulznet/auth.h>
+#include <lulznet/config.h>
+#include <lulznet/log.h>
+#include <lulznet/networking.h>
+#include <lulznet/peer.h>
+#include <lulznet/routing.h>
+#include <lulznet/protocol.h>
+#include <lulznet/tap.h>
+#include <lulznet/xfunc.h>
+
+route_entry route_table[512];
+
+int route_entries_count;
+
+void set_internal_routing (int destination, int fd, char op)
 {
-
-typedef struct
-{
-  std::string command;
-  std::string argv[4];
-  int argc;
-} Cmd;
-
-void peer_preconnect (Cmd * cmd);
-void peer_list ();
-void peer_kill (Cmd * cmd);
-
-void tap_list ();
-
-/* Parsing command stuff */
-Cmd *preparse_command (std::string line);
-void parse_command (Cmd * cmd);
-
-void start ();
+  fd = 0;
+  destination = 0;
+  op = 0;
 }
-#endif

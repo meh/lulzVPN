@@ -17,8 +17,13 @@
  * MA 02110-1301, USA.
 */
 
+#include <pthread.h>
+
 #ifndef _LNET_LOG_H
 #define _LNET_LOG_H
+
+namespace Log
+{
 
 #define INFO		1
 #define DEBUG_1		2
@@ -26,12 +31,9 @@
 #define DEBUG_3		4
 #define ERROR		5
 #define FATAL		6
-#define SHELL_MSG	7
-
 #define MAXLOGSIZE	512
 
-extern int debug_level;
-extern pthread_mutex_t log_mutex;
+extern pthread_mutex_t mutex;
 
 /* Call appropriate log function */
 void do_log (const char *fmt, va_list args, int level);
@@ -47,5 +49,6 @@ void shell_msg (const char *msg, ...);
 
 /* Dump in ascii and hex data_buffer */
 void dump (char *data_buffer, int length);
+}
 
 #endif
