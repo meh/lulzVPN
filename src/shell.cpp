@@ -69,19 +69,15 @@ void Shell::peer_list ()
       tmp = peer->address ();
       inet_ntop (AF_INET, &tmp, address, ADDRESS_LEN);
 
-      printf ("%s:\n\t[*] filedescriptor: %d\n\t[*] address: %s",
-              peer->user ().c_str (), peer->fd (), address);
-      printf ("\n\t[*] available networks: %d\n", 1);
-
+      std::cout << peer->user() << "\taddr: " << address << " networks: " << peer->nl().count << std::endl;
       for (j = 0; j < peer->nl ().count; j++)
         {
 
           inet_ntop (AF_INET, &peer->nl ().network[j], network, ADDRESS_LEN);
           inet_ntop (AF_INET, &peer->nl ().netmask[j], netmask, ADDRESS_LEN);
 
-          printf ("\t\t[*] network:%s netmask:%s\n", network, netmask);
+          std::cout << "\t\tnetwork: " << network << " netmask: " << netmask << std::endl;
         }
-      printf ("\n");
     }
 }
 
@@ -93,19 +89,21 @@ void Shell::peer_kill (Cmd * cmd)
     std::cout << "Usage: peer kill peer_name" << std::endl;
   else
     {
-	 for ( i = 0; i < Peers::count; i++)
-	      if(!Peers::db[i]->user().compare(cmd->argv[1])){
-		   if(Peers::db[i]->isActive()){
-			Peers::db[i]->disassociate();
-			Peers::db[i] = NULL;
-			Peers::rebuild_db();
-		   }
-		   else 
-			std::cout << "Peer is not active" << std::endl;
-		   
-		   return;
-		   }
-	 std::cout << "Invalid user specified" << std::endl;
+      for ( i = 0; i < Peers::count; i++)
+        if (!Peers::db[i]->user().compare(cmd->argv[1]))
+          {
+            if (Peers::db[i]->isActive())
+              {
+                Peers::db[i]->disassociate();
+                Peers::db[i] = NULL;
+                Peers::rebuild_db();
+              }
+            else
+              std::cout << "Peer is not active" << std::endl;
+
+            return;
+          }
+      std::cout << "Invalid user specified" << std::endl;
     }
 }
 
@@ -121,15 +119,13 @@ void Shell::tap_list ()
   for (i = 0; i < Taps::count; i++)
     {
       tap = Taps::db[i];
+
       n_address = tap->address();
       n_netmask = tap->netmask();
-
-      std::cout << tap->device () << ":\n\t[*] filedecriptor: " << tap->fd () << std::endl;
-
       inet_ntop (AF_INET, &n_address, p_address, ADDRESS_LEN);
       inet_ntop (AF_INET, &n_netmask, p_netmask, ADDRESS_LEN);
 
-      std::cout << "\t[*] address: " << p_address << " netmask: " << p_netmask << std::endl;
+      std::cout << tap->device () << "\taddr: " << p_address << " mask: " << p_netmask << std::endl;
     }
 }
 
@@ -222,7 +218,7 @@ void Shell::parse_command (Shell::Cmd * cmd)
 
   /* useless command */
   else if (!cmd->command.compare ("whoami"))
-    printf ("%s\n", options.username ().c_str ());
+    std::cout << options.username() << std::endl;
 
   /* quit command */
   else if (!cmd->command.compare ("quit"))

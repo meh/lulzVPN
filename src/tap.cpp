@@ -118,22 +118,30 @@ Taps::Tap::~Tap()
   Log::debug2 ("Removed fd %d from fd_set master (current fd %d)", _fd, count);
 }
 
-void
+bool
 Taps::Tap::operator>> (Network::Packet * packet)
 {
   if (!(packet->length = read (_fd,  packet->buffer + 1, 4095)))
-    _state = TAP_CLOSING;
+    {
+      _state = TAP_CLOSING;
+      return FAIL;
+    }
 
   Log::debug3 ("Read %d bytes packet from tap %s", packet->length, _device.c_str());
+  return DONE;
 }
 
-void
+bool
 Taps::Tap::operator<< (Network::Packet * packet)
 {
   if (!write (_fd, packet->buffer + 1, packet->length - 1))
-    _state = TAP_CLOSING;
+    {
+      _state = TAP_CLOSING;
+      return FAIL;
+    }
 
   Log::debug3 ("\tForwarded to tap %s", _device.c_str());
+  return DONE;
 }
 
 bool
@@ -289,9 +297,9 @@ Taps::set_system_routing (Peers::Peer * peer, char op)
 {
   char route_command[256];
 
-  char gateway[ADDRESS_LEN];
-  char network[ADDRESS_LEN];
-  char netmask[ADDRESS_LEN];
+  char gateway[ADDRESS_LEN + 1];
+  char network[ADDRESS_LEN + 1];
+  char netmask[ADDRESS_LEN + 1];
 
   net_ls_t local_nl;
   net_ls_t remote_nl;
@@ -321,6 +329,7 @@ Taps::set_system_routing (Peers::Peer * peer, char op)
                      "/sbin/route del -net %s netmask %s gw %s", network,
                      netmask, gateway);
 
+          Log::debug3("Route command: %s",route_command);
           system (route_command);
         }
     }

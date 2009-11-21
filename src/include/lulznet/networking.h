@@ -32,6 +32,7 @@ namespace Network
 {
 
 extern fd_set master;
+extern int free_fd_flag;
 
 namespace Client
 {

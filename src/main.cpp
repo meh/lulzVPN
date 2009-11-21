@@ -19,6 +19,7 @@
 
 #include <lulznet/lulznet.h>
 
+#include <lulznet/auth.h>
 #include <lulznet/config.h>
 #include <lulznet/log.h>
 #include <lulznet/networking.h>
@@ -56,6 +57,9 @@ int main (int argc, char *argv[])
 
   /* ??? black magic (don't know) */
   tap = new Taps::Tap (options.tap_address (), options.tap_netmask ());
+
+  /* Prompt for password */
+  Auth::password_prompt();
 
   /* Start (or not) the listening service */
   if (options.flags () & LISTEN_MODE)
@@ -150,6 +154,9 @@ void help ()
 void exit_lulznet ()
 {
   int i;
+
+  pthread_mutex_lock(&Peers::db_mutex);
+  pthread_cancel (Network::Server::select_t);
 
   Log::info ("Closing lulznet");
   for (i = 0; i < Peers::count; i++)

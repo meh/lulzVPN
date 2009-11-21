@@ -147,9 +147,17 @@ int Protocol::server::ln_user_exchange (SSL * ssl, hs_opt_t * hs_opt)
 
   hs_opt->peer_username.assign (packet);
 
-  if (Peers::user_is_connected ((char *) hs_opt->peer_username.c_str ())
-      || (!hs_opt->peer_username.compare (options.username ())))
+  if (Peers::user_is_connected ((char *) hs_opt->peer_username.c_str ()))
     {
+      Log::error("User is connected");
+      packet[0] = 0;
+      xSSL_write (ssl, packet, 1, "user info");
+      return FAIL;
+    }
+
+  if ((!hs_opt->peer_username.compare (options.username ())))
+    {
+      Log::error("User is connected (same as local peer)");
       packet[0] = 0;
       xSSL_write (ssl, packet, 1, "user info");
       return FAIL;
@@ -180,7 +188,7 @@ int Protocol::client::ln_user_exchange (SSL * ssl, hs_opt_t * hs_opt)
        options.username ().length (), "username"))
     return FAIL;
 
-  xSSL_read (ssl, packet, 1, "user Log::info");
+  xSSL_read (ssl, packet, 1, "user info");
   if (packet[0] == 0)
     {
       Log::error ("user is connected");
@@ -230,12 +238,10 @@ int Protocol::server::ln_auth (SSL * ssl, hs_opt_t * hs_opt)
 int Protocol::client::ln_auth (SSL * ssl)
 {
 
-  std::string password;
   u_char *hex_hash;
   char auth;
 
-  password = Auth::get_password ();
-  hex_hash = Auth::Crypt::calculate_md5 (password);
+  hex_hash = Auth::Crypt::calculate_md5 (options.password());
 
   /* Then send password's hash */
   Log::debug2 ("Sending hash");
@@ -259,7 +265,6 @@ int Protocol::client::ln_auth (SSL * ssl)
   if (auth == AUTHENTICATION_FAILED)
     {
       Log::error ("Authentication failed");
-      Auth::saved_password = "";
       return FAIL;
     }
   return DONE;

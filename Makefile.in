@@ -4,8 +4,6 @@ version        = @PACKAGE_VERSION@
 srcdir         = @srcdir@
 VPATH          = @srcdir@
 
-UG_FILES = var/lulznet_ug.c
-	        
 all lulznet:
 	$(MAKE) -C src $@
 

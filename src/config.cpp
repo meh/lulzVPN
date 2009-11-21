@@ -72,6 +72,16 @@ std::string Config::username ()
   return _username;
 }
 
+std::string Config::password ()
+{
+  return _password;
+}
+
+void Config::password (std::string password)
+{
+  _password = password;
+}
+
 int Config::debug_level ()
 {
   return _debug_level;

@@ -18,11 +18,11 @@
 */
 
 #include <lulznet/lulznet.h>
+
 #include <lulznet/auth.h>
+#include <lulznet/config.h>
 #include <lulznet/log.h>
 #include <lulznet/xfunc.h>
-
-std::string Auth::saved_password;
 
 int
 Auth::do_authentication (std::string username, u_char * hash)
@@ -54,7 +54,7 @@ Auth::do_authentication (std::string username, u_char * hash)
   return response;
 }
 
-std::string
+void
 Auth::password_prompt ()
 {
 
@@ -70,21 +70,13 @@ Auth::password_prompt ()
 
   ioctl (0, TCSETA, &tty);
 
-  std::cout << std::endl << "Password: ";
+  std::cout << "Password: ";
   std::cin >> password;
+  std::cout << std::endl;
 
   ioctl (0, TCSETA, &oldtty);
 
-  return password;
-}
-
-std::string
-Auth::get_password ()
-{
-  if (saved_password.empty ())
-    saved_password = password_prompt ();
-
-  return saved_password;
+  options.password(password);
 }
 
 int
@@ -122,7 +114,8 @@ Auth::File::get_hash (std::string request_user)
       else
         user.clear ();
 
-  return NULL;
+  hash.clear();
+  return hash;
 }
 
 u_char *

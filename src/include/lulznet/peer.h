@@ -56,8 +56,8 @@ public:
   Peer (int fd, SSL * ssl, std::string user, int address, net_ls_t nl,
         char type);
   ~Peer ();
-  void operator>> (Network::Packet * packet);
-  void operator<< (Network::Packet * packet);
+  bool operator>> (Network::Packet * packet);
+  bool operator<< (Network::Packet * packet);
 
   bool isActive();
   bool isReadyToRead(fd_set *rd_sel);

@@ -41,10 +41,7 @@ extern std::string saved_password;
 int do_authentication (std::string username, u_char * hash);
 
 /* Ask for password (disable echo */
-std::string password_prompt ();
-
-/* Check if there's a saved password, else ask for a password */
-std::string get_password ();
+void password_prompt ();
 
 namespace File
 {

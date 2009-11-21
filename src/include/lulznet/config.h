@@ -40,6 +40,7 @@ private:
   std::string _tap_address;
   std::string _tap_netmask;
   std::string _username;
+  std::string _password;
   int _debug_level;
 
 public:
@@ -52,6 +53,8 @@ public:
   std::string tap_address ();
   std::string tap_netmask ();
   std::string username ();
+  std::string password ();
+  void password (std::string password);
   int debug_level ();
 
 public:

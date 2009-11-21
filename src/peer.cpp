@@ -87,22 +87,30 @@ Peers::Peer::~Peer ()
                count);
 }
 
-void
+bool
 Peers::Peer::operator>> (Network::Packet * packet)
 {
   if (!(packet->length = xSSL_read (_ssl, packet->buffer, 4096, "forwarding data")))
-    _state = PEER_CLOSING;
+    {
+      _state = PEER_CLOSING;
+      return FAIL;
+    }
 
   Log::debug3 ("Read %d bytes packet from peer %s", packet->length, _user.c_str());
+  return DONE;
 }
 
-void
+bool
 Peers::Peer::operator<< (Network::Packet * packet)
 {
   if (!xSSL_write (_ssl, packet->buffer, packet->length + 1, "forwarding data"))
-    _state = PEER_CLOSING;
+    {
+      _state = PEER_CLOSING;
+      return FAIL;
+    }
 
   Log::debug3 ("\tForwarded to peer %s",_user.c_str());
+  return DONE;
 }
 
 bool Peers::Peer::isActive()
@@ -212,9 +220,9 @@ int Peers::user_is_connected (char *user)
 {
   int i;
 
-  for (i = 0; i < max_fd; i++)
+  for (i = 0; i < count; i++)
     if (db[i]->isActive())
-      if (db[i]->user ().compare (user))
+      if (!db[i]->user ().compare (user))
         return TRUE;
 
   return FALSE;
