@@ -67,7 +67,9 @@ Taps::Tap::alloc (std::string *dev)
     }
 
   dev->assign(ifr.ifr_name);
+#ifdef DEBUG
   Log::debug1 ("%s device create (fd %d).", dev->c_str(), fd);
+#endif
   return fd;
 }
 
@@ -103,7 +105,9 @@ Taps::Tap::Tap (std::string address, std::string netmask)
   set_max_fd ();
 
   FD_SET (_fd, &Network::master);
+#ifdef DEBUG
   Log::debug2 ("Added fd %d to fd_set master (1st free fd: %d)", _fd, count);
+#endif
 
   Network::Server::restart_select_loop();
 }
@@ -115,7 +119,9 @@ Taps::Tap::~Tap()
   FD_CLR (_fd, &Network::master);
   close (_fd);
 
+#ifdef DEBUG
   Log::debug2 ("Removed fd %d from fd_set master (current fd %d)", _fd, count);
+#endif
 }
 
 bool
@@ -127,7 +133,9 @@ Taps::Tap::operator>> (Network::Packet * packet)
       return FAIL;
     }
 
+#ifdef DEBUG
   Log::debug3 ("Read %d bytes packet from tap %s", packet->length, _device.c_str());
+#endif
   return DONE;
 }
 
@@ -140,7 +148,9 @@ Taps::Tap::operator<< (Network::Packet * packet)
       return FAIL;
     }
 
+#ifdef DEBUG
   Log::debug3 ("\tForwarded to tap %s", _device.c_str());
+#endif
   return DONE;
 }
 
@@ -329,7 +339,9 @@ Taps::set_system_routing (Peers::Peer * peer, char op)
                      "/sbin/route del -net %s netmask %s gw %s", network,
                      netmask, gateway);
 
+#ifdef DEBUG
           Log::debug3("Route command: %s",route_command);
+#endif
           system (route_command);
         }
     }

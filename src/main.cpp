@@ -63,8 +63,10 @@ int main (int argc, char *argv[])
   /* Start (or not) the listening service */
   if (options.flags () & LISTEN_MODE)
     pthread_create (&server_t, NULL, Network::Server::server_loop, NULL);
+#ifdef DEBUG
   else
     Log::debug1 ("Not listening");
+#endif
 
   /* Autoconnection */
   if (!options.connecting_address ().empty ())
@@ -80,8 +82,10 @@ int main (int argc, char *argv[])
   /* A lovable shell */
   if (options.flags () & INTERPEER_ACTIVE_MODE)
     Shell::start ();
+#ifdef DEBUG
   else
     Log::debug1 ("Non interactive mode");
+#endif
 
   /* cause we don't like it exits as soon as it starts :| */
   pthread_join (Network::Server::select_t, NULL);
@@ -92,12 +96,12 @@ int main (int argc, char *argv[])
 
 void lulznet_init ()
 {
-  memset (Peers::db, '\x00', MAX_PEERS * sizeof (Peers::Peer));
+  memset (Peers::db, '\x00', MAX_PEERS * sizeof (Peers::Peer *));
   Peers::count = 0;
   Peers::conections_to_peer = 0;
   Peers::max_fd = 0;
 
-  memset (Taps::db, '\x00', MAX_TAPS * sizeof (Taps::Tap));
+  memset (Taps::db, '\x00', MAX_TAPS * sizeof (Taps::Tap *));
   Taps::count = 0;
   Taps::max_fd = 0;
 

@@ -33,6 +33,7 @@ void Log::info (const char *msg, ...)
   va_end (args);
 }
 
+#ifdef DEBUG
 void Log::debug1 (const char *msg, ...)
 {
   va_list args;
@@ -68,6 +69,7 @@ void Log::debug3 (const char *msg, ...)
   do_log (msg, args, DEBUG_3);
   va_end (args);
 }
+#endif
 
 void Log::error (const char *msg, ...)
 {
@@ -102,11 +104,13 @@ void Log::do_log (const char *fmt, va_list args, int level)
     case INFO:
       snprintf (fmtbuf, sizeof (fmtbuf), "[inf] %s\n", fmt);
       break;
+#ifdef DEBUG
     case DEBUG_1:
     case DEBUG_2:
     case DEBUG_3:
       snprintf (fmtbuf, sizeof (fmtbuf), "[dbg] %s\n", fmt);
       break;
+#endif
     case ERROR:
       snprintf (fmtbuf, sizeof (fmtbuf), "[err] %s\n", fmt);
       break;
@@ -128,7 +132,8 @@ void Log::do_log (const char *fmt, va_list args, int level)
 
 }
 
-void Log::dump (char *data_buffer, int length)
+#ifdef DEBUG
+void Log::dump (unsigned char *data_buffer, int length)
 {
   char byte;
   int i;
@@ -139,18 +144,16 @@ void Log::dump (char *data_buffer, int length)
 
   pthread_mutex_lock (&mutex);
 
-  fprintf (stderr, "\n");
-
   for (i = 0; i < length; i++)
     {
       byte = data_buffer[i];
       fprintf (stderr, "%02x ", data_buffer[i]);
-      if (((i % 16) == 15) || (i == length - 1))
+      if (((i % 32) == 31) || (i == length - 1))
         {
-          for (j = 0; j < 15 - (i % 16); j++)
+          for (j = 0; j < 31 - (i % 32); j++)
             fprintf (stderr, "   ");
           fprintf (stderr, "| ");
-          for (j = (i - (i % 16)); j <= i; j++)
+          for (j = (i - (i % 32)); j <= i; j++)
             {
               byte = data_buffer[j];
               if ((byte > 31) && (byte < 127))
@@ -165,3 +168,4 @@ void Log::dump (char *data_buffer, int length)
 
   pthread_mutex_unlock (&mutex);
 }
+#endif

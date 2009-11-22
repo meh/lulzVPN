@@ -71,7 +71,9 @@ int Protocol::server::handshake (SSL * ssl, hs_opt_t * hs_opt)
   if (!ln_auth (ssl, hs_opt))
     return FAIL;
 
+#ifdef DEBUG
   Log::debug2 ("Recving listening status");
+#endif
   if (!xSSL_read (ssl, packet, sizeof (char), "listening status"))
     return FAIL;
 
@@ -111,7 +113,9 @@ int Protocol::client::handshake (SSL * ssl, hs_opt_t * hs_opt)
 
   /* Peer tells remote peer if it's listening or not */
   /* we need to know this for routing */
+#ifdef DEBUG
   Log::debug2 ("Sending listening status");
+#endif
   if (options.flags () & LISTEN_MODE)
     packet[0] = 1;
   else
@@ -141,7 +145,9 @@ int Protocol::server::ln_user_exchange (SSL * ssl, hs_opt_t * hs_opt)
 {
   int rd_len;
 
+#ifdef DEBUG
   Log::debug2 ("Recving username");
+#endif
   if (!(rd_len = xSSL_read (ssl, packet, MAX_USERNAME_LEN, "username")))
     return FAIL;
 
@@ -168,7 +174,9 @@ int Protocol::server::ln_user_exchange (SSL * ssl, hs_opt_t * hs_opt)
     return FAIL;
 
   /* And send its username */
+#ifdef DEBUG
   Log::debug2 ("Sending username");
+#endif
   if (!xSSL_write
       (ssl, (void *) options.username ().c_str (),
        options.username ().length (), "username"))
@@ -182,7 +190,9 @@ int Protocol::client::ln_user_exchange (SSL * ssl, hs_opt_t * hs_opt)
   int rd_len;
 
   /* Peer send its username */
+#ifdef DEBUG
   Log::debug2 ("Sending username");
+#endif
   if (!xSSL_write
       (ssl, (char *) options.username ().c_str (),
        options.username ().length (), "username"))
@@ -196,7 +206,9 @@ int Protocol::client::ln_user_exchange (SSL * ssl, hs_opt_t * hs_opt)
     }
 
   /* And recv remote peer username */
+#ifdef DEBUG
   Log::debug2 ("Recving username");
+#endif
   if (!(rd_len = xSSL_read (ssl, packet, MAX_USERNAME_LEN, "username")))
     return FAIL;
 
@@ -212,7 +224,9 @@ int Protocol::server::ln_auth (SSL * ssl, hs_opt_t * hs_opt)
   char auth;
 
   /* Recv hash */
+#ifdef DEBUG
   Log::debug2 ("Recving hash");
+#endif
   if (!xSSL_read (ssl, hex_hash, 16, "hash"))
     return FAIL;
 
@@ -220,14 +234,18 @@ int Protocol::server::ln_auth (SSL * ssl, hs_opt_t * hs_opt)
   if (Auth::do_authentication (hs_opt->peer_username, hex_hash))
     {
       auth = AUTHENTICATION_SUCCESSFULL;
+#ifdef DEBUG
       Log::debug2 ("Sending auth response (successfull)");
+#endif
       if (!xSSL_write (ssl, &auth, sizeof (char), "auth response"))
         return FAIL;
     }
   else
     {
       auth = AUTHENTICATION_FAILED;
+#ifdef DEBUG
       Log::debug2 ("Sending auth response (failed)");
+#endif
       xSSL_write (ssl, &auth, sizeof (char), "auth response");
       return FAIL;
     }
@@ -244,7 +262,9 @@ int Protocol::client::ln_auth (SSL * ssl)
   hex_hash = Auth::Crypt::calculate_md5 (options.password());
 
   /* Then send password's hash */
+#ifdef DEBUG
   Log::debug2 ("Sending hash");
+#endif
   if (!xSSL_write (ssl, hex_hash, 16, "hash"))
     {
       delete hex_hash;
@@ -254,13 +274,17 @@ int Protocol::client::ln_auth (SSL * ssl)
   delete hex_hash;
 
   /* And recv authentication response */
+#ifdef DEBUG
   Log::debug2 ("Recving auth response");
+#endif
 
   if (!xSSL_read (ssl, &auth, sizeof (char), "auth response"))
     return FAIL;
 
+#ifdef DEBUG
   Log::debug2 ("Server response: %s (%x)",
                (auth ? "auth successfull" : "auth failed"), auth);
+#endif
 
   if (auth == AUTHENTICATION_FAILED)
     {
@@ -277,10 +301,14 @@ int Protocol::ln_send_network (SSL * ssl, hs_opt_t * hs_opt)
 
   local_net_ls = Taps::get_user_allowed_networks ((char *) hs_opt->peer_username.c_str ());
 
+#ifdef DEBUG
   Log::debug2 ("Sending available network count");
+#endif
   if (local_net_ls.count == 0)
     {
+#ifdef DEBUG
       Log::debug2 ("Peer cannot access any networks");
+#endif
       xSSL_write (ssl, &local_net_ls.count, sizeof (int), "network count");
       return FAIL;
     }
@@ -312,7 +340,9 @@ int Protocol::ln_recv_network (SSL * ssl, hs_opt_t * hs_opt)
   int i;
   int rd_len;
 
+#ifdef DEBUG
   Log::debug2 ("Recving available network count");
+#endif
   if (!
       (rd_len =
          xSSL_read (ssl, &hs_opt->net_ls.count, sizeof (int), "network count")))
@@ -348,7 +378,9 @@ int Protocol::ln_send_userlist (SSL * ssl)
   user_ls_t user_ls;
   user_ls = Protocol::get_userlist ();
 
+#ifdef DEBUG
   Log::debug2 ("Sending peer count");
+#endif
   if (!xSSL_write (ssl, &user_ls.count, sizeof (int), "peer count"))
     return FAIL;
 

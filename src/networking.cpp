@@ -43,12 +43,16 @@ void Network::Server::ssl_init ()
   if (!Network::Server::ssl_ctx)
     Log::fatal ("Failed to do SSL CTX new");
 
+#ifdef DEBUG
   Log::debug2 ("Loading SSL certificate");
+#endif
   if (SSL_CTX_use_certificate_file
       (Network::Server::ssl_ctx, CERT_FILE, SSL_FILETYPE_PEM) <= 0)
     Log::fatal ("Failed to load SSL certificate %s", CERT_FILE);
 
+#ifdef DEBUG
   Log::debug2 ("Loading SSL private key");
+#endif
   if (SSL_CTX_use_PrivateKey_file
       (Network::Server::ssl_ctx, KEY_FILE, SSL_FILETYPE_PEM) <= 0)
     Log::fatal ("Failed to load SSL private key %s", KEY_FILE);
@@ -77,7 +81,9 @@ void *Network::Server::server_loop (void *arg __attribute__ ((unused)))
   if ((listen_sock = socket (PF_INET, SOCK_STREAM, 0)) == -1)
     Log::fatal ("cannot create socket");
 
+#ifdef DEBUG
   Log::debug2 ("listen_sock (fd %d) created", listen_sock);
+#endif
   if (setsockopt (listen_sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof (on)) ==
       -1)
     Log::error ("setsockopt SO_REUSEADDR: %s", strerror (errno));
@@ -87,13 +93,17 @@ void *Network::Server::server_loop (void *arg __attribute__ ((unused)))
   server.sin_addr.s_addr = INADDR_ANY;	/*(server_opt->binding_address); */
   memset (&(server.sin_zero), '\0', 8);
 
+#ifdef DEBUG
   Log::debug2 ("Binding port %d", PORT);
+#endif
   if (bind
       (listen_sock, (struct sockaddr *) &server,
        sizeof (struct sockaddr)) == -1)
     Log::fatal ("cannot binding to socket");
 
+#ifdef DEBUG
   Log::debug1 ("Listening");
+#endif
   if (listen (listen_sock, MAX_ACCEPTED_PEERS_CONNECTIONS) == -1)
     Log::fatal ("cannot listen");
 
@@ -111,7 +121,9 @@ void *Network::Server::server_loop (void *arg __attribute__ ((unused)))
       if ((peer_ssl = SSL_new (Network::Server::ssl_ctx)) != NULL)
         {
           SSL_set_fd (peer_ssl, peer_sock);
+#ifdef DEBUG
           Log::debug2 ("SSL Handshake");
+#endif
           if (SSL_accept (peer_ssl) > 0)
             {
               if (Protocol::server::handshake (peer_ssl, &hs_opt))
@@ -155,6 +167,7 @@ void *Network::Server::server_loop (void *arg __attribute__ ((unused)))
           close (peer_sock);
         }
     }
+  return NULL;
 }
 
 int Network::lookup_address (std::string address)
@@ -162,7 +175,9 @@ int Network::lookup_address (std::string address)
 
   struct hostent *host_info;
 
+#ifdef DEBUG
   Log::debug1 ("Looking up client %s", address.c_str ());
+#endif
   host_info = gethostbyname (address.c_str ());
 
   if (host_info == NULL)
@@ -199,7 +214,9 @@ void Network::Client::peer_connect (int address, short port)
       return;
     }
 
+#ifdef DEBUG
   Log::debug2 ("peer_sock (fd %d) created", peer_sock);
+#endif
 
   peer.sin_family = AF_INET;
   peer.sin_port = htons (port ? port : PORT);
@@ -217,8 +234,9 @@ void Network::Client::peer_connect (int address, short port)
   if ((peer_ssl = SSL_new (Network::Client::ssl_ctx)) != NULL)
     {
       SSL_set_fd (peer_ssl, peer_sock);
-
+#ifdef DEBUG
       Log::debug2 ("SSL Handshake");
+#endif
       if (SSL_connect (peer_ssl) > 0)
         {
           if (Network::verify_ssl_cert (peer_ssl))
@@ -319,7 +337,9 @@ void *Network::Server::select_loop (void __attribute__ ((unused)) * arg)
                         case CONTROL_PACKET:
                           if (packet.buffer[1] == CLOSE_CONNECTION)
                             {
+#ifdef DEBUG
                               Log::debug3 ("control_packet: closing connection");
+#endif
                               free_fd_flag = 1;
                               peer->setClosing ();
                             }
@@ -354,7 +374,9 @@ void *Network::Server::select_loop (void __attribute__ ((unused)) * arg)
 
 void Network::Server::restart_select_loop ()
 {
+#ifdef DEBUG
   Log::debug2 ("Restarting select()");
+#endif
   if (Network::Server::select_t != (pthread_t) NULL)
     {
       if (pthread_cancel (Network::Server::select_t))
@@ -377,7 +399,9 @@ inline void Network::Server::forward_to_tap (Network::Packet * packet)
     if (Taps::db[i]->isActive())
       *Taps::db[i] << packet;
 
-//  Log::dump (packet->buffer, packet->length);
+#ifdef DEBUG
+  Log::dump (packet->buffer, packet->length);
+#endif
 }
 
 inline void Network::Server::forward_to_peer (Network::Packet * packet)
@@ -394,13 +418,15 @@ inline void Network::Server::forward_to_peer (Network::Packet * packet)
       if (Peers::db[i]->isRoutableAddress(n_addr))
         *Peers::db[i] << packet;
 
-//  Log::dump (packet->buffer, packet->length);
+#ifdef DEBUG
+  Log::dump (packet->buffer, packet->length);
+#endif
 }
 
 int Network::verify_ssl_cert (SSL * ssl)
 {
   char *fingerprint;
-//  char answer;
+  char answer;
 
   if (SSL_get_verify_result (ssl) != X509_V_OK)
     {
@@ -408,12 +434,12 @@ int Network::verify_ssl_cert (SSL * ssl)
       std::cout << "Could not verify SSL servers certificate (self signed)." << std::endl;
       std::cout << "Fingerprint is: "<< fingerprint << std::endl;
       std::cout << "Do you want to continue? [y|n]: ";
-//      std::cin >> answer;
+      std::cin >> answer;
 
-      //   if (answer == 'y' || answer == 'Y')
-      return TRUE;
-      // else
-      // return FALSE;
+      if (answer == 'y' || answer == 'Y')
+        return TRUE;
+      else
+        return FALSE;
     }
 
   return TRUE;
@@ -432,7 +458,7 @@ void *Network::check_connections_queue (void *arg)
   for (i = 0; i < user_ls->count; i++)
 
     /* check if we're connected to peer */
-    if (!Peers::user_is_connected ((char *) user_ls->user[i].c_str ()))
+    if (!Peers::user_is_connected (user_ls->user[i]))
       Network::Client::peer_connect (user_ls->address[i], PORT);
 
   return NULL;

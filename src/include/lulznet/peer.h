@@ -90,7 +90,7 @@ void free_non_active ();
 void rebuild_db ();
 
 /* Check if user is connected */
-int user_is_connected (char *user);
+int user_is_connected (std::string user);
 }
 
 #endif

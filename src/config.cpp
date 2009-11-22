@@ -29,7 +29,9 @@ Config::Config ()
   _flags = 0;
   _connecting_port = PORT;
   _binding_port = PORT;
+#ifdef DEBUG
   _debug_level = 0;
+#endif
 }
 
 int Config::flags ()
@@ -82,10 +84,12 @@ void Config::password (std::string password)
   _password = password;
 }
 
+#ifdef DEBUG
 int Config::debug_level ()
 {
   return _debug_level;
 }
+#endif
 
 void Config::parse_args (int argc, char **argv)
 {
@@ -138,9 +142,11 @@ void Config::parse_args (int argc, char **argv)
         else
           _tap_address = optarg;
         break;
+#ifdef DEBUG
       case 'v':
         _debug_level++;
         break;
+#endif
       case '?':
         if (optopt == 'p' || optopt == 'c')
           Log::fatal ("Option -%c requires an argument.\n", optopt);
@@ -206,11 +212,13 @@ void Config::parse_config_file (char *filename)
               else
                 Log::error ("Invalid option");
             }
+#ifdef DEBUG
           else if (!strcmp (tmp, "debug"))
             {
               fscanf (fp, "%32s", tmp);
               _debug_level = atoi (tmp);
             }
+#endif
           else if (!tmp[0] == '#')
             Log::error ("Invalid option in configfile");
 

@@ -66,7 +66,9 @@ Peers::Peer::Peer (int fd, SSL * ssl, std::string user, int address, net_ls_t nl
   set_max_fd ();
 
   FD_SET (_fd, &Network::master);
+#ifdef DEBUG
   Log::debug2 ("Added fd %d to fd_set master (1st free fd: %d)", fd, count);
+#endif
 
   /* restart select thread so select() won't block world */
   Network::Server::restart_select_loop ();
@@ -83,8 +85,10 @@ Peers::Peer::~Peer ()
   FD_CLR (_fd, &Network::master);
   close (_fd);
 
+#ifdef DEBUG
   Log::debug2 ("Removed fd %d from fd_set master (current fd %d)", _fd,
                count);
+#endif
 }
 
 bool
@@ -96,7 +100,9 @@ Peers::Peer::operator>> (Network::Packet * packet)
       return FAIL;
     }
 
+#ifdef DEBUG
   Log::debug3 ("Read %d bytes packet from peer %s", packet->length, _user.c_str());
+#endif
   return DONE;
 }
 
@@ -109,7 +115,9 @@ Peers::Peer::operator<< (Network::Packet * packet)
       return FAIL;
     }
 
+#ifdef DEBUG
   Log::debug3 ("\tForwarded to peer %s",_user.c_str());
+#endif
   return DONE;
 }
 bool
@@ -170,7 +178,9 @@ void Peers::free_non_active ()
 {
   int i;
 
+#ifdef DEBUG
   Log::debug2 ("freeing non active fd");
+#endif
   for (i = 0; i < count; i++)
     if (!db[i]->isActive ())
       {
@@ -215,7 +225,7 @@ Peers::Peer::disassociate ()
   delete this;
 }
 
-int Peers::user_is_connected (char *user)
+int Peers::user_is_connected (std::string user)
 {
   int i;
 

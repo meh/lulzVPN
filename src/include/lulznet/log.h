@@ -48,7 +48,7 @@ void fatal (const char *msg, ...);
 void shell_msg (const char *msg, ...);
 
 /* Dump in ascii and hex data_buffer */
-void dump (char *data_buffer, int length);
+void dump (unsigned char *data_buffer, int length);
 }
 
 #endif

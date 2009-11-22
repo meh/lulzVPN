@@ -17,14 +17,8 @@
  * MA 02110-1301, USA.
 */
 
-#include <iostream>
-#include <string>
-
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <unistd.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
 #include <netdb.h>
@@ -32,6 +26,9 @@
 #include <signal.h>
 #include <pthread.h>
 #include <termio.h>
+
+#include <iostream>
+#include <string>
 
 #include <sys/socket.h>
 #include <sys/ioctl.h>
@@ -55,6 +52,8 @@
 
 #include <readline/readline.h>
 #include <readline/history.h>
+
+#include "_config.h"
 
 #ifndef _LNET_LULZNET_H
 #define _LNET_LULZNET_H

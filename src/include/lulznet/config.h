@@ -41,7 +41,9 @@ private:
   std::string _tap_netmask;
   std::string _username;
   std::string _password;
+#ifdef DEBUG
   int _debug_level;
+#endif
 
 public:
   Config ();
@@ -55,7 +57,9 @@ public:
   std::string username ();
   std::string password ();
   void password (std::string password);
+#ifdef DEBUG
   int debug_level ();
+#endif
 
 public:
   /* parse console args */
