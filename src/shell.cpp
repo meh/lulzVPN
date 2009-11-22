@@ -19,6 +19,7 @@
 
 #include <lulznet/lulznet.h>
 
+#include <lulznet/auth.h>
 #include <lulznet/config.h>
 #include <lulznet/log.h>
 #include <lulznet/networking.h>
@@ -129,11 +130,19 @@ void Shell::tap_list ()
     }
 }
 
+void
+Shell::help()
+{
+  std::cout << "peer: handle peer"<< std::endl ;
+  std::cout << "tap: handle tap device" << std::endl;
+  std::cout << "connect: connect to a peer" << std::endl;
+  std::cout << "whoami: display local peer name" << std::endl;
+  std::cout << "password: reset password" << std::endl;
+}
 
 Shell::Cmd *
 Shell::preparse_command (std::string line)
 {
-
   Cmd *command;
   int i;
   char tmp_str[65];
@@ -179,20 +188,20 @@ void Shell::parse_command (Shell::Cmd * cmd)
   if (!cmd->command.compare ("peer"))
     {
       if (!cmd->argc)
-        std::cout << "Usage: peer [ list | kill ]" << std::endl;
+        std::cout << "Usage: peer (list | kill)" << std::endl;
       else if (!cmd->argv[0].compare ("list"))
         peer_list ();
       else if (!cmd->argv[0].compare ("kill"))
         peer_kill (cmd);
       else
-        Log::error ("Unknow arg");
+        std::cout << "Usage: peer (list | kill)" << std::endl;
     }
 
   /* tap command */
   else if (!cmd->command.compare ("tap"))
     {
       if (!cmd->argc)
-        std::cout << "Usage: tap [ list | add | del ]" << std::endl;
+        std::cout << "Usage: tap (list | add | del)" << std::endl;
       else if (!cmd->argv[0].compare ("list"))
         tap_list ();
       else if (!cmd->argv[0].compare ("add"))
@@ -204,14 +213,14 @@ void Shell::parse_command (Shell::Cmd * cmd)
           /* TODO: add all stuff */
         }
       else
-        Log::error ("Unknow arg");
+        std::cout << "Usage: tap (list | add | del)" << std::endl;
     }
 
   /* connect peer command */
   else if (!cmd->command.compare ("connect"))
     {
       if (!cmd->argc)
-        std::cout << "Usage: connect [address] [port]" << std::endl;
+        std::cout << "Usage: connect address [port]" << std::endl;
       else
         peer_preconnect (cmd);
     }
@@ -219,6 +228,13 @@ void Shell::parse_command (Shell::Cmd * cmd)
   /* useless command */
   else if (!cmd->command.compare ("whoami"))
     std::cout << options.username() << std::endl;
+
+  /* reset password */
+  else if (!cmd->command.compare ("password"))
+    Auth::password_prompt();
+
+  else if (!cmd->command.compare ("help"))
+    help();
 
   /* quit command */
   else if (!cmd->command.compare ("quit"))

@@ -112,6 +112,16 @@ Peers::Peer::operator<< (Network::Packet * packet)
   Log::debug3 ("\tForwarded to peer %s",_user.c_str());
   return DONE;
 }
+bool
+Peers::Peer::isRoutableAddress(int address)
+{
+  int i;
+  for (i = 0; i < _nl.count; i++)
+    if (_nl.network[i] == get_ip_address_network(address, _nl.netmask[i]))
+      return true;
+
+  return false;
+}
 
 bool Peers::Peer::isActive()
 {
@@ -203,17 +213,6 @@ Peers::Peer::disassociate ()
 
   Taps::set_system_routing (this, DEL_ROUTING);
   delete this;
-}
-
-Peers::Peer * Peers::get_fd_related (int fd)
-{
-  int i;
-
-  for (i = 0; i < MAX_PEERS; i++)
-    if (db[i]->isActive ()&& db[i]->fd () == fd)
-      return db[i];
-
-  return NULL;
 }
 
 int Peers::user_is_connected (char *user)

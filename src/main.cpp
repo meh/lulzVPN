@@ -24,7 +24,6 @@
 #include <lulznet/log.h>
 #include <lulznet/networking.h>
 #include <lulznet/peer.h>
-#include <lulznet/routing.h>
 #include <lulznet/shell.h>
 #include <lulznet/tap.h>
 #include <lulznet/xfunc.h>
@@ -93,10 +92,6 @@ int main (int argc, char *argv[])
 
 void lulznet_init ()
 {
-  int sysctl_name[3];
-  int sysctl_newval[1];
-  int sysctl_newlen;
-
   memset (Peers::db, '\x00', MAX_PEERS * sizeof (Peers::Peer));
   Peers::count = 0;
   Peers::conections_to_peer = 0;
@@ -111,22 +106,12 @@ void lulznet_init ()
   memset (&Network::Server::select_t, '\x00', sizeof (pthread_t));
   pthread_mutex_init (&Peers::db_mutex, NULL);
 
-  memset (route_table, '\x00', 512);
-  route_entries_count = 0;
-
   SSL_load_error_strings ();
   SSLeay_add_ssl_algorithms ();
   OpenSSL_add_all_digests ();
 
   Network::Server::ssl_init ();
   Network::Client::ssl_init ();
-
-  sysctl_name[0] = CTL_NET;
-  sysctl_name[1] = NET_IPV4;
-  sysctl_name[2] = NET_IPV4_FORWARD;
-  sysctl_newlen = sizeof (sysctl_name);
-  sysctl_newval[0] = 1;
-  sysctl (sysctl_name, 3, NULL, 0, sysctl_newval, sysctl_newlen);
 
   signal (SIGINT, sigint_handler);
 }
@@ -156,7 +141,8 @@ void exit_lulznet ()
   int i;
 
   pthread_mutex_lock(&Peers::db_mutex);
-  pthread_cancel (Network::Server::select_t);
+  if (Network::Server::select_t != (pthread_t) NULL)
+    pthread_cancel (Network::Server::select_t);
 
   Log::info ("Closing lulznet");
   for (i = 0; i < Peers::count; i++)

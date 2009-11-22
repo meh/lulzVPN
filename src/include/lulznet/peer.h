@@ -59,6 +59,7 @@ public:
   bool operator>> (Network::Packet * packet);
   bool operator<< (Network::Packet * packet);
 
+  bool isRoutableAddress(int address);
   bool isActive();
   bool isReadyToRead(fd_set *rd_sel);
   void setClosing();
@@ -87,9 +88,6 @@ void free_non_active ();
 
 /* Delete empty entry */
 void rebuild_db ();
-
-/* return the peer associated with an fd */
-Peer *get_fd_related (int fd);
 
 /* Check if user is connected */
 int user_is_connected (char *user);

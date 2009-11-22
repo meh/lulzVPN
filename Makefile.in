@@ -1,6 +1,5 @@
 package        = @PACKAGE_NAME@
 version        = @PACKAGE_VERSION@
-
 srcdir         = @srcdir@
 VPATH          = @srcdir@
 

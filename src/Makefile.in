@@ -15,13 +15,13 @@ source	= $(srcdir)/auth.cpp\
 	  $(srcdir)/config.cpp\
 	  $(srcdir)/main.cpp\
 	  $(srcdir)/peer.cpp\
-	  $(srcdir)/routing.cpp\
 	  $(srcdir)/shell.cpp\
 	  $(srcdir)/xfunc.cpp\
 	  $(srcdir)/log.cpp\
 	  $(srcdir)/networking.cpp\
 	  $(srcdir)/protocol.cpp\
 	  $(srcdir)/tap.cpp\
+	  $(srcdir)/packet.cpp
 
 all:lulznet 
 	${CC} ${LDFLAGS} -o ${package} $(source:.cpp=.o)

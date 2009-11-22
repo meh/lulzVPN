@@ -25,6 +25,7 @@
 #include <lulznet/networking.h>
 #include <lulznet/peer.h>
 #include <lulznet/protocol.h>
+#include <lulznet/packet.h>
 #include <lulznet/tap.h>
 #include <lulznet/xfunc.h>
 
@@ -368,6 +369,9 @@ inline void Network::Server::forward_to_tap (Network::Packet * packet)
 {
 
   int i;
+  int n_addr;
+
+  n_addr = PacketInspection::get_destination_ip(packet);
 
   for (i = 0; i < Taps::count; i++)
     if (Taps::db[i]->isActive())
@@ -380,12 +384,15 @@ inline void Network::Server::forward_to_peer (Network::Packet * packet)
 {
 
   int i;
+  int n_addr;
 
+  n_addr = PacketInspection::get_destination_ip(packet);
   packet->buffer[0] = DATA_PACKET;
 
   for (i = 0; i < Peers::count; i++)
     if (Peers::db[i]->isActive())
-      *Peers::db[i] << packet;
+      if (Peers::db[i]->isRoutableAddress(n_addr))
+        *Peers::db[i] << packet;
 
 //  Log::dump (packet->buffer, packet->length);
 }

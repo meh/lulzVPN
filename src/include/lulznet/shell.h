@@ -36,6 +36,8 @@ void peer_kill (Cmd * cmd);
 
 void tap_list ();
 
+void help();
+
 /* Parsing command stuff */
 Cmd *preparse_command (std::string line);
 void parse_command (Cmd * cmd);
