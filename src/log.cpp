@@ -24,17 +24,17 @@
 
 pthread_mutex_t Log::mutex;
 
-void Log::info (const char *msg, ...)
+void Log::Info (const char *msg, ...)
 {
   va_list args;
 
   va_start (args, msg);
-  do_log (msg, args, INFO);
+  DoLog (msg, args, INFO);
   va_end (args);
 }
 
 #ifdef DEBUG
-void Log::debug1 (const char *msg, ...)
+void Log::Debug1 (const char *msg, ...)
 {
   va_list args;
 
@@ -42,11 +42,11 @@ void Log::debug1 (const char *msg, ...)
     return;
 
   va_start (args, msg);
-  do_log (msg, args, DEBUG_1);
+  DoLog (msg, args, DEBUG_1);
   va_end (args);
 }
 
-void Log::debug2 (const char *msg, ...)
+void Log::Debug2 (const char *msg, ...)
 {
   va_list args;
 
@@ -54,11 +54,11 @@ void Log::debug2 (const char *msg, ...)
     return;
 
   va_start (args, msg);
-  do_log (msg, args, DEBUG_2);
+  DoLog (msg, args, DEBUG_2);
   va_end (args);
 }
 
-void Log::debug3 (const char *msg, ...)
+void Log::Debug3 (const char *msg, ...)
 {
   va_list args;
 
@@ -66,34 +66,34 @@ void Log::debug3 (const char *msg, ...)
     return;
 
   va_start (args, msg);
-  do_log (msg, args, DEBUG_3);
+  DoLog (msg, args, DEBUG_3);
   va_end (args);
 }
 #endif
 
-void Log::error (const char *msg, ...)
+void Log::Error (const char *msg, ...)
 {
   va_list args;
 
   va_start (args, msg);
-  do_log (msg, args, ERROR);
+  DoLog (msg, args, ERROR);
   va_end (args);
 }
 
-void Log::fatal (const char *msg, ...)
+void Log::Fatal (const char *msg, ...)
 {
   va_list args;
 
   va_start (args, msg);
-  do_log (msg, args, FATAL);
+  DoLog (msg, args, FATAL);
   va_end (args);
 
-  exit_lulznet ();
+  LulznetExit ();
 
   exit (1);
 }
 
-void Log::do_log (const char *fmt, va_list args, int level)
+void Log::DoLog (const char *fmt, va_list args, int level)
 {
   char msgbuf[MAXLOGSIZE];
   char fmtbuf[MAXLOGSIZE];
@@ -133,7 +133,7 @@ void Log::do_log (const char *fmt, va_list args, int level)
 }
 
 #ifdef DEBUG
-void Log::dump (unsigned char *data_buffer, int length)
+void Log::Dump (unsigned char *data_buffer, int length)
 {
   char byte;
   int i;

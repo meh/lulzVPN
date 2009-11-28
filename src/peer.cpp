@@ -34,7 +34,7 @@ int Peers::conections_to_peer;
 int Peers::max_fd;
 
 void
-Peers::set_max_fd ()
+Peers::SetMaxFd ()
 {
   int i;
   max_fd = 0;
@@ -63,15 +63,15 @@ Peers::Peer::Peer (int fd, SSL * ssl, std::string user, int address, net_ls_t nl
   db[count] = this;
 
   count++;
-  set_max_fd ();
+  SetMaxFd ();
 
   FD_SET (_fd, &Network::master);
 #ifdef DEBUG
-  Log::debug2 ("Added fd %d to fd_set master (1st free fd: %d)", fd, count);
+  Log::Debug2 ("Added fd %d to fd_set master (1st free fd: %d)", fd, count);
 #endif
 
   /* restart select thread so select() won't block world */
-  Network::Server::restart_select_loop ();
+  Network::Server::RestartSelectLoop ();
 }
 
 
@@ -86,7 +86,7 @@ Peers::Peer::~Peer ()
   close (_fd);
 
 #ifdef DEBUG
-  Log::debug2 ("Removed fd %d from fd_set master (current fd %d)", _fd,
+  Log::Debug2 ("Removed fd %d from fd_set master (current fd %d)", _fd,
                count);
 #endif
 }
@@ -101,7 +101,7 @@ Peers::Peer::operator>> (Network::Packet * packet)
     }
 
 #ifdef DEBUG
-  Log::debug3 ("Read %d bytes packet from peer %s", packet->length, _user.c_str());
+  Log::Debug3 ("Read %d bytes packet from peer %s", packet->length, _user.c_str());
 #endif
   return DONE;
 }
@@ -116,7 +116,7 @@ Peers::Peer::operator<< (Network::Packet * packet)
     }
 
 #ifdef DEBUG
-  Log::debug3 ("\tForwarded to peer %s",_user.c_str());
+  Log::Debug3 ("\tForwarded to peer %s",_user.c_str());
 #endif
   return DONE;
 }
@@ -174,12 +174,12 @@ net_ls_t Peers::Peer::nl ()
 }
 
 
-void Peers::free_non_active ()
+void Peers::FreeNonActive ()
 {
   int i;
 
 #ifdef DEBUG
-  Log::debug2 ("freeing non active fd");
+  Log::Debug2 ("freeing non active fd");
 #endif
   for (i = 0; i < count; i++)
     if (!db[i]->isActive ())
@@ -189,11 +189,11 @@ void Peers::free_non_active ()
         db[i] = NULL;
       }
 
-  rebuild_db ();
+  RebuildDb ();
 }
 
 void
-Peers::rebuild_db ()
+Peers::RebuildDb ()
 {
   int i;
   int j;
@@ -209,11 +209,11 @@ Peers::rebuild_db ()
       freed_peer++;
 
   count -= freed_peer;
-  set_max_fd ();
+  SetMaxFd ();
 }
 
 void
-Peers::Peer::disassociate ()
+Peers::Peer::Disassociate ()
 {
   char packet[3];
 
@@ -225,7 +225,7 @@ Peers::Peer::disassociate ()
   delete this;
 }
 
-int Peers::user_is_connected (std::string user)
+int Peers::UserIsConnected (std::string user)
 {
   int i;
 

@@ -3,10 +3,8 @@
 # Package-related substitution variables
 package	= @PACKAGE_NAME@
 version	= @PACKAGE_VERSION@
-
 srcdir	= @srcdir@
 VPATH	= @srcdir@
-
 CC	= g++
 CFLAGS	= -Wall -Wextra -pedantic -g -I $(srcdir)/include
 LDFLAGS	= -lpthread -lssl -lreadline
@@ -30,10 +28,6 @@ lulznet: $(source:.cpp=.o)
 
 $(source:.cpp=.o): $(source)
 	${CC} -c ${CFLAGS} -o $*.o $*.cpp
-
-indent:
-	@indent -l 512 $(srcdir)/*.cpp
-	@rm -f $(srcdir)/*~
 
 clean:
 	rm -f $(srcdir)/*.o

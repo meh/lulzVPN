@@ -38,16 +38,16 @@ namespace Auth
 extern std::string saved_password;
 
 /* Check if hash match username (local for now */
-int do_authentication (std::string username, u_char * hash);
+int DoAuthentication (std::string username, u_char * hash);
 
 /* Ask for password (disable echo */
-void password_prompt ();
+void PasswordPrompt ();
 
 namespace File
 {
 
 /* Function to return a line of the credential file */
-int get_user_credential (FILE * fp, std::string * username,
+int GetUserCredentials (FILE * fp, std::string * username,
                          std::string * hash);
 
 /* Parse each line of credential file to get username and hash */
@@ -58,10 +58,10 @@ namespace Crypt
 {
 
 /* return string's md5 */
-u_char *calculate_md5 (std::string string);
+u_char *CalculateMd5 (std::string string);
 
 /* return a string with ssl'peer certificate fingerprint */
-char *get_fingerprint_from_ctx (SSL * ssl);
+char *GetFingerprintFromCtx (SSL * ssl);
 }
 }
 

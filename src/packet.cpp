@@ -45,7 +45,7 @@ u_int PacketInspection::get_destination_ip (Network::Packet *packet)
       address = arp_hdr->dst_ip_adr;
 #ifdef DEBUG
       inet_ntop (AF_INET, &address, p_addr, ADDRESS_LEN);
-      Log::debug3 ("\tarp packet, dst: %s", p_addr);
+      Log::Debug3 ("\tarp packet, dst: %s", p_addr);
 #endif
 
     }
@@ -58,7 +58,7 @@ u_int PacketInspection::get_destination_ip (Network::Packet *packet)
 
 #ifdef DEBUG
       inet_ntop (AF_INET, &address, p_addr, ADDRESS_LEN);
-      Log::debug3 ("\tip packet, dst: %s", p_addr);
+      Log::Debug3 ("\tip packet, dst: %s", p_addr);
 #endif
     }
   else

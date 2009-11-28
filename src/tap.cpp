@@ -33,7 +33,7 @@ int Taps::count;
 int Taps::max_fd;
 
 void
-Taps::set_max_fd ()
+Taps::SetMaxFd ()
 {
 
   int i;
@@ -53,7 +53,7 @@ Taps::Tap::alloc (std::string *dev)
   int fd, err;
 
   if ((fd = open ("/dev/net/tun", O_RDWR)) < 0)
-    Log::fatal ("Could not open /dev/net/tun device");
+    Log::Fatal ("Could not open /dev/net/tun device");
 
   memset (&ifr, 0, sizeof (ifr));
 
@@ -63,12 +63,12 @@ Taps::Tap::alloc (std::string *dev)
   if ((err = ioctl (fd, TUNSETIFF, (void *) &ifr)) < 0)
     {
       close (fd);
-      Log::fatal ("Could not allocate tap device");
+      Log::Fatal ("Could not allocate tap device");
     }
 
   dev->assign(ifr.ifr_name);
 #ifdef DEBUG
-  Log::debug1 ("%s device create (fd %d).", dev->c_str(), fd);
+  Log::Debug1 ("%s device create (fd %d).", dev->c_str(), fd);
 #endif
   return fd;
 }
@@ -102,14 +102,14 @@ Taps::Tap::Tap (std::string address, std::string netmask)
   db[count] = this;
 
   count++;
-  set_max_fd ();
+  SetMaxFd ();
 
   FD_SET (_fd, &Network::master);
 #ifdef DEBUG
-  Log::debug2 ("Added fd %d to fd_set master (1st free fd: %d)", _fd, count);
+  Log::Debug2 ("Added fd %d to fd_set master (1st free fd: %d)", _fd, count);
 #endif
 
-  Network::Server::restart_select_loop();
+  Network::Server::RestartSelectLoop();
 }
 
 
@@ -120,7 +120,7 @@ Taps::Tap::~Tap()
   close (_fd);
 
 #ifdef DEBUG
-  Log::debug2 ("Removed fd %d from fd_set master (current fd %d)", _fd, count);
+  Log::Debug2 ("Removed fd %d from fd_set master (current fd %d)", _fd, count);
 #endif
 }
 
@@ -134,7 +134,7 @@ Taps::Tap::operator>> (Network::Packet * packet)
     }
 
 #ifdef DEBUG
-  Log::debug3 ("Read %d bytes packet from tap %s", packet->length, _device.c_str());
+  Log::Debug3 ("Read %d bytes packet from tap %s", packet->length, _device.c_str());
 #endif
   return DONE;
 }
@@ -149,7 +149,7 @@ Taps::Tap::operator<< (Network::Packet * packet)
     }
 
 #ifdef DEBUG
-  Log::debug3 ("\tForwarded to tap %s", _device.c_str());
+  Log::Debug3 ("\tForwarded to tap %s", _device.c_str());
 #endif
   return DONE;
 }
@@ -211,7 +211,7 @@ std::string Taps::Tap::device ()
 }
 
 void
-Taps::free_non_active ()
+Taps::FreeNonActive ()
 {
 
   int i;
@@ -223,11 +223,11 @@ Taps::free_non_active ()
         db[i] = NULL;
       }
 
-  rebuild_db();
+  RebuildDb();
 }
 
 void
-Taps::rebuild_db ()
+Taps::RebuildDb ()
 {
   int i;
   int j;
@@ -243,7 +243,7 @@ Taps::rebuild_db ()
       freed_tap++;
 
   count -= freed_tap;
-  set_max_fd ();
+  SetMaxFd ();
 }
 
 int
@@ -270,7 +270,6 @@ Taps::configure_device (std::string device, std::string address, std::string net
   char ifconfig_command[256];
 
   sprintf (ifconfig_command, "/sbin/ifconfig %s %s netmask %s", device.c_str(), address.c_str(), netmask.c_str());
-
   system (ifconfig_command);
 
   return 1;
@@ -340,7 +339,7 @@ Taps::set_system_routing (Peers::Peer * peer, char op)
                      netmask, gateway);
 
 #ifdef DEBUG
-          Log::debug3("Route command: %s",route_command);
+          Log::Debug3("Route command: %s",route_command);
 #endif
           system (route_command);
         }

@@ -82,10 +82,10 @@
 void help ();
 
 /* lulznet initialization */
-void lulznet_init ();
+void LulznetInit ();
 
 /* Close fd, send disconnect packet to all peer and all that stuff */
-void exit_lulznet ();
+void LulznetExit ();
 
 /* Don't close lulznet with signal */
 void sigint_handler (int signal __attribute__ ((unused)));

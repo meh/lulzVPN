@@ -43,48 +43,49 @@ int main (int argc, char *argv[])
   std::cout << "Version: " << VERSION << std::endl;
 
   /* Config Parsing */
-  options.parse_config_file ((char *) CONFIG_FILE);
-  options.parse_args (argc, argv);
-  options.check_empty_config_entry ();
+  options.ParseConfigFile ((char *) CONFIG_FILE);
+  options.ParseArgs (argc, argv);
+  options.ChecEmptyConfigEntry ();
 
   /* Check faggot user */
   if (getuid ())
-    Log::fatal ("You must be super user");
+    Log::Fatal ("You must be super user");
 
   /* initialize db and other stuff */
-  lulznet_init ();
+  LulznetInit ();
 
   /* ??? black magic (don't know) */
   tap = new Taps::Tap (options.tap_address (), options.tap_netmask ());
 
   /* Prompt for password */
-  Auth::password_prompt();
+  if (options.password().empty())
+    Auth::PasswordPrompt();
 
   /* Start (or not) the listening service */
   if (options.flags () & LISTEN_MODE)
-    pthread_create (&server_t, NULL, Network::Server::server_loop, NULL);
+    pthread_create (&server_t, NULL, Network::Server::ServerLoop, NULL);
 #ifdef DEBUG
   else
-    Log::debug1 ("Not listening");
+    Log::Debug1 ("Not listening");
 #endif
 
   /* Autoconnection */
   if (!options.connecting_address ().empty ())
     {
-      address = Network::lookup_address (options.connecting_address ());
+      address = Network::LookupAddress (options.connecting_address ());
       if (address != 0)
-        Network::Client::peer_connect (address, options.connecting_port ());
+        Network::Client::PeerConnect (address, options.connecting_port ());
     }
 
   /* ??? (another black magic) */
-  pthread_create (&Network::Server::select_t, NULL, Network::Server::select_loop, NULL);
+  pthread_create (&Network::Server::select_t, NULL, Network::Server::SelectLoop, NULL);
 
   /* A lovable shell */
   if (options.flags () & INTERPEER_ACTIVE_MODE)
-    Shell::start ();
+    Shell::Start ();
 #ifdef DEBUG
   else
-    Log::debug1 ("Non interactive mode");
+    Log::Debug1 ("Non interactive mode");
 #endif
 
   /* cause we don't like it exits as soon as it starts :| */
@@ -94,7 +95,7 @@ int main (int argc, char *argv[])
   return 0;
 }
 
-void lulznet_init ()
+void LulznetInit ()
 {
   memset (Peers::db, '\x00', MAX_PEERS * sizeof (Peers::Peer *));
   Peers::count = 0;
@@ -114,8 +115,8 @@ void lulznet_init ()
   SSLeay_add_ssl_algorithms ();
   OpenSSL_add_all_digests ();
 
-  Network::Server::ssl_init ();
-  Network::Client::ssl_init ();
+  Network::Server::SslInit ();
+  Network::Client::SslInit ();
 
   signal (SIGINT, sigint_handler);
 }
@@ -140,7 +141,7 @@ void help ()
   exit (0);
 }
 
-void exit_lulznet ()
+void LulznetExit ()
 {
   int i;
 
@@ -148,14 +149,14 @@ void exit_lulznet ()
   if (Network::Server::select_t != (pthread_t) NULL)
     pthread_cancel (Network::Server::select_t);
 
-  Log::info ("Closing lulznet");
+  Log::Info ("Closing lulznet");
   for (i = 0; i < Peers::count; i++)
-    Peers::db[i]->disassociate();
+    Peers::db[i]->Disassociate();
 
   exit (0);
 }
 
 void sigint_handler (int signal __attribute__ ((unused)))
 {
-  exit_lulznet ();
+  LulznetExit ();
 }

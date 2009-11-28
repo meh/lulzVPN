@@ -22,10 +22,9 @@
 #include <lulznet/auth.h>
 #include <lulznet/config.h>
 #include <lulznet/log.h>
-#include <lulznet/xfunc.h>
 
 int
-Auth::do_authentication (std::string username, u_char * hash)
+Auth::DoAuthentication (std::string username, u_char * hash)
 {
   std::string str_hash;
   std::string local_hash;
@@ -46,16 +45,16 @@ Auth::do_authentication (std::string username, u_char * hash)
       if (!str_hash.compare (local_hash))
         response = TRUE;
       else
-        Log::error ("Wrong password");
+        Log::Error ("Wrong password");
     }
   else
-    Log::error ("Cannot find user");
+    Log::Error ("Cannot find user");
 
   return response;
 }
 
 void
-Auth::password_prompt ()
+Auth::PasswordPrompt ()
 {
 
   std::string password;
@@ -80,7 +79,7 @@ Auth::password_prompt ()
 }
 
 int
-Auth::File::get_user_credential (FILE * fp, std::string * username, std::string * hash)
+Auth::File::GetUserCredentials (FILE * fp, std::string * username, std::string * hash)
 {
   char tmp[50];
   int i;
@@ -106,9 +105,9 @@ Auth::File::get_hash (std::string request_user)
   cred = fopen (CREDENTIAL_FILE, "r");
 
   if (cred == NULL)
-    Log::error ("Cannot open credential file %s", CREDENTIAL_FILE);
+    Log::Error ("Cannot open credential file %s", CREDENTIAL_FILE);
   else
-    while (get_user_credential (cred, &user, &hash))
+    while (GetUserCredentials (cred, &user, &hash))
       if (!user.compare (request_user))
         return hash;
       else
@@ -119,7 +118,7 @@ Auth::File::get_hash (std::string request_user)
 }
 
 u_char *
-Auth::Crypt::calculate_md5 (std::string string)
+Auth::Crypt::CalculateMd5 (std::string string)
 {
   EVP_MD_CTX mdctx;
   const EVP_MD *md;
@@ -139,7 +138,7 @@ Auth::Crypt::calculate_md5 (std::string string)
 }
 
 char *
-Auth::Crypt::get_fingerprint_from_ctx (SSL * ssl)
+Auth::Crypt::GetFingerprintFromCtx (SSL * ssl)
 {
   u_char digest[SHA_DIGEST_LENGTH];
   char hex[] = "0123456789ABCDEF";

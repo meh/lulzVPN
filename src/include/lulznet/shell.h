@@ -30,18 +30,18 @@ typedef struct
   int argc;
 } Cmd;
 
-void peer_preconnect (Cmd * cmd);
-void peer_list ();
-void peer_kill (Cmd * cmd);
+void PeerPreconnect (Cmd * cmd);
+void PeerList ();
+void PeerKill (Cmd * cmd);
 
-void tap_list ();
+void TapList ();
 
-void help();
+void Help();
 
 /* Parsing command stuff */
-Cmd *preparse_command (std::string line);
-void parse_command (Cmd * cmd);
+Cmd *PreparseCommand (std::string line);
+void ParseCommand (Cmd * cmd);
 
-void start ();
+void Start ();
 }
 #endif

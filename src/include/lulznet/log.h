@@ -36,16 +36,16 @@ namespace Log
 extern pthread_mutex_t mutex;
 
 /* Call appropriate log function */
-void do_log (const char *fmt, va_list args, int level);
+void DoLog (const char *fmt, va_list args, int level);
 
 /* Print to stderr various messages */
-void info (const char *msg, ...);
-void debug1 (const char *msg, ...);
-void debug2 (const char *msg, ...);
-void debug3 (const char *msg, ...);
-void error (const char *msg, ...);
-void fatal (const char *msg, ...);
-void shell_msg (const char *msg, ...);
+void Info (const char *msg, ...);
+void Debug1 (const char *msg, ...);
+void Debug2 (const char *msg, ...);
+void Debug3 (const char *msg, ...);
+void Error (const char *msg, ...);
+void Fatal (const char *msg, ...);
+void ShellMsg (const char *msg, ...);
 
 /* Dump in ascii and hex data_buffer */
 void dump (unsigned char *data_buffer, int length);

@@ -64,7 +64,7 @@ public:
   bool isReadyToRead(fd_set *rd_sel);
   void setClosing();
   void showInfo();
-  void disassociate();
+  void Disassociate();
 
 public:
   int fd();
@@ -81,16 +81,16 @@ extern int conections_to_peer;
 extern int max_fd;
 
 /* set global var max_peer_fd to proper value (we use it with select() ) */
-void set_max_fd ();
+void SetMaxFd ();
 
 /* Check for non active peer and reomve them */
-void free_non_active ();
+void FreeNonActive ();
 
 /* Delete empty entry */
-void rebuild_db ();
+void RebuildDb ();
 
 /* Check if user is connected */
-int user_is_connected (std::string user);
+int UserIsConnected (std::string user);
 }
 
 #endif

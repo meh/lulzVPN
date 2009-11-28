@@ -73,11 +73,11 @@ extern int count;
 extern int max_fd;
 
 /* set global var max_tap_fd to proper value */
-void set_max_fd ();
+void SetMaxFd ();
 
-void free_non_active ();
+void FreeNonActive ();
 
-void rebuild_db ();
+void RebuildDb ();
 
 Tap *get_fd_related (int fd);
 

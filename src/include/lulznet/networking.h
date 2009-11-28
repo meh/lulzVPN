@@ -39,10 +39,10 @@ namespace Client
 
 extern SSL_CTX *ssl_ctx;
 /* Initialize ssl client's context */
-void ssl_init ();
+void SslInit ();
 
 /* Function for connecting to a peer */
-void peer_connect (int address, short port);
+void PeerConnect (int address, short port);
 
 }
 
@@ -56,27 +56,27 @@ extern SSL_CTX *ssl_ctx;
 extern pthread_t select_t;
 
 /* Initialize ssl server's context */
-void ssl_init ();
+void SslInit ();
 
 /* Main server thread, accepting connection */
-void *server_loop (void *arg);
+void *ServerLoop (void *arg);
 
 /* Main forwarding function */
-void *select_loop (void *arg);
-inline void forward_to_tap (Packet * packet);
-inline void forward_to_peer (Packet * packet);
-void restart_select_loop ();
+void *SelectLoop (void *arg);
+inline void ForwardToTap (Packet * packet);
+inline void ForwardToPeer (Packet * packet);
+void RestartSelectLoop ();
 
 }
 
 /* return a int network ordered address from a string */
-int lookup_address (std::string address);
+int LookupAddress (std::string address);
 
 /* Function for disconnecting from a peer */
 void disassociation_request (Peers::Peer *peer);
 
 /* handle cert verification */
-int verify_ssl_cert (SSL * ssl);
+int VerifySslCert (SSL * ssl);
 
 /* check if we have to connect to another peer after handshake */
 void *check_connections_queue (void *arg);

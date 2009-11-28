@@ -63,13 +63,13 @@ public:
 
 public:
   /* parse console args */
-  void parse_args (int argc, char **argv);
+  void ParseArgs (int argc, char **argv);
   /* parse config file */
-  void parse_config_file (char *filename);
+  void ParseConfigFile (char *filename);
   /* initialize struct opt */
   void set_default_options ();
   /* check if something configuration is missing */
-  void check_empty_config_entry ();
+  void ChecEmptyConfigEntry ();
 
 };
 

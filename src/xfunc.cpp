@@ -29,7 +29,7 @@ int xSSL_read (SSL * ssl, void *buf, int max_len, const char *item)
   rd_len = SSL_read (ssl, buf, max_len);
 
   if (!rd_len)
-    Log::error ("cannot recv %s",item);
+    Log::Error ("cannot recv %s",item);
 
   return rd_len;
 }
@@ -42,7 +42,7 @@ int xSSL_write (SSL * ssl, void *buf, int max_len, const char *item)
   wr_len = SSL_write (ssl, buf, max_len);
 
   if (!wr_len)
-    Log::error ("cannot send %s",item);
+    Log::Error ("cannot send %s",item);
 
   return wr_len;
 }
@@ -53,7 +53,7 @@ int xinet_pton (char *address)
 
   if (inet_pton (AF_INET, address, &int_addr) < 0)
     {
-      Log::error ("Invalid address format");
+      Log::Error ("Invalid address format");
       return 0;
     }
   else

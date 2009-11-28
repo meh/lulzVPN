@@ -22,7 +22,6 @@
 #include <lulznet/config.h>
 #include <lulznet/log.h>
 #include <lulznet/networking.h>
-#include <lulznet/xfunc.h>
 
 Config::Config ()
 {
@@ -91,7 +90,7 @@ int Config::debug_level ()
 }
 #endif
 
-void Config::parse_args (int argc, char **argv)
+void Config::ParseArgs (int argc, char **argv)
 {
   int c;
   char optopt = '\x00';
@@ -102,7 +101,7 @@ void Config::parse_args (int argc, char **argv)
       {
       case 'c':
         if (!*optarg)
-          Log::fatal ("You must specify an address");
+          Log::Fatal ("You must specify an address");
         else
           _connecting_address = optarg;
         break;
@@ -120,25 +119,25 @@ void Config::parse_args (int argc, char **argv)
         break;
       case 'n':
         if (!*optarg)
-          Log::fatal ("You must specify a netmask");
+          Log::Fatal ("You must specify a netmask");
         else
           _tap_netmask = optarg;
         break;
       case 'p':
         if (!*optarg)
-          Log::fatal ("You must specify a port");
+          Log::Fatal ("You must specify a port");
         else
           _connecting_port = (short) atoi (optarg);
         break;
       case 'P':
         if (!*optarg)
-          Log::fatal ("You must specify a port");
+          Log::Fatal ("You must specify a port");
         else
           _binding_port = (short) atoi (optarg);
         break;
       case 't':
         if (!*optarg)
-          Log::fatal ("You must specify an address");
+          Log::Fatal ("You must specify an address");
         else
           _tap_address = optarg;
         break;
@@ -149,15 +148,15 @@ void Config::parse_args (int argc, char **argv)
 #endif
       case '?':
         if (optopt == 'p' || optopt == 'c')
-          Log::fatal ("Option -%c requires an argument.\n", optopt);
+          Log::Fatal ("Option -%c requires an argument.\n", optopt);
         else if (isprint (optopt))
-          Log::fatal ("Unknown option `-%c'.\n", optopt);
+          Log::Fatal ("Unknown option `-%c'.\n", optopt);
         else
-          Log::fatal ("Unknown option character `\\x%x'.\n", optopt);
+          Log::Fatal ("Unknown option character `\\x%x'.\n", optopt);
       }
 }
 
-void Config::parse_config_file (char *filename)
+void Config::ParseConfigFile (char *filename)
 {
   FILE *fp;
   char tmp[33];
@@ -166,7 +165,7 @@ void Config::parse_config_file (char *filename)
   fp = fopen (filename, "r");
 
   if (fp == NULL)
-    Log::fatal ("Cannot open config file %s", filename);
+    Log::Fatal ("Cannot open config file %s", filename);
   else
     {
       while (fscanf (fp, "%32s", tmp) != -1)
@@ -175,6 +174,11 @@ void Config::parse_config_file (char *filename)
             {
               fscanf (fp, "%32s", tmp);
               _username = tmp;
+            }
+          if (!strcmp (tmp, "password"))
+            {
+              fscanf (fp, "%32s", tmp);
+              _password = tmp;
             }
           else if (!strcmp (tmp, "tap_addr"))
             {
@@ -197,7 +201,7 @@ void Config::parse_config_file (char *filename)
                     _flags ^= INTERPEER_ACTIVE_MODE;
                 }
               else
-                Log::error ("Invalid option");
+                Log::Error ("Invalid option");
             }
           else if (!strcmp (tmp, "listening"))
             {
@@ -210,7 +214,7 @@ void Config::parse_config_file (char *filename)
                     _flags ^= LISTEN_MODE;
                 }
               else
-                Log::error ("Invalid option");
+                Log::Error ("Invalid option");
             }
 #ifdef DEBUG
           else if (!strcmp (tmp, "debug"))
@@ -220,7 +224,7 @@ void Config::parse_config_file (char *filename)
             }
 #endif
           else if (!tmp[0] == '#')
-            Log::error ("Invalid option in configfile");
+            Log::Error ("Invalid option in configfile");
 
           do
             fscanf (fp, "%c", &c);
@@ -229,11 +233,11 @@ void Config::parse_config_file (char *filename)
     }
 }
 
-void Config::check_empty_config_entry ()
+void Config::ChecEmptyConfigEntry ()
 {
   if (_tap_address.empty ())
-    Log::fatal ("You must specify a tap address");
+    Log::Fatal ("You must specify a tap address");
 
   if (_username.empty ())
-    Log::fatal ("You must specify an username");
+    Log::Fatal ("You must specify an username");
 }

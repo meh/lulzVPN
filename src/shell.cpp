@@ -28,7 +28,7 @@
 #include <lulznet/shell.h>
 #include <lulznet/xfunc.h>
 
-void Shell::peer_preconnect (Cmd * cmd)
+void Shell::PeerPreconnect (Cmd * cmd)
 {
   int address;
   unsigned short port;
@@ -37,23 +37,23 @@ void Shell::peer_preconnect (Cmd * cmd)
     std::cout << "Usage: connect address [port]" << std::endl;
   else if (cmd->argc == 1)
     {
-      address = Network::lookup_address (cmd->argv[0]);
+      address = Network::LookupAddress (cmd->argv[0]);
       if (address == 0)
         return;
 
-      Network::Client::peer_connect (address, 7890);
+      Network::Client::PeerConnect (address, 7890);
     }
   else
     {
       address = xinet_pton ((char *) cmd->argv[0].c_str ());
       port = atoi ((char *) cmd->argv[1].c_str ());
 
-      Network::Client::peer_connect (address, port);
+      Network::Client::PeerConnect (address, port);
     }
 
 }
 
-void Shell::peer_list ()
+void Shell::PeerList ()
 {
   int i;
   int j;
@@ -82,7 +82,7 @@ void Shell::peer_list ()
     }
 }
 
-void Shell::peer_kill (Cmd * cmd)
+void Shell::PeerKill (Cmd * cmd)
 {
   int i;
 
@@ -95,9 +95,9 @@ void Shell::peer_kill (Cmd * cmd)
           {
             if (Peers::db[i]->isActive())
               {
-                Peers::db[i]->disassociate();
+                Peers::db[i]->Disassociate();
                 Peers::db[i] = NULL;
-                Peers::rebuild_db();
+                Peers::RebuildDb();
               }
             else
               std::cout << "Peer is not active" << std::endl;
@@ -108,7 +108,7 @@ void Shell::peer_kill (Cmd * cmd)
     }
 }
 
-void Shell::tap_list ()
+void Shell::TapList ()
 {
   int i;
   int n_address;
@@ -131,7 +131,7 @@ void Shell::tap_list ()
 }
 
 void
-Shell::help()
+Shell::Help()
 {
   std::cout << "peer: handle peer"<< std::endl ;
   std::cout << "tap: handle tap device" << std::endl;
@@ -141,7 +141,7 @@ Shell::help()
 }
 
 Shell::Cmd *
-Shell::preparse_command (std::string line)
+Shell::PreparseCommand (std::string line)
 {
   Cmd *command;
   int i;
@@ -181,7 +181,7 @@ Shell::preparse_command (std::string line)
   return command;
 }
 
-void Shell::parse_command (Shell::Cmd * cmd)
+void Shell::ParseCommand (Shell::Cmd * cmd)
 {
 
   /* peer command */
@@ -190,9 +190,9 @@ void Shell::parse_command (Shell::Cmd * cmd)
       if (!cmd->argc)
         std::cout << "Usage: peer (list | kill)" << std::endl;
       else if (!cmd->argv[0].compare ("list"))
-        peer_list ();
+        PeerList ();
       else if (!cmd->argv[0].compare ("kill"))
-        peer_kill (cmd);
+        PeerKill (cmd);
       else
         std::cout << "Usage: peer (list | kill)" << std::endl;
     }
@@ -203,15 +203,7 @@ void Shell::parse_command (Shell::Cmd * cmd)
       if (!cmd->argc)
         std::cout << "Usage: tap (list | add | del)" << std::endl;
       else if (!cmd->argv[0].compare ("list"))
-        tap_list ();
-      else if (!cmd->argv[0].compare ("add"))
-        {
-          /* TODO: add all stuff */
-        }
-      else if (!cmd->argv[0].compare ("del"))
-        {
-          /* TODO: add all stuff */
-        }
+        TapList ();
       else
         std::cout << "Usage: tap (list | add | del)" << std::endl;
     }
@@ -222,7 +214,7 @@ void Shell::parse_command (Shell::Cmd * cmd)
       if (!cmd->argc)
         std::cout << "Usage: connect address [port]" << std::endl;
       else
-        peer_preconnect (cmd);
+        PeerPreconnect (cmd);
     }
 
   /* useless command */
@@ -231,21 +223,21 @@ void Shell::parse_command (Shell::Cmd * cmd)
 
   /* reset password */
   else if (!cmd->command.compare ("password"))
-    Auth::password_prompt();
+    Auth::PasswordPrompt();
 
   else if (!cmd->command.compare ("help"))
-    help();
+    Help();
 
   /* quit command */
   else if (!cmd->command.compare ("quit"))
-    exit_lulznet ();
+    LulznetExit ();
 
   /* invalid command */
   else
     std::cout << cmd->command.c_str () << ": command not found." << std::endl;
 }
 
-void Shell::start ()
+void Shell::Start ()
 {
   std::string line;
   char *readline_str;
@@ -259,10 +251,11 @@ void Shell::start ()
           line = readline_str;
           if (!line.empty ())
             {
-              if ((cmd = preparse_command (line)))
+              if ((cmd = PreparseCommand (line)))
                 {
-                  parse_command (cmd);
+                  ParseCommand (cmd);
                   add_history (line.c_str ());
+                  line.clear();
                 }
               delete cmd;
             }

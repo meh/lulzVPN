@@ -32,9 +32,9 @@
  * and recv during handshake
  * TODO: find right size
  */
-char packet[128];
+char packet[64];
 
-void Protocol::send_banner (int fd)
+void Protocol::SendBanner (int fd)
 {
 
   char banner[512];
@@ -45,7 +45,7 @@ void Protocol::send_banner (int fd)
   write (fd, banner, len);
 }
 
-void Protocol::recv_banner (int fd)
+void Protocol::RecvBanner (int fd)
 {
 
   char banner[512];
@@ -53,58 +53,58 @@ void Protocol::recv_banner (int fd)
 
   len = read (fd, banner, 511);
   banner[len] = '\x00';
-  Log::info ("Recv Banner:\n%s", banner);
+  Log::Info ("Recv Banner:\n%s", banner);
 
 }
 
-int Protocol::server::handshake (SSL * ssl, hs_opt_t * hs_opt)
+int Protocol::server::Handshake (SSL * ssl, hs_opt_t * hs_opt)
 {
   /*
    * PROTOCOL!1!1ONE
    */
 
   /* Exchange peer username */
-  if (!ln_user_exchange (ssl, hs_opt))
+  if (!LnUserExchange (ssl, hs_opt))
     return FAIL;
 
   /* Recv hash and do authentication */
-  if (!ln_auth (ssl, hs_opt))
+  if (!LnAuth (ssl, hs_opt))
     return FAIL;
 
 #ifdef DEBUG
-  Log::debug2 ("Recving listening status");
+  Log::Debug2 ("Recving listening status");
 #endif
   if (!xSSL_read (ssl, packet, sizeof (char), "listening status"))
     return FAIL;
 
   /* Networks exchange */
-  if (!ln_recv_network (ssl, hs_opt))
+  if (!LnRecvNetworks (ssl, hs_opt))
     return FAIL;
 
-  if (!ln_send_network (ssl, hs_opt))
+  if (!LnSendNetworks (ssl, hs_opt))
     return FAIL;
 
   /* User exchange */
-  if (!ln_recv_userlist (ssl, hs_opt))
+  if (!LnRecvUserlist (ssl, hs_opt))
     return FAIL;
 
-  if (!ln_send_userlist (ssl))
+  if (!LnSendUserlist (ssl))
     return FAIL;
 
   return DONE;
 }
 
-int Protocol::client::handshake (SSL * ssl, hs_opt_t * hs_opt)
+int Protocol::client::Handshake (SSL * ssl, hs_opt_t * hs_opt)
 {
 
   /*
    * PROTOCOL!1!!ONE
    */
 
-  if (!ln_user_exchange (ssl, hs_opt))
+  if (!LnUserExchange (ssl, hs_opt))
     return FAIL;
 
-  if (!ln_auth (ssl))
+  if (!LnAuth (ssl))
     return FAIL;
 
   /*
@@ -114,7 +114,7 @@ int Protocol::client::handshake (SSL * ssl, hs_opt_t * hs_opt)
   /* Peer tells remote peer if it's listening or not */
   /* we need to know this for routing */
 #ifdef DEBUG
-  Log::debug2 ("Sending listening status");
+  Log::Debug2 ("Sending listening status");
 #endif
   if (options.flags () & LISTEN_MODE)
     packet[0] = 1;
@@ -125,37 +125,37 @@ int Protocol::client::handshake (SSL * ssl, hs_opt_t * hs_opt)
     return FAIL;
 
   /* Networks exchange */
-  if (!ln_send_network (ssl, hs_opt))
+  if (!LnSendNetworks (ssl, hs_opt))
     return FAIL;
 
-  if (!ln_recv_network (ssl, hs_opt))
+  if (!LnRecvNetworks (ssl, hs_opt))
     return FAIL;
 
   /* User exchange */
-  if (!ln_send_userlist (ssl))
+  if (!LnSendUserlist (ssl))
     return FAIL;
 
-  if (!ln_recv_userlist (ssl, hs_opt))
+  if (!LnRecvUserlist (ssl, hs_opt))
     return FAIL;
 
   return DONE;
 }
 
-int Protocol::server::ln_user_exchange (SSL * ssl, hs_opt_t * hs_opt)
+int Protocol::server::LnUserExchange (SSL * ssl, hs_opt_t * hs_opt)
 {
   int rd_len;
 
 #ifdef DEBUG
-  Log::debug2 ("Recving username");
+  Log::Debug2 ("Recving username");
 #endif
   if (!(rd_len = xSSL_read (ssl, packet, MAX_USERNAME_LEN, "username")))
     return FAIL;
 
   hs_opt->peer_username.assign (packet);
 
-  if (Peers::user_is_connected ((char *) hs_opt->peer_username.c_str ()))
+  if (Peers::UserIsConnected ((char *) hs_opt->peer_username.c_str ()))
     {
-      Log::error("User is connected");
+      Log::Error("User is connected");
       packet[0] = 0;
       xSSL_write (ssl, packet, 1, "user info");
       return FAIL;
@@ -163,7 +163,7 @@ int Protocol::server::ln_user_exchange (SSL * ssl, hs_opt_t * hs_opt)
 
   if ((!hs_opt->peer_username.compare (options.username ())))
     {
-      Log::error("User is connected (same as local peer)");
+      Log::Error("User is connected (same as local peer)");
       packet[0] = 0;
       xSSL_write (ssl, packet, 1, "user info");
       return FAIL;
@@ -175,7 +175,7 @@ int Protocol::server::ln_user_exchange (SSL * ssl, hs_opt_t * hs_opt)
 
   /* And send its username */
 #ifdef DEBUG
-  Log::debug2 ("Sending username");
+  Log::Debug2 ("Sending username");
 #endif
   if (!xSSL_write
       (ssl, (void *) options.username ().c_str (),
@@ -185,13 +185,13 @@ int Protocol::server::ln_user_exchange (SSL * ssl, hs_opt_t * hs_opt)
   return DONE;
 }
 
-int Protocol::client::ln_user_exchange (SSL * ssl, hs_opt_t * hs_opt)
+int Protocol::client::LnUserExchange (SSL * ssl, hs_opt_t * hs_opt)
 {
   int rd_len;
 
   /* Peer send its username */
 #ifdef DEBUG
-  Log::debug2 ("Sending username");
+  Log::Debug2 ("Sending username");
 #endif
   if (!xSSL_write
       (ssl, (char *) options.username ().c_str (),
@@ -201,13 +201,13 @@ int Protocol::client::ln_user_exchange (SSL * ssl, hs_opt_t * hs_opt)
   xSSL_read (ssl, packet, 1, "user info");
   if (packet[0] == 0)
     {
-      Log::error ("user is connected");
+      Log::Error ("user is connected");
       return FAIL;
     }
 
   /* And recv remote peer username */
 #ifdef DEBUG
-  Log::debug2 ("Recving username");
+  Log::Debug2 ("Recving username");
 #endif
   if (!(rd_len = xSSL_read (ssl, packet, MAX_USERNAME_LEN, "username")))
     return FAIL;
@@ -217,7 +217,7 @@ int Protocol::client::ln_user_exchange (SSL * ssl, hs_opt_t * hs_opt)
   return DONE;
 }
 
-int Protocol::server::ln_auth (SSL * ssl, hs_opt_t * hs_opt)
+int Protocol::server::LnAuth (SSL * ssl, hs_opt_t * hs_opt)
 {
 
   u_char hex_hash[16];
@@ -225,17 +225,17 @@ int Protocol::server::ln_auth (SSL * ssl, hs_opt_t * hs_opt)
 
   /* Recv hash */
 #ifdef DEBUG
-  Log::debug2 ("Recving hash");
+  Log::Debug2 ("Recving hash");
 #endif
   if (!xSSL_read (ssl, hex_hash, 16, "hash"))
     return FAIL;
 
   /* Do authentication checking if hash match local credential file's hash */
-  if (Auth::do_authentication (hs_opt->peer_username, hex_hash))
+  if (Auth::DoAuthentication (hs_opt->peer_username, hex_hash))
     {
       auth = AUTHENTICATION_SUCCESSFULL;
 #ifdef DEBUG
-      Log::debug2 ("Sending auth response (successfull)");
+      Log::Debug2 ("Sending auth response (successfull)");
 #endif
       if (!xSSL_write (ssl, &auth, sizeof (char), "auth response"))
         return FAIL;
@@ -244,7 +244,7 @@ int Protocol::server::ln_auth (SSL * ssl, hs_opt_t * hs_opt)
     {
       auth = AUTHENTICATION_FAILED;
 #ifdef DEBUG
-      Log::debug2 ("Sending auth response (failed)");
+      Log::Debug2 ("Sending auth response (failed)");
 #endif
       xSSL_write (ssl, &auth, sizeof (char), "auth response");
       return FAIL;
@@ -253,17 +253,17 @@ int Protocol::server::ln_auth (SSL * ssl, hs_opt_t * hs_opt)
   return DONE;
 }
 
-int Protocol::client::ln_auth (SSL * ssl)
+int Protocol::client::LnAuth (SSL * ssl)
 {
 
   u_char *hex_hash;
   char auth;
 
-  hex_hash = Auth::Crypt::calculate_md5 (options.password());
+  hex_hash = Auth::Crypt::CalculateMd5 (options.password());
 
   /* Then send password's hash */
 #ifdef DEBUG
-  Log::debug2 ("Sending hash");
+  Log::Debug2 ("Sending hash");
 #endif
   if (!xSSL_write (ssl, hex_hash, 16, "hash"))
     {
@@ -271,30 +271,30 @@ int Protocol::client::ln_auth (SSL * ssl)
       return FAIL;
     }
 
-  delete hex_hash;
+  delete[] hex_hash;
 
   /* And recv authentication response */
 #ifdef DEBUG
-  Log::debug2 ("Recving auth response");
+  Log::Debug2 ("Recving auth response");
 #endif
 
   if (!xSSL_read (ssl, &auth, sizeof (char), "auth response"))
     return FAIL;
 
 #ifdef DEBUG
-  Log::debug2 ("Server response: %s (%x)",
+  Log::Debug2 ("Server response: %s (%x)",
                (auth ? "auth successfull" : "auth failed"), auth);
 #endif
 
   if (auth == AUTHENTICATION_FAILED)
     {
-      Log::error ("Authentication failed");
+      Log::Error ("Authentication failed");
       return FAIL;
     }
   return DONE;
 }
 
-int Protocol::ln_send_network (SSL * ssl, hs_opt_t * hs_opt)
+int Protocol::LnSendNetworks (SSL * ssl, hs_opt_t * hs_opt)
 {
   int i;
   net_ls_t local_net_ls;
@@ -302,12 +302,12 @@ int Protocol::ln_send_network (SSL * ssl, hs_opt_t * hs_opt)
   local_net_ls = Taps::get_user_allowed_networks ((char *) hs_opt->peer_username.c_str ());
 
 #ifdef DEBUG
-  Log::debug2 ("Sending available network count");
+  Log::Debug2 ("Sending available network count");
 #endif
   if (local_net_ls.count == 0)
     {
 #ifdef DEBUG
-      Log::debug2 ("Peer cannot access any networks");
+      Log::Debug2 ("Peer cannot access any networks");
 #endif
       xSSL_write (ssl, &local_net_ls.count, sizeof (int), "network count");
       return FAIL;
@@ -335,13 +335,13 @@ int Protocol::ln_send_network (SSL * ssl, hs_opt_t * hs_opt)
 
 }
 
-int Protocol::ln_recv_network (SSL * ssl, hs_opt_t * hs_opt)
+int Protocol::LnRecvNetworks (SSL * ssl, hs_opt_t * hs_opt)
 {
   int i;
   int rd_len;
 
 #ifdef DEBUG
-  Log::debug2 ("Recving available network count");
+  Log::Debug2 ("Recving available network count");
 #endif
   if (!
       (rd_len =
@@ -350,7 +350,7 @@ int Protocol::ln_recv_network (SSL * ssl, hs_opt_t * hs_opt)
 
   if (hs_opt->net_ls.count == 0)
     {
-      Log::error ("No network available");
+      Log::Error ("No network available");
       return FAIL;
     }
 
@@ -372,14 +372,14 @@ int Protocol::ln_recv_network (SSL * ssl, hs_opt_t * hs_opt)
   return DONE;
 }
 
-int Protocol::ln_send_userlist (SSL * ssl)
+int Protocol::LnSendUserlist (SSL * ssl)
 {
   int i;
   user_ls_t user_ls;
-  user_ls = Protocol::get_userlist ();
+  user_ls = Protocol::GetUserlist ();
 
 #ifdef DEBUG
-  Log::debug2 ("Sending peer count");
+  Log::Debug2 ("Sending peer count");
 #endif
   if (!xSSL_write (ssl, &user_ls.count, sizeof (int), "peer count"))
     return FAIL;
@@ -398,7 +398,7 @@ int Protocol::ln_send_userlist (SSL * ssl)
   return DONE;
 }
 
-int Protocol::ln_recv_userlist (SSL * ssl, hs_opt_t * hs_opt)
+int Protocol::LnRecvUserlist (SSL * ssl, hs_opt_t * hs_opt)
 {
   int i;
 
@@ -410,7 +410,7 @@ int Protocol::ln_recv_userlist (SSL * ssl, hs_opt_t * hs_opt)
   hs_opt->user_ls.user = new std::string[hs_opt->user_ls.count];
   hs_opt->user_ls.address = new int[hs_opt->user_ls.count];
 
-  /* And recv peers Log::info */
+  /* And recv peers Log::Info */
   for (i = 0; i < hs_opt->user_ls.count && i < MAX_PEERS; i++)
     {
       if (!(rd_len = xSSL_read (ssl, packet, MAX_USERNAME_LEN, "user list")))
@@ -430,7 +430,7 @@ int Protocol::ln_recv_userlist (SSL * ssl, hs_opt_t * hs_opt)
 
 }
 
-user_ls_t Protocol::get_userlist ()
+user_ls_t Protocol::GetUserlist ()
 {
 
   int i;

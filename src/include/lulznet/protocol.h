@@ -57,33 +57,33 @@ namespace Protocol
 {
 
 /* Send and recv banner */
-void send_banner (int fd);
-void recv_banner (int fd);
+void SendBanner (int fd);
+void RecvBanner (int fd);
 
 namespace server
 {
-int handshake (SSL * ssl, hs_opt_t * hs_opt);
-int ln_user_exchange (SSL * ssl, hs_opt_t * hs_opt);
-int ln_auth (SSL * ssl, hs_opt_t * hs_opt);
+int Handshake (SSL * ssl, hs_opt_t * hs_opt);
+int LnUserExchange (SSL * ssl, hs_opt_t * hs_opt);
+int LnAuth (SSL * ssl, hs_opt_t * hs_opt);
 }
 
 namespace client
 {
 /* peer and server handshake */
-int handshake (SSL * ssl, hs_opt_t * hs_opt);
-int ln_user_exchange (SSL * ssl, hs_opt_t * hs_opt);
-int ln_auth (SSL * ssl);
+int Handshake (SSL * ssl, hs_opt_t * hs_opt);
+int LnUserExchange (SSL * ssl, hs_opt_t * hs_opt);
+int LnAuth (SSL * ssl);
 }
 
 /* Networks exchange */
-int ln_send_network (SSL * ssl, hs_opt_t * hs_opt);
-int ln_recv_network (SSL * ssl, hs_opt_t * hs_opt);
+int LnSendNetworks (SSL * ssl, hs_opt_t * hs_opt);
+int LnRecvNetworks (SSL * ssl, hs_opt_t * hs_opt);
 
 /* User exchange */
-int ln_send_userlist (SSL * ssl);
-int ln_recv_userlist (SSL * ssl, hs_opt_t * hs_opt);
+int LnSendUserlist (SSL * ssl);
+int LnRecvUserlist (SSL * ssl, hs_opt_t * hs_opt);
 
 /* Return a list with all the users connected */
-user_ls_t get_userlist ();
+user_ls_t GetUserlist ();
 }
 #endif
