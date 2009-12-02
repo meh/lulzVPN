@@ -272,6 +272,10 @@ Taps::configure_device (std::string device, std::string address, std::string net
   sprintf (ifconfig_command, "ifconfig %s %s netmask %s", device.c_str(), address.c_str(), netmask.c_str());
   system (ifconfig_command);
 
+#ifdef DEBUG
+          Log::Debug2("Ifconfig command: %s",ifconfig_command);
+#endif
+
   return 1;
 }
 
@@ -339,7 +343,7 @@ Taps::set_system_routing (Peers::Peer * peer, char op)
                      netmask, gateway);
 
 #ifdef DEBUG
-          Log::Debug3("Route command: %s",route_command);
+          Log::Debug2("Route command: %s",route_command);
 #endif
           system (route_command);
         }
