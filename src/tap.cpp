@@ -269,7 +269,7 @@ Taps::configure_device (std::string device, std::string address, std::string net
 {
   char ifconfig_command[256];
 
-  sprintf (ifconfig_command, "/sbin/ifconfig %s %s netmask %s", device.c_str(), address.c_str(), netmask.c_str());
+  sprintf (ifconfig_command, "ifconfig %s %s netmask %s", device.c_str(), address.c_str(), netmask.c_str());
   system (ifconfig_command);
 
   return 1;
@@ -331,11 +331,11 @@ Taps::set_system_routing (Peers::Peer * peer, char op)
 
           if (op == ADD_ROUTING)
             sprintf (route_command,
-                     "/sbin/route add -net %s netmask %s gw %s", network,
+                     "route add -net %s netmask %s gw %s", network,
                      netmask, gateway);
           else
             sprintf (route_command,
-                     "/sbin/route del -net %s netmask %s gw %s", network,
+                     "route del -net %s netmask %s gw %s", network,
                      netmask, gateway);
 
 #ifdef DEBUG

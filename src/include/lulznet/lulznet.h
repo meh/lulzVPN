@@ -55,6 +55,8 @@
 
 #include "_config.h"
 
+#define DEBUG
+
 #ifndef _LNET_LULZNET_H
 #define _LNET_LULZNET_H
 
