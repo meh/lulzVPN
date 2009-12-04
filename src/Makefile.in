@@ -31,7 +31,7 @@ $(source:.cpp=.o): $(source)
 
 clean:
 	rm -f $(srcdir)/*.o
-	rm ${package}
+	rm ../${package}
 
 Makefile: Makefile.in ../config.status
 	cd .. && ./config.status $@
