@@ -22,7 +22,7 @@ source	= $(srcdir)/auth.cpp\
 	  $(srcdir)/packet.cpp
 
 all:lulznet 
-	${CC} ${LDFLAGS} -o ${package} $(source:.cpp=.o)
+	${CC} ${LDFLAGS} -o ../${package} $(source:.cpp=.o)
       
 lulznet: $(source:.cpp=.o)
 

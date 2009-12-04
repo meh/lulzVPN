@@ -45,7 +45,6 @@ private:
   std::string _device;
   int _address;
   int _netmask;
-  int _network;
 
   int alloc (std::string *dev);
 
@@ -63,7 +62,6 @@ public:
   std::string device ();
   int address ();
   int netmask ();
-  int network ();
 };
 
 /* A structure that keep file descriptors information */
@@ -87,6 +85,8 @@ int configure_device (std::string device, std::string address, std::string netma
 void set_system_routing (Peers::Peer * peer, char op);
 
 int get_ip_address_default_netmask (int address);
+
+int getCidrNotation(int netmask);
 
 #define get_ip_address_network(address, netmask) ((address) & (netmask))
 

@@ -42,8 +42,8 @@ typedef struct
 
   std::string *device;
   int *address;
-  int *network;
   int *netmask;
+  int *network;
 } net_ls_t;
 
 typedef struct

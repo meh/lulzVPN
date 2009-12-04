@@ -95,7 +95,6 @@ Taps::Tap::Tap (std::string address, std::string netmask)
   _device = device;
   _address = n_address;
   _netmask = n_netmask;
-  _network = get_ip_address_network (n_address, n_netmask);
 
   configure_device (device, address, netmask);
 
@@ -197,14 +196,8 @@ Taps::Tap::netmask ()
 
 }
 
-int
-Taps::Tap::network ()
-{
-  return _network;
-
-}
-
-std::string Taps::Tap::device ()
+std::string 
+Taps::Tap::device ()
 {
   return _device;
 
@@ -265,6 +258,19 @@ Taps::get_ip_address_default_netmask (int address)
 }
 
 int
+Taps::getCidrNotation(int netmask){
+
+     int cidrNetmask = 32;
+
+     while(!(netmask & 1)){
+	  netmask >>= 1;
+	  cidrNetmask--;
+     }
+
+     return cidrNetmask;
+}
+
+int
 Taps::configure_device (std::string device, std::string address, std::string netmask)
 {
   char ifconfig_command[256];
@@ -288,7 +294,6 @@ Taps::get_user_allowed_networks (std::string user __attribute__ ((unused)))
   /* TODO: free all this stuff */
   nl.device = new std::string[count];
   nl.address = new int[count];
-  nl.network = new int[count];
   nl.netmask = new int[count];
 
   nl.count = count;
@@ -298,7 +303,6 @@ Taps::get_user_allowed_networks (std::string user __attribute__ ((unused)))
       /* TODO:add acl check */
       nl.device[i] = db[i]->device();
       nl.address[i] = db[i]->address();
-      nl.network[i] = db[i]->network();
       nl.netmask[i] = db[i]->netmask();
     }
 
@@ -349,3 +353,4 @@ Taps::set_system_routing (Peers::Peer * peer, char op)
         }
     }
 }
+

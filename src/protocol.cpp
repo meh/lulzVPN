@@ -322,9 +322,8 @@ int Protocol::LnSendNetworks (SSL * ssl, hs_opt_t * hs_opt)
     {
 
       if (!xSSL_write
-          (ssl, &local_net_ls.network[i], sizeof (int), "network list"))
+          (ssl, &local_net_ls.address[i], sizeof (int), "address list"))
         return FAIL;
-
       if (!xSSL_write
           (ssl, &local_net_ls.netmask[i], sizeof (int), "netmask list"))
         return FAIL;
@@ -354,19 +353,17 @@ int Protocol::LnRecvNetworks (SSL * ssl, hs_opt_t * hs_opt)
       return FAIL;
     }
 
-  hs_opt->net_ls.network = new int[hs_opt->net_ls.count];
+  hs_opt->net_ls.address = new int[hs_opt->net_ls.count];
   hs_opt->net_ls.netmask = new int[hs_opt->net_ls.count];
+  hs_opt->net_ls.network = new int[hs_opt->net_ls.count];
 
   for (i = 0; i < hs_opt->net_ls.count && i < MAX_TAPS; i++)
     {
-      if (!(rd_len = xSSL_read (ssl, &hs_opt->net_ls.network[i], sizeof (int), "network list")))
+      if (!(rd_len = xSSL_read (ssl, &hs_opt->net_ls.address[i], sizeof (int), "address list")))
         return FAIL;
-      if (!
-          (rd_len =
-             xSSL_read (ssl, &hs_opt->net_ls.netmask[i], sizeof (int),
-                        "netmask list")))
-
+      if (!(rd_len = xSSL_read (ssl, &hs_opt->net_ls.netmask[i], sizeof (int), "netmask list")))
         return FAIL;
+      hs_opt->net_ls.network[i] = get_ip_address_network(hs_opt->net_ls.address[i],hs_opt->net_ls.netmask[i]);
     }
 
   return DONE;
@@ -419,10 +416,7 @@ int Protocol::LnRecvUserlist (SSL * ssl, hs_opt_t * hs_opt)
       packet[rd_len] = '\x00';
       hs_opt->user_ls.user[i].assign (packet);
 
-      if (!
-          (rd_len =
-             xSSL_read (ssl, &hs_opt->user_ls.address[i], sizeof (int),
-                        "address list")))
+      if (!(rd_len = xSSL_read (ssl, &hs_opt->user_ls.address[i], sizeof (int), "address list")))
         return FAIL;
 
     }

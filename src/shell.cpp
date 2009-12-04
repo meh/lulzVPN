@@ -59,8 +59,8 @@ void Shell::PeerList ()
   int j;
   int tmp;
   char address[ADDRESS_LEN + 1];
-  char network[ADDRESS_LEN + 1];
-  char netmask[ADDRESS_LEN + 1];
+  char vAddress[ADDRESS_LEN + 1];
+  int cidrNetmask;
   Peers::Peer * peer;
 
   for (i = 0; i < Peers::count; i++)
@@ -69,15 +69,13 @@ void Shell::PeerList ()
 
       tmp = peer->address ();
       inet_ntop (AF_INET, &tmp, address, ADDRESS_LEN);
-
       std::cout << peer->user() << "\taddr: " << address << " networks: " << peer->nl().count << std::endl;
+
       for (j = 0; j < peer->nl ().count; j++)
         {
-
-          inet_ntop (AF_INET, &peer->nl ().network[j], network, ADDRESS_LEN);
-          inet_ntop (AF_INET, &peer->nl ().netmask[j], netmask, ADDRESS_LEN);
-
-          std::cout << "\t\tnetwork: " << network << " netmask: " << netmask << std::endl;
+          inet_ntop (AF_INET, &peer->nl ().address[j], vAddress, ADDRESS_LEN);
+	  cidrNetmask = Taps::getCidrNotation(ntohl(peer->nl().netmask[i]));
+          std::cout << "\t\t[" << i + 1 << "] addr: " << vAddress << "/" << cidrNetmask << std::endl;
         }
     }
 }
@@ -114,7 +112,7 @@ void Shell::TapList ()
   int n_address;
   int n_netmask;
   char p_address[ADDRESS_LEN + 1];
-  char p_netmask[ADDRESS_LEN + 1];
+  int netmask;
   Taps::Tap * tap;
 
   for (i = 0; i < Taps::count; i++)
@@ -124,9 +122,9 @@ void Shell::TapList ()
       n_address = tap->address();
       n_netmask = tap->netmask();
       inet_ntop (AF_INET, &n_address, p_address, ADDRESS_LEN);
-      inet_ntop (AF_INET, &n_netmask, p_netmask, ADDRESS_LEN);
+      netmask = Taps::getCidrNotation(ntohl(n_netmask));
 
-      std::cout << tap->device () << "\taddr: " << p_address << " mask: " << p_netmask << std::endl;
+      std::cout << tap->device () << "\taddr: " << p_address << "/" << netmask << std::endl;
     }
 }
 

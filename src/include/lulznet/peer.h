@@ -50,6 +50,7 @@ private:
   char _type;
   std::string _user;
   int _address;
+  int _virtualAddress;
   net_ls_t _nl;
 
 public:
@@ -63,7 +64,6 @@ public:
   bool isActive();
   bool isReadyToRead(fd_set *rd_sel);
   void setClosing();
-  void showInfo();
   void Disassociate();
 
 public:
