@@ -75,9 +75,9 @@ void Shell::PeerList ()
 
       for (j = 0; j < peer->nl().count; j++)
         {
-	  n_vAddress = peer->nl().address[j];
+          n_vAddress = peer->nl().address[j];
           inet_ntop (AF_INET, &n_vAddress, p_vAddress, ADDRESS_LEN);
-	  cidrNetmask = Taps::getCidrNotation(ntohl(peer->nl().netmask[i]));
+          cidrNetmask = Taps::getCidrNotation(ntohl(peer->nl().netmask[i]));
 
           std::cout << "\t\t[" << j + 1 << "] addr: " << p_vAddress << "/" << cidrNetmask << std::endl;
         }

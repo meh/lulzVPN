@@ -196,7 +196,7 @@ Taps::Tap::netmask ()
 
 }
 
-std::string 
+std::string
 Taps::Tap::device ()
 {
   return _device;
@@ -258,16 +258,18 @@ Taps::get_ip_address_default_netmask (int address)
 }
 
 int
-Taps::getCidrNotation(int netmask){
+Taps::getCidrNotation(int netmask)
+{
 
-     int cidrNetmask = 32;
+  int cidrNetmask = 32;
 
-     while(!(netmask & 1)){
-	  netmask >>= 1;
-	  cidrNetmask--;
-     }
+  while (!(netmask & 1) && cidrNetmask > 0)
+    {
+      netmask >>= 1;
+      cidrNetmask--;
+    }
 
-     return cidrNetmask;
+  return cidrNetmask;
 }
 
 int
@@ -279,7 +281,7 @@ Taps::configure_device (std::string device, std::string address, std::string net
   system (ifconfig_command);
 
 #ifdef DEBUG
-          Log::Debug2("Ifconfig command: %s",ifconfig_command);
+  Log::Debug2("Ifconfig command: %s",ifconfig_command);
 #endif
 
   return 1;
