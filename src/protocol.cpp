@@ -151,6 +151,7 @@ int Protocol::server::LnUserExchange (SSL * ssl, hs_opt_t * hs_opt)
   if (!(rd_len = xSSL_read (ssl, packet, MAX_USERNAME_LEN, "username")))
     return FAIL;
 
+  packet[rd_len] = '\x00';
   hs_opt->peer_username.assign (packet);
 
   if (Peers::UserIsConnected ((char *) hs_opt->peer_username.c_str ()))
@@ -211,7 +212,7 @@ int Protocol::client::LnUserExchange (SSL * ssl, hs_opt_t * hs_opt)
 #endif
   if (!(rd_len = xSSL_read (ssl, packet, MAX_USERNAME_LEN, "username")))
     return FAIL;
-
+  packet[rd_len] = '\x00';
   hs_opt->peer_username.assign (packet);
 
   return DONE;

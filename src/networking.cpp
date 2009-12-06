@@ -257,9 +257,6 @@ void Network::Client::PeerConnect (int address, short port)
                                   Network::check_connections_queue, &hs_opt.user_ls);
                   pthread_join (connect_queue_t, NULL);
 
-		  /* TODO: check 
-                  delete hs_opt.user_ls.user;
-                  delete hs_opt.user_ls.address; */
                 }
               else
                 {
