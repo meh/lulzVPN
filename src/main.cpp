@@ -38,7 +38,7 @@ int main (int argc, char *argv[])
   pthread_t server_t;	/* Listening thread */
 
   /* Wellcome!1!1ONE */
-  std::cout << "Wellcome to lulzNet ¯\\_(O_o)_/¯" << std::endl;
+  std::cout << "Welcome to lulzNet ¯\\_(O_o)_/¯" << std::endl;
   std::cout << "Lulz p2p Virtual Priv8 Net" << std::endl;
   std::cout << "Version: " << VERSION << std::endl;
 

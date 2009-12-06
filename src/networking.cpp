@@ -256,12 +256,10 @@ void Network::Client::PeerConnect (int address, short port)
                   pthread_create (&connect_queue_t, NULL,
                                   Network::check_connections_queue, &hs_opt.user_ls);
                   pthread_join (connect_queue_t, NULL);
-                  /* XXX: check
+
+		  /* TODO: check 
                   delete hs_opt.user_ls.user;
-                  delete hs_opt.user_ls.address;
-                  delete hs_opt.net_ls.address;
-                  delete hs_opt.net_ls.network;
-                  delete hs_opt.net_ls.netmask; */
+                  delete hs_opt.user_ls.address; */
                 }
               else
                 {
