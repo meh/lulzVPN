@@ -23,9 +23,9 @@
 
 u_int PacketInspection::get_destination_ip (Network::Packet *packet)
 {
-  eth_header *eth_hdr;
-  arp_header *arp_hdr;
-  ip_header *ip_hdr;
+  eth_header *ethHdr;
+  arp_header *arpHdr;
+  ip_header *ipHdr;
   u_int address;
   u_short protocol;
 
@@ -33,16 +33,16 @@ u_int PacketInspection::get_destination_ip (Network::Packet *packet)
   char p_addr[ADDRESS_LEN];
 #endif
 
-  eth_hdr = (eth_header *) (packet->buffer + 1);
-  protocol = eth_hdr->eth_type;
+  ethHdr = (eth_header *) (packet->buffer + 1);
+  protocol = ethHdr->eth_type;
   protocol = ntohs (protocol);
 
   if (protocol == 0x0806)
     {
       /*arp packet */
 
-      arp_hdr = (arp_header *) (packet->buffer + ETH_HDR_LEN + 1);
-      address = arp_hdr->dst_ip_adr;
+      arpHdr = (arp_header *) (packet->buffer + ETH_HDR_LEN + 1);
+      address = arpHdr->dst_ip_adr;
 #ifdef DEBUG
       inet_ntop (AF_INET, &address, p_addr, ADDRESS_LEN);
       Log::Debug3 ("\tarp packet, dst: %s", p_addr);
@@ -53,8 +53,8 @@ u_int PacketInspection::get_destination_ip (Network::Packet *packet)
     {
       /* ip packet */
 
-      ip_hdr = (ip_header *) (packet->buffer + ETH_HDR_LEN + 1);
-      address = ip_hdr->dst_adr;
+      ipHdr = (ip_header *) (packet->buffer + ETH_HDR_LEN + 1);
+      address = ipHdr->dst_adr;
 
 #ifdef DEBUG
       inet_ntop (AF_INET, &address, p_addr, ADDRESS_LEN);

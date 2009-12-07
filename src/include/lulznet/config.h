@@ -33,8 +33,8 @@ class Config
 
 private:
   int _flags;
-  short _connecting_port;
-  short _binding_port;
+  short _connectingPort;
+  short _bindingPort;
   std::string _connecting_address;
   std::string _binding_address;
   std::string _tap_address;
@@ -42,14 +42,14 @@ private:
   std::string _username;
   std::string _password;
 #ifdef DEBUG
-  int _debug_level;
+  int _debugLevel;
 #endif
 
 public:
   Config ();
   int flags ();
-  short connecting_port ();
-  short binding_port ();
+  short connectingPort ();
+  short bindingPort ();
   std::string connecting_address ();
   std::string binding_address ();
   std::string tap_address ();
@@ -58,7 +58,7 @@ public:
   std::string password ();
   void password (std::string password);
 #ifdef DEBUG
-  int debug_level ();
+  int debugLevel ();
 #endif
 
 public:

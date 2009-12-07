@@ -26,23 +26,23 @@
 int
 Auth::DoAuthentication (std::string username, u_char * hash)
 {
-  std::string str_hash;
-  std::string local_hash;
+  std::string strHash;
+  std::string localHash;
   char tmp[3];
   int response;
   int i;
 
   response = FALSE;
 
-  local_hash = File::get_hash (username);
-  if (!local_hash.empty ())
+  localHash = File::get_hash (username);
+  if (!localHash.empty ())
     {
       for (i = 0; i < MD5_DIGEST_LENGTH; i++)
         {
           sprintf (tmp, "%02x", hash[i]);
-          str_hash.append (tmp);
+          strHash.append (tmp);
         }
-      if (!str_hash.compare (local_hash))
+      if (!strHash.compare (localHash))
         response = TRUE;
       else
         Log::Error ("Wrong password");
@@ -123,18 +123,18 @@ Auth::Crypt::CalculateMd5 (std::string string)
   EVP_MD_CTX mdctx;
   const EVP_MD *md;
   u_int md_len;
-  u_char *hex_hash;
+  u_char *hexHash;
 
-  hex_hash = new u_char[MD5_DIGEST_LENGTH];
+  hexHash = new u_char[MD5_DIGEST_LENGTH];
 
   md = EVP_get_digestbyname ("MD5");
   EVP_MD_CTX_init (&mdctx);
   EVP_DigestInit_ex (&mdctx, md, NULL);
   EVP_DigestUpdate (&mdctx, string.c_str (), string.length ());
-  EVP_DigestFinal_ex (&mdctx, hex_hash, &md_len);
+  EVP_DigestFinal_ex (&mdctx, hexHash, &md_len);
   EVP_MD_CTX_cleanup (&mdctx);
 
-  return hex_hash;
+  return hexHash;
 }
 
 char *

@@ -38,7 +38,7 @@ void Log::Debug1 (const char *msg, ...)
 {
   va_list args;
 
-  if (options.debug_level () < 1)
+  if (options.debugLevel () < 1)
     return;
 
   va_start (args, msg);
@@ -50,7 +50,7 @@ void Log::Debug2 (const char *msg, ...)
 {
   va_list args;
 
-  if (options.debug_level () < 2)
+  if (options.debugLevel () < 2)
     return;
 
   va_start (args, msg);
@@ -62,7 +62,7 @@ void Log::Debug3 (const char *msg, ...)
 {
   va_list args;
 
-  if (options.debug_level () < 3)
+  if (options.debugLevel () < 3)
     return;
 
   va_start (args, msg);
@@ -139,7 +139,7 @@ void Log::Dump (unsigned char *data_buffer, int length)
   int i;
   int j;
 
-  if (options.debug_level () < 4)
+  if (options.debugLevel () < 4)
     return;
 
   pthread_mutex_lock (&mutex);

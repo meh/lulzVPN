@@ -37,7 +37,7 @@ extern int free_fd_flag;
 namespace Client
 {
 
-extern SSL_CTX *ssl_ctx;
+extern SSL_CTX *sslCtx;
 /* Initialize ssl client's context */
 void SslInit ();
 
@@ -49,7 +49,7 @@ void PeerConnect (int address, short port);
 namespace Server
 {
 
-extern SSL_CTX *ssl_ctx;
+extern SSL_CTX *sslCtx;
 
 /* mutex used to prevent fd_db structure's modifies
    while select() main cycle is running */

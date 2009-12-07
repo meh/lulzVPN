@@ -31,20 +31,20 @@ Peers::Peer * Peers::db[MAX_PEERS];
 pthread_mutex_t Peers::db_mutex;
 int Peers::count;
 int Peers::conections_to_peer;
-int Peers::max_fd;
+int Peers::maxFd;
 
 void
 Peers::SetMaxFd ()
 {
   int i;
-  max_fd = 0;
+  maxFd = 0;
 
   for (i = 0; i < count; i++)
-    if (db[i]->fd() > max_fd)
-      max_fd = db[i]->fd();
+    if (db[i]->fd() > maxFd)
+      maxFd = db[i]->fd();
 }
 
-Peers::Peer::Peer (int fd, SSL * ssl, std::string user, int address, net_ls_t nl, char type)
+Peers::Peer::Peer (int fd, SSL * ssl, std::string user, int address, netLsT nl, char type)
 {
   _fd = fd;
   _ssl = ssl;
@@ -168,7 +168,7 @@ int Peers::Peer::address ()
   return _address;
 }
 
-net_ls_t Peers::Peer::nl ()
+netLsT Peers::Peer::nl ()
 {
   return _nl;
 }
@@ -184,7 +184,7 @@ void Peers::FreeNonActive ()
   for (i = 0; i < count; i++)
     if (!db[i]->isActive ())
       {
-        Taps::set_system_routing (db[i], DEL_ROUTING);
+        Taps::setSystemRouting (db[i], DEL_ROUTING);
         delete db[i];
         db[i] = NULL;
       }
@@ -197,18 +197,18 @@ Peers::RebuildDb ()
 {
   int i;
   int j;
-  int freed_peer;
+  int freedPeer;
 
-  freed_peer = 0;
+  freedPeer = 0;
   j = 0;
 
   for (i = 0; i < count; i++)
     if (db[i] != NULL)
       db[j++] = db[i];
     else
-      freed_peer++;
+      freedPeer++;
 
-  count -= freed_peer;
+  count -= freedPeer;
   SetMaxFd ();
 }
 
@@ -221,7 +221,7 @@ Peers::Peer::Disassociate ()
   packet[1] =  CLOSE_CONNECTION;
   xSSL_write (_ssl, packet, 2, "disconnection packet");
 
-  Taps::set_system_routing (this, DEL_ROUTING);
+  Taps::setSystemRouting (this, DEL_ROUTING);
   delete this;
 }
 

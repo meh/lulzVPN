@@ -35,7 +35,7 @@ int main (int argc, char *argv[])
 
   int address;
   Taps::Tap * tap;
-  pthread_t server_t;	/* Listening thread */
+  pthread_t serverT;	/* Listening thread */
 
   /* Wellcome!1!1ONE */
   std::cout << "Welcome to lulzNet ¯\\_(O_o)_/¯" << std::endl;
@@ -63,7 +63,7 @@ int main (int argc, char *argv[])
 
   /* Start (or not) the listening service */
   if (options.flags () & LISTEN_MODE)
-    pthread_create (&server_t, NULL, Network::Server::ServerLoop, NULL);
+    pthread_create (&serverT, NULL, Network::Server::ServerLoop, NULL);
 #ifdef DEBUG
   else
     Log::Debug1 ("Not listening");
@@ -74,7 +74,7 @@ int main (int argc, char *argv[])
     {
       address = Network::LookupAddress (options.connecting_address ());
       if (address != 0)
-        Network::Client::PeerConnect (address, options.connecting_port ());
+        Network::Client::PeerConnect (address, options.connectingPort ());
     }
 
   /* ??? (another black magic) */
@@ -90,7 +90,7 @@ int main (int argc, char *argv[])
 
   /* cause we don't like it exits as soon as it starts :| */
   pthread_join (Network::Server::select_t, NULL);
-  pthread_join (server_t, NULL);
+  pthread_join (serverT, NULL);
 
   return 0;
 }
@@ -100,11 +100,11 @@ void LulznetInit ()
   memset (Peers::db, '\x00', MAX_PEERS * sizeof (Peers::Peer *));
   Peers::count = 0;
   Peers::conections_to_peer = 0;
-  Peers::max_fd = 0;
+  Peers::maxFd = 0;
 
   memset (Taps::db, '\x00', MAX_TAPS * sizeof (Taps::Tap *));
   Taps::count = 0;
-  Taps::max_fd = 0;
+  Taps::maxFd = 0;
 
   FD_ZERO (&Network::master);
 

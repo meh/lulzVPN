@@ -68,7 +68,7 @@ public:
 extern Tap *db[MAX_TAPS];
 extern pthread_mutex_t db_mutex;
 extern int count;
-extern int max_fd;
+extern int maxFd;
 
 /* set global var max_tap_fd to proper value */
 void SetMaxFd ();
@@ -80,17 +80,17 @@ void RebuildDb ();
 Tap *get_fd_related (int fd);
 
 /* Set address of tap device */
-int configure_device (std::string device, std::string address, std::string netmask);
+int configureDevice (std::string device, std::string address, std::string netmask);
 
-void set_system_routing (Peers::Peer * peer, char op);
+void setSystemRouting (Peers::Peer * peer, char op);
 
-int get_ip_address_default_netmask (int address);
+int getDefaultNetmask (int address);
 
 int getCidrNotation(int netmask);
 
 #define get_ip_address_network(address, netmask) ((address) & (netmask))
 
-net_ls_t get_user_allowed_networks (std::string user);
+netLsT getUserAllowedNetworks (std::string user);
 
 }
 #endif

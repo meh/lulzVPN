@@ -30,18 +30,18 @@
 Taps::Tap  *Taps::db[MAX_TAPS];
 pthread_mutex_t Taps::db_mutex;
 int Taps::count;
-int Taps::max_fd;
+int Taps::maxFd;
 
 void
 Taps::SetMaxFd ()
 {
 
   int i;
-  max_fd = 0;
+  maxFd = 0;
 
   for (i = 0; i < count; i++)
-    if (db[i]->fd() > max_fd)
-      max_fd = db[i]->fd();
+    if (db[i]->fd() > maxFd)
+      maxFd = db[i]->fd();
 }
 
 int
@@ -84,7 +84,7 @@ Taps::Tap::Tap (std::string address, std::string netmask)
 
   if (netmask.empty())
     {
-      n_netmask = get_ip_address_default_netmask (n_address);
+      n_netmask = htonl(getDefaultNetmask (n_address));
       inet_ntop (AF_INET, &n_netmask, (char *) netmask.c_str(), ADDRESS_LEN);
     }
   else
@@ -96,7 +96,7 @@ Taps::Tap::Tap (std::string address, std::string netmask)
   _address = n_address;
   _netmask = n_netmask;
 
-  configure_device (device, address, netmask);
+  configureDevice (device, address, netmask);
 
   db[count] = this;
 
@@ -224,32 +224,32 @@ Taps::RebuildDb ()
 {
   int i;
   int j;
-  int freed_tap;
+  int freedTap;
 
-  freed_tap = 0;
+  freedTap = 0;
   j = 0;
 
   for (i = 0; i < count; i++)
     if (db[i] != NULL)
       db[j++] = db[i];
     else
-      freed_tap++;
+      freedTap++;
 
-  count -= freed_tap;
+  count -= freedTap;
   SetMaxFd ();
 }
 
 int
-Taps::get_ip_address_default_netmask (int address)
+Taps::getDefaultNetmask (int address)
 {
-  u_char *c_addr;
+  u_char *cAddr;
   int netmask;
 
-  c_addr = (u_char *) & address;
+  cAddr = (u_char *) & address;
 
-  if (c_addr[0] < (u_char) 128)
+  if (cAddr[0] < (u_char) 128)
     netmask = 0xff000000;
-  else if (c_addr[0] < (u_char) 192)
+  else if (cAddr[0] < (u_char) 192)
     netmask = 0xffff0000;
   else
     netmask = 0xffffff00;
@@ -273,7 +273,7 @@ Taps::getCidrNotation(int netmask)
 }
 
 int
-Taps::configure_device (std::string device, std::string address, std::string netmask)
+Taps::configureDevice (std::string device, std::string address, std::string netmask)
 {
   char ifconfig_command[256];
 
@@ -287,11 +287,11 @@ Taps::configure_device (std::string device, std::string address, std::string net
   return 1;
 }
 
-net_ls_t
-Taps::get_user_allowed_networks (std::string user __attribute__ ((unused)))
+netLsT
+Taps::getUserAllowedNetworks (std::string user __attribute__ ((unused)))
 {
   int i;
-  net_ls_t nl;
+  netLsT nl;
 
   /* TODO: free all this stuff */
   nl.device = new std::string[count];
@@ -312,7 +312,7 @@ Taps::get_user_allowed_networks (std::string user __attribute__ ((unused)))
 }
 
 void
-Taps::set_system_routing (Peers::Peer * peer, char op)
+Taps::setSystemRouting (Peers::Peer * peer, char op)
 {
   char route_command[256];
 
@@ -320,13 +320,13 @@ Taps::set_system_routing (Peers::Peer * peer, char op)
   char network[ADDRESS_LEN + 1];
   char netmask[ADDRESS_LEN + 1];
 
-  net_ls_t local_nl;
-  net_ls_t remote_nl;
+  netLsT local_nl;
+  netLsT remote_nl;
 
   int i;
   int j;
 
-  local_nl = get_user_allowed_networks (peer->user());
+  local_nl = getUserAllowedNetworks (peer->user());
   remote_nl = peer->nl();
 
   for (i = 0; i < local_nl.count; i++)

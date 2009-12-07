@@ -51,10 +51,10 @@ private:
   std::string _user;
   int _address;
   int _virtualAddress;
-  net_ls_t _nl;
+  netLsT _nl;
 
 public:
-  Peer (int fd, SSL * ssl, std::string user, int address, net_ls_t nl,
+  Peer (int fd, SSL * ssl, std::string user, int address, netLsT nl,
         char type);
   ~Peer ();
   bool operator>> (Network::Packet * packet);
@@ -70,7 +70,7 @@ public:
   int fd();
   std::string user();
   int address();
-  net_ls_t nl();
+  netLsT nl();
 };
 
 extern Peer *db[MAX_PEERS];
@@ -78,7 +78,7 @@ extern pthread_mutex_t db_mutex;
 
 extern int count;
 extern int conections_to_peer;
-extern int max_fd;
+extern int maxFd;
 
 /* set global var max_peer_fd to proper value (we use it with select() ) */
 void SetMaxFd ();

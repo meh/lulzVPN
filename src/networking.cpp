@@ -28,8 +28,8 @@
 #include <lulznet/packet.h>
 #include <lulznet/tap.h>
 
-SSL_CTX *Network::Client::ssl_ctx;
-SSL_CTX *Network::Server::ssl_ctx;
+SSL_CTX *Network::Client::sslCtx;
+SSL_CTX *Network::Server::sslCtx;
 
 fd_set Network::master;
 pthread_t Network::Server::select_t;
@@ -37,58 +37,58 @@ int Network::free_fd_flag;
 
 void Network::Server::SslInit ()
 {
-  Network::Server::ssl_ctx = SSL_CTX_new (SSLv23_server_method ());
+  Network::Server::sslCtx = SSL_CTX_new (SSLv23_server_method ());
 
-  if (!Network::Server::ssl_ctx)
+  if (!Network::Server::sslCtx)
     Log::Fatal ("Failed to do SSL CTX new");
 
 #ifdef DEBUG
   Log::Debug2 ("Loading SSL certificate");
 #endif
   if (SSL_CTX_use_certificate_file
-      (Network::Server::ssl_ctx, CERT_FILE, SSL_FILETYPE_PEM) <= 0)
+      (Network::Server::sslCtx, CERT_FILE, SSL_FILETYPE_PEM) <= 0)
     Log::Fatal ("Failed to load SSL certificate %s", CERT_FILE);
 
 #ifdef DEBUG
   Log::Debug2 ("Loading SSL private key");
 #endif
   if (SSL_CTX_use_PrivateKey_file
-      (Network::Server::ssl_ctx, KEY_FILE, SSL_FILETYPE_PEM) <= 0)
+      (Network::Server::sslCtx, KEY_FILE, SSL_FILETYPE_PEM) <= 0)
     Log::Fatal ("Failed to load SSL private key %s", KEY_FILE);
 }
 
 void Network::Client::SslInit ()
 {
-  Network::Client::ssl_ctx = SSL_CTX_new (SSLv23_client_method ());
+  Network::Client::sslCtx = SSL_CTX_new (SSLv23_client_method ());
 }
 
 void *Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
 {
 
-  int listen_sock;
-  int peer_sock;
+  int listenSock;
+  int peerSock;
   int on = 1;
-  SSL *peer_ssl;
+  SSL *peerSsl;
   char peer_address[ADDRESS_LEN + 1];
   struct sockaddr_in server;
   struct sockaddr_in peer;
-  socklen_t addr_size;
-  pthread_t connect_queue_t;
-  hs_opt_t hs_opt;
-  Peers::Peer * new_peer;
+  socklen_t addrSize;
+  pthread_t connectQueueT;
+  hsOptT hsOpt;
+  Peers::Peer * newPeer;
 
-  if ((listen_sock = socket (PF_INET, SOCK_STREAM, 0)) == -1)
+  if ((listenSock = socket (PF_INET, SOCK_STREAM, 0)) == -1)
     Log::Fatal ("cannot create socket");
 
 #ifdef DEBUG
-  Log::Debug2 ("listen_sock (fd %d) created", listen_sock);
+  Log::Debug2 ("listenSock (fd %d) created", listenSock);
 #endif
-  if (setsockopt (listen_sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof (on)) ==
+  if (setsockopt (listenSock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof (on)) ==
       -1)
     Log::Error ("setsockopt SO_REUSEADDR: %s", strerror (errno));
 
   server.sin_family = AF_INET;
-  server.sin_port = htons (options.binding_port ());
+  server.sin_port = htons (options.bindingPort ());
   server.sin_addr.s_addr = INADDR_ANY;	/*(server_opt->binding_address); */
   memset (&(server.sin_zero), '\0', 8);
 
@@ -96,74 +96,74 @@ void *Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
   Log::Debug2 ("Binding port %d", PORT);
 #endif
   if (bind
-      (listen_sock, (struct sockaddr *) &server,
+      (listenSock, (struct sockaddr *) &server,
        sizeof (struct sockaddr)) == -1)
     Log::Fatal ("cannot binding to socket");
 
 #ifdef DEBUG
   Log::Debug1 ("Listening");
 #endif
-  if (listen (listen_sock, MAX_ACCEPTED_PEERS_CONNECTIONS) == -1)
+  if (listen (listenSock, MAX_ACCEPTED_PEERS_CONNECTIONS) == -1)
     Log::Fatal ("cannot listen");
 
-  addr_size = sizeof (struct sockaddr_in);
+  addrSize = sizeof (struct sockaddr_in);
 
   /* @TODO while(available_connection()) else sleep && goto! */
   while (1)
     {
-      if ((peer_sock =
-             accept (listen_sock, (struct sockaddr *) &peer, &addr_size)) == -1)
+      if ((peerSock =
+             accept (listenSock, (struct sockaddr *) &peer, &addrSize)) == -1)
         Log::Fatal ("cannot accept");
 
-      Protocol::SendBanner (peer_sock);
+      Protocol::SendBanner (peerSock);
 
-      if ((peer_ssl = SSL_new (Network::Server::ssl_ctx)) != NULL)
+      if ((peerSsl = SSL_new (Network::Server::sslCtx)) != NULL)
         {
-          SSL_set_fd (peer_ssl, peer_sock);
+          SSL_set_fd (peerSsl, peerSock);
 #ifdef DEBUG
           Log::Debug2 ("SSL Handshake");
 #endif
-          if (SSL_accept (peer_ssl) > 0)
+          if (SSL_accept (peerSsl) > 0)
             {
-              if (Protocol::server::Handshake (peer_ssl, &hs_opt))
+              if (Protocol::server::Handshake (peerSsl, &hsOpt))
                 {
                   pthread_mutex_lock (&Peers::db_mutex);
 
-                  new_peer = new Peers::Peer (peer_sock, peer_ssl, hs_opt.peer_username,
-                                              peer.sin_addr.s_addr, hs_opt.net_ls,
+                  newPeer = new Peers::Peer (peerSock, peerSsl, hsOpt.peer_username,
+                                              peer.sin_addr.s_addr, hsOpt.netLs,
                                               INCOMING_CONNECTION);
                   inet_ntop (AF_INET, &peer.sin_addr.s_addr, peer_address,
                              ADDRESS_LEN);
                   Log::Info ("Connection accepted from %s (fd %d)", peer_address,
-                             peer_sock);
+                             peerSock);
 
                   /* Set routing */
-                  Taps::set_system_routing (new_peer, ADD_ROUTING);
+                  Taps::setSystemRouting (newPeer, ADD_ROUTING);
 
                   pthread_mutex_unlock (&Peers::db_mutex);
 
-                  pthread_create (&connect_queue_t, NULL, check_connections_queue,
-                                  &hs_opt.user_ls);
-                  pthread_join (connect_queue_t, NULL);
+                  pthread_create (&connectQueueT, NULL, check_connections_queue,
+                                  &hsOpt.userLs);
+                  pthread_join (connectQueueT, NULL);
                 }
               else
                 {
                   Log::Error("Cannot complete handshake");
-                  SSL_free (peer_ssl);
-                  close (peer_sock);
+                  SSL_free (peerSsl);
+                  close (peerSock);
                 }
             }
           else
             {
               Log::Error ("Cannot complete SSL handshake");
-              close (peer_sock);
+              close (peerSock);
             }
         }
       else
         {
 
           Log::Error ("Cannot create new SSL");
-          close (peer_sock);
+          close (peerSock);
         }
     }
   return NULL;
@@ -193,12 +193,12 @@ void Network::Client::PeerConnect (int address, short port)
 {
 
   struct sockaddr_in peer;
-  int peer_sock;
-  SSL *peer_ssl;
-  hs_opt_t hs_opt;
+  int peerSock;
+  SSL *peerSsl;
+  hsOptT hsOpt;
 
-  pthread_t connect_queue_t;
-  Peers::Peer * new_peer;
+  pthread_t connectQueueT;
+  Peers::Peer * newPeer;
 
   /* check if is there any free Peer */
   if (Peers::conections_to_peer == MAX_CONNECTIONS_TO_PEER)
@@ -207,14 +207,14 @@ void Network::Client::PeerConnect (int address, short port)
       return;
     }
 
-  if ((peer_sock = socket (AF_INET, SOCK_STREAM, 0)) == -1)
+  if ((peerSock = socket (AF_INET, SOCK_STREAM, 0)) == -1)
     {
       Log::Error ("cannot create socket", 1);
       return;
     }
 
 #ifdef DEBUG
-  Log::Debug2 ("peer_sock (fd %d) created", peer_sock);
+  Log::Debug2 ("peerSock (fd %d) created", peerSock);
 #endif
 
   peer.sin_family = AF_INET;
@@ -222,68 +222,68 @@ void Network::Client::PeerConnect (int address, short port)
   peer.sin_addr.s_addr = address;
   memset (&(peer.sin_zero), '\0', 8);
 
-  if (connect (peer_sock, (struct sockaddr *) &peer, sizeof (peer)) == -1)
+  if (connect (peerSock, (struct sockaddr *) &peer, sizeof (peer)) == -1)
     {
       Log::Error ("Cannot connect", 1);
       return;
     }
 
-  Protocol::RecvBanner (peer_sock);
+  Protocol::RecvBanner (peerSock);
 
-  if ((peer_ssl = SSL_new (Network::Client::ssl_ctx)) != NULL)
+  if ((peerSsl = SSL_new (Network::Client::sslCtx)) != NULL)
     {
-      SSL_set_fd (peer_ssl, peer_sock);
+      SSL_set_fd (peerSsl, peerSock);
 #ifdef DEBUG
       Log::Debug2 ("SSL Handshake");
 #endif
-      if (SSL_connect (peer_ssl) > 0)
+      if (SSL_connect (peerSsl) > 0)
         {
-          if (Network::VerifySslCert (peer_ssl))
+          if (Network::VerifySslCert (peerSsl))
             {
-              if (Protocol::client::Handshake (peer_ssl, &hs_opt))
+              if (Protocol::client::Handshake (peerSsl, &hsOpt))
                 {
                   pthread_mutex_lock (&Peers::db_mutex);
 
-                  new_peer =
-                    new Peers::Peer (peer_sock, peer_ssl, hs_opt.peer_username, address,
-                                     hs_opt.net_ls, OUTGOING_CONNECTION);
+                  newPeer =
+                    new Peers::Peer (peerSock, peerSsl, hsOpt.peer_username, address,
+                                     hsOpt.netLs, OUTGOING_CONNECTION);
                   Log::Info ("Connected");
 
-                  Taps::set_system_routing (new_peer, ADD_ROUTING);
+                  Taps::setSystemRouting (newPeer, ADD_ROUTING);
 
                   pthread_mutex_unlock (&Peers::db_mutex);
 
-                  pthread_create (&connect_queue_t, NULL,
-                                  Network::check_connections_queue, &hs_opt.user_ls);
-                  pthread_join (connect_queue_t, NULL);
+                  pthread_create (&connectQueueT, NULL,
+                                  Network::check_connections_queue, &hsOpt.userLs);
+                  pthread_join (connectQueueT, NULL);
 
                 }
               else
                 {
                   Log::Error ("Cannot complete lulznet handshake");
-                  SSL_free (peer_ssl);
-                  close (peer_sock);
+                  SSL_free (peerSsl);
+                  close (peerSock);
                 }
 
             }
           else
             {
               Log::Error ("Cannot verify host identity");
-              SSL_free (peer_ssl);
-              close (peer_sock);
+              SSL_free (peerSsl);
+              close (peerSock);
             }
         }
       else
         {
           Log::Error ("Cannot complete SSL handshake");
-          SSL_free (peer_ssl);
-          close (peer_sock);
+          SSL_free (peerSsl);
+          close (peerSock);
         }
     }
   else
     {
       Log::Error ("Cannot creane new SSL");
-      close (peer_sock);
+      close (peerSock);
     }
 }
 
@@ -291,8 +291,8 @@ void *Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
 {
   Packet packet;
   int ret;
-  fd_set read_select;
-  int max_fd;
+  fd_set readSelect;
+  int maxFd;
   int i;
   Peers::Peer * peer;
   Taps::Tap * tap;
@@ -302,12 +302,12 @@ void *Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
   while (dont_close_flag)
     {
       pthread_mutex_lock (&Peers::db_mutex);
-      read_select = Network::master;
+      readSelect = Network::master;
       free_fd_flag = 0;
-      max_fd = (Peers::max_fd > Taps::max_fd ? Peers::max_fd : Taps::max_fd);
+      maxFd = (Peers::maxFd > Taps::maxFd ? Peers::maxFd : Taps::maxFd);
       pthread_mutex_unlock (&Peers::db_mutex);
 
-      ret = select (max_fd + 1, &read_select, NULL, NULL, NULL);
+      ret = select (maxFd + 1, &readSelect, NULL, NULL, NULL);
 
       pthread_mutex_lock (&Peers::db_mutex);
       if (ret == -1)
@@ -318,7 +318,7 @@ void *Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
           for (i = 0; i < Peers::count; i++)
             {
               peer = Peers::db[i];
-              if (peer->isActive () && peer->isReadyToRead(&read_select))
+              if (peer->isActive () && peer->isReadyToRead(&readSelect))
                 {
                   /* Read from it */
                   if ( *peer >> &packet )
@@ -352,7 +352,7 @@ void *Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
           for (i = 0; i < Taps::count; i++)
             {
               tap = Taps::db[i];
-              if (tap->isActive() && tap->isReadyToRead(&read_select))
+              if (tap->isActive() && tap->isReadyToRead(&readSelect))
                 {
                   if (*tap >> &packet)
                     Network::Server::ForwardToPeer (&packet);
@@ -385,9 +385,9 @@ inline void Network::Server::ForwardToTap (Network::Packet * packet)
 {
 
   int i;
-  int n_addr;
+  int nAddr;
 
-  n_addr = PacketInspection::get_destination_ip(packet);
+  nAddr = PacketInspection::get_destination_ip(packet);
 
   for (i = 0; i < Taps::count; i++)
     if (Taps::db[i]->isActive())
@@ -402,14 +402,14 @@ inline void Network::Server::ForwardToPeer (Network::Packet * packet)
 {
 
   int i;
-  int n_addr;
+  int nAddr;
 
-  n_addr = PacketInspection::get_destination_ip(packet);
+  nAddr = PacketInspection::get_destination_ip(packet);
   packet->buffer[0] = DATA_PACKET;
 
   for (i = 0; i < Peers::count; i++)
     if (Peers::db[i]->isActive())
-      if (Peers::db[i]->isRoutableAddress(n_addr))
+      if (Peers::db[i]->isRoutableAddress(nAddr))
         *Peers::db[i] << packet;
 
 #ifdef DEBUG
@@ -445,17 +445,17 @@ void *Network::check_connections_queue (void *arg)
 {
 
   int i;
-  user_ls_t *user_ls;
-  user_ls = (user_ls_t *) arg;
+  userLsT *userLs;
+  userLs = (userLsT *) arg;
 
-  if (user_ls->count == 0)
+  if (userLs->count == 0)
     return NULL;
 
-  for (i = 0; i < user_ls->count; i++)
+  for (i = 0; i < userLs->count; i++)
 
     /* check if we're connected to peer */
-    if (!Peers::UserIsConnected (user_ls->user[i]))
-      Network::Client::PeerConnect (user_ls->address[i], PORT);
+    if (!Peers::UserIsConnected (userLs->user[i]))
+      Network::Client::PeerConnect (userLs->address[i], PORT);
 
   return NULL;
 }

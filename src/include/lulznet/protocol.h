@@ -34,7 +34,7 @@ typedef struct
   int *address;
 
   int count;
-} user_ls_t;
+} userLsT;
 
 typedef struct
 {
@@ -44,14 +44,14 @@ typedef struct
   int *address;
   int *netmask;
   int *network;
-} net_ls_t;
+} netLsT;
 
 typedef struct
 {
   std::string peer_username;
-  user_ls_t user_ls;
-  net_ls_t net_ls;
-} hs_opt_t;
+  userLsT userLs;
+  netLsT netLs;
+} hsOptT;
 
 namespace Protocol
 {
@@ -62,28 +62,28 @@ void RecvBanner (int fd);
 
 namespace server
 {
-int Handshake (SSL * ssl, hs_opt_t * hs_opt);
-int LnUserExchange (SSL * ssl, hs_opt_t * hs_opt);
-int LnAuth (SSL * ssl, hs_opt_t * hs_opt);
+int Handshake (SSL * ssl, hsOptT * hsOpt);
+int LnUserExchange (SSL * ssl, hsOptT * hsOpt);
+int LnAuth (SSL * ssl, hsOptT * hsOpt);
 }
 
 namespace client
 {
 /* peer and server handshake */
-int Handshake (SSL * ssl, hs_opt_t * hs_opt);
-int LnUserExchange (SSL * ssl, hs_opt_t * hs_opt);
+int Handshake (SSL * ssl, hsOptT * hsOpt);
+int LnUserExchange (SSL * ssl, hsOptT * hsOpt);
 int LnAuth (SSL * ssl);
 }
 
 /* Networks exchange */
-int LnSendNetworks (SSL * ssl, hs_opt_t * hs_opt);
-int LnRecvNetworks (SSL * ssl, hs_opt_t * hs_opt);
+int LnSendNetworks (SSL * ssl, hsOptT * hsOpt);
+int LnRecvNetworks (SSL * ssl, hsOptT * hsOpt);
 
 /* User exchange */
 int LnSendUserlist (SSL * ssl);
-int LnRecvUserlist (SSL * ssl, hs_opt_t * hs_opt);
+int LnRecvUserlist (SSL * ssl, hsOptT * hsOpt);
 
 /* Return a list with all the users connected */
-user_ls_t GetUserlist ();
+userLsT GetUserlist ();
 }
 #endif

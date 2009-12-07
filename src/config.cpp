@@ -26,10 +26,10 @@
 Config::Config ()
 {
   _flags = 0;
-  _connecting_port = PORT;
-  _binding_port = PORT;
+  _connectingPort = PORT;
+  _bindingPort = PORT;
 #ifdef DEBUG
-  _debug_level = 0;
+  _debugLevel = 0;
 #endif
 }
 
@@ -38,14 +38,14 @@ int Config::flags ()
   return _flags;
 }
 
-short Config::connecting_port ()
+short Config::connectingPort ()
 {
-  return _connecting_port;
+  return _connectingPort;
 }
 
-short Config::binding_port ()
+short Config::bindingPort ()
 {
-  return _binding_port;
+  return _bindingPort;
 }
 
 std::string Config::connecting_address ()
@@ -84,9 +84,9 @@ void Config::password (std::string password)
 }
 
 #ifdef DEBUG
-int Config::debug_level ()
+int Config::debugLevel ()
 {
-  return _debug_level;
+  return _debugLevel;
 }
 #endif
 
@@ -127,13 +127,13 @@ void Config::ParseArgs (int argc, char **argv)
         if (!*optarg)
           Log::Fatal ("You must specify a port");
         else
-          _connecting_port = (short) atoi (optarg);
+          _connectingPort = (short) atoi (optarg);
         break;
       case 'P':
         if (!*optarg)
           Log::Fatal ("You must specify a port");
         else
-          _binding_port = (short) atoi (optarg);
+          _bindingPort = (short) atoi (optarg);
         break;
       case 't':
         if (!*optarg)
@@ -143,7 +143,7 @@ void Config::ParseArgs (int argc, char **argv)
         break;
 #ifdef DEBUG
       case 'v':
-        _debug_level++;
+        _debugLevel++;
         break;
 #endif
       case '?':
@@ -220,7 +220,7 @@ void Config::ParseConfigFile (char *filename)
           else if (!strcmp (tmp, "debug"))
             {
               fscanf (fp, "%32s", tmp);
-              _debug_level = atoi (tmp);
+              _debugLevel = atoi (tmp);
             }
 #endif
           else if (!tmp[0] == '#')

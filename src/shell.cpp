@@ -57,9 +57,9 @@ void Shell::PeerList ()
 {
   int i;
   int j;
-  int n_address;
+  int nAddr;
   int n_vAddress;
-  char p_address[ADDRESS_LEN + 1];
+  char pAddr[ADDRESS_LEN + 1];
   char p_vAddress[ADDRESS_LEN + 1];
   int cidrNetmask;
   Peers::Peer * peer;
@@ -68,15 +68,16 @@ void Shell::PeerList ()
     {
       peer = Peers::db[i];
 
-      n_address = peer->address ();
-      inet_ntop (AF_INET, &n_address, p_address, ADDRESS_LEN);
+      nAddr = peer->address ();
+      inet_ntop (AF_INET, &nAddr, pAddr, ADDRESS_LEN);
 
-      std::cout << peer->user() << "\taddr: " << p_address << " networks: " << peer->nl().count << std::endl;
+      std::cout << peer->user() << "\taddr: " << pAddr << " networks: " << peer->nl().count << std::endl;
 
       for (j = 0; j < peer->nl().count; j++)
         {
           n_vAddress = peer->nl().address[j];
           inet_ntop (AF_INET, &n_vAddress, p_vAddress, ADDRESS_LEN);
+
           cidrNetmask = Taps::getCidrNotation(ntohl(peer->nl().netmask[i]));
 
           std::cout << "\t\t[" << j + 1 << "] addr: " << p_vAddress << "/" << cidrNetmask << std::endl;
@@ -113,22 +114,23 @@ void Shell::PeerKill (Cmd * cmd)
 void Shell::TapList ()
 {
   int i;
-  int n_address;
-  int n_netmask;
-  int netmask;
-  char p_address[ADDRESS_LEN + 1];
+  int nAddr;
+  int nNetm;
+  int cidr;
+  char pAddr[ADDRESS_LEN + 1];
   Taps::Tap * tap;
 
   for (i = 0; i < Taps::count; i++)
     {
       tap = Taps::db[i];
 
-      n_address = tap->address();
-      n_netmask = tap->netmask();
-      inet_ntop (AF_INET, &n_address, p_address, ADDRESS_LEN);
-      netmask = Taps::getCidrNotation(ntohl(n_netmask));
+      nAddr = tap->address();
+      inet_ntop (AF_INET, &nAddr, pAddr, ADDRESS_LEN);
 
-      std::cout << tap->device () << "\taddr: " << p_address << "/" << netmask << std::endl;
+      nNetm = tap->netmask();
+      cidr = Taps::getCidrNotation(ntohl(nNetm));
+
+      std::cout << tap->device () << "\taddr: " << pAddr << "/" << cidr << std::endl;
     }
 }
 
@@ -148,34 +150,34 @@ Shell::PreparseCommand (std::string line)
   Cmd *command;
   int i;
   char tmp_str[65];
-  char *line_ptr;
-  u_int line_len;
-  u_int tmp_len;
-  u_int parsed_bytes;
+  char *linePtr;
+  u_int lineLen;
+  u_int tmpLen;
+  u_int parsedBytes;
 
   command = new Cmd;
-  parsed_bytes = 0;
+  parsedBytes = 0;
 
-  line_ptr = (char *) line.c_str ();
-  line_len = line.length();
+  linePtr = (char *) line.c_str ();
+  lineLen = line.length();
 
   /* Read command */
-  sscanf (line_ptr, "%32s", tmp_str);
+  sscanf (linePtr, "%32s", tmp_str);
   command->command.assign (tmp_str);
-  tmp_len = command->command.length () + 1;
+  tmpLen = command->command.length () + 1;
 
-  line_ptr += tmp_len;
-  parsed_bytes += tmp_len;
+  linePtr += tmpLen;
+  parsedBytes += tmpLen;
 
   /* Read arguments */
-  for (i = 0; i < 4 && parsed_bytes < line_len; i++)
+  for (i = 0; i < 4 && parsedBytes < lineLen; i++)
     {
-      sscanf (line_ptr, "%64s", tmp_str);
+      sscanf (linePtr, "%64s", tmp_str);
       command->argv[i] = tmp_str;
-      tmp_len = command->argv[i].length () + 1;
+      tmpLen = command->argv[i].length () + 1;
 
-      line_ptr += tmp_len;
-      parsed_bytes += tmp_len;
+      linePtr += tmpLen;
+      parsedBytes += tmpLen;
     }
 
   command->argc = i;
@@ -242,15 +244,15 @@ void Shell::ParseCommand (Shell::Cmd * cmd)
 void Shell::Start ()
 {
   std::string line;
-  char *readline_str;
+  char *rlStr;
   Cmd *cmd;
   while (TRUE)
     {
 
-      readline_str = readline ("[lulznet] ");
-      if (readline_str != NULL)
+      rlStr = readline ("[lulznet] ");
+      if (rlStr != NULL)
         {
-          line = readline_str;
+          line = rlStr;
           if (!line.empty ())
             {
               if ((cmd = PreparseCommand (line)))
