@@ -57,10 +57,10 @@
     <!-- network entry -->
     <tap>
       <!-- network name -->
-      <name>enjoy</name>
+      <name></name>
 
       <!--network address -->
-      <address>>/address>
+      <address>></address>
 
       <!-- network netmask -->
       <netmask></netmask>
