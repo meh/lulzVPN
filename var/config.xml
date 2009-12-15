@@ -1,0 +1,76 @@
+<lulzNetConfig>
+  <!-- global config -->
+  <config>
+    <!-- your username -->
+    <username></username>
+
+    <!-- your password. You could leave blank here and specify it at startup -->
+    <password></password>
+
+    <!-- set listening thread or not (yes,no) -->
+    <listening></listening>
+
+    <!--set if lulznet will be interactive with a shell or not (yes, no) -->
+    <interactive></interactive>
+
+    <!-- debug level-->
+    <debug></debug>
+  </config>
+
+  <!-- users credentials -->
+  <users>
+    <!--user entry-->
+    <user>
+      <!--username -->
+      <name></name>
+
+      <!-- user hashed password -->
+      <hash></hash>
+
+      <!-- list of user allowed networks name -->
+      <allowedTap>
+        <name></name>
+        <name></name>
+      </allowedTap>
+    </user>
+
+    <user>
+      <name></name>
+      <hash></hash>
+      <allowedTap>
+        <name></name>
+      </allowedTap>
+    </user>
+
+    <user>
+      <name></name>
+      <hash></hash>
+      <allowedTap>
+        <name></name>
+        <name></name>
+      </allowedTap>
+    </user>
+  </users>
+
+  <!-- list of networks -->
+  <taps>
+    <!-- network entry -->
+    <tap>
+      <!-- network name -->
+      <name>enjoy</name>
+
+      <!--network address -->
+      <address>>/address>
+
+      <!-- network netmask -->
+      <netmask></netmask>
+    </tap>
+
+    <tap>
+      <name></name>
+      <address></address>
+      <netmask></netmask>
+    </tap>
+  </taps>
+  <!-- now you can enjoy the lulznet -->
+</lulzNetConfig>
