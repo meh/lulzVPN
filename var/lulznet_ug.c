@@ -11,9 +11,9 @@ main (int argc, char *argv[])
   unsigned int md_len, i;
   char digest[33];
 
-  if (argc != 3)
+  if (argc != 2)
     {
-      printf ("Usage: %s username password\n", argv[0]);
+      printf ("Usage: %s password\n", argv[0]);
       return 1;
     }
 
@@ -23,13 +23,13 @@ main (int argc, char *argv[])
 
   EVP_MD_CTX_init (&mdctx);
   EVP_DigestInit_ex (&mdctx, md, NULL);
-  EVP_DigestUpdate (&mdctx, argv[2], strlen (argv[2]));
+  EVP_DigestUpdate (&mdctx, argv[1], strlen (argv[1]));
   EVP_DigestFinal_ex (&mdctx, md_value, &md_len);
   EVP_MD_CTX_cleanup (&mdctx);
 
   for (i = 0; i < md_len; i++)
       sprintf (digest + (i * 2), "%02x", md_value[i]);
-  printf ("%s:%s\n", argv[1], digest);
+  printf ("%s\n", digest);
 
   return 0;
 }

@@ -45,7 +45,7 @@ Taps::SetMaxFd ()
 }
 
 int
-Taps::Tap::alloc (std::string *dev)
+Taps::Tap::alloc (std::string NetName, std::string *dev)
 {
 
   /* TODO: add *bsd support */
@@ -58,7 +58,7 @@ Taps::Tap::alloc (std::string *dev)
   memset (&ifr, 0, sizeof (ifr));
 
   ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
-  strncpy (ifr.ifr_name, "lulz%d", IFNAMSIZ);
+  snprintf(ifr.ifr_name, IFNAMSIZ, "%s%%d", (char *) NetName.c_str());
 
   if ((err = ioctl (fd, TUNSETIFF, (void *) &ifr)) < 0)
     {
@@ -73,30 +73,32 @@ Taps::Tap::alloc (std::string *dev)
   return fd;
 }
 
-Taps::Tap::Tap (std::string address, std::string netmask)
+Taps::Tap::Tap (TapDeviceT TapOpt)
 {
 
   int n_address;
   int n_netmask;
   std::string device;
 
-  n_address = xinet_pton ((char *) address.c_str());
+  n_address = xinet_pton ((char *) TapOpt.Address.c_str());
 
-  if (netmask.empty())
+  if (TapOpt.Netmask.empty())
     {
       n_netmask = htonl(getDefaultNetmask (n_address));
-      inet_ntop (AF_INET, &n_netmask, (char *) netmask.c_str(), ADDRESS_LEN);
+      inet_ntop (AF_INET, &n_netmask, (char *) TapOpt.Netmask.c_str(), ADDRESS_LEN);
     }
   else
-    n_netmask = xinet_pton ((char *) netmask.c_str());
+    n_netmask = xinet_pton ((char *) TapOpt.Netmask.c_str());
 
-  _fd = alloc(&device);
+  _fd = alloc(TapOpt.NetworkName, &device);
   _state = TAP_ACTIVE;
   _device = device;
+  _NetworkName = TapOpt.NetworkName;
   _address = n_address;
   _netmask = n_netmask;
+  _network = get_ip_address_network(n_address, n_netmask);
 
-  configureDevice (device, address, netmask);
+  configureDevice (device, TapOpt.Address, TapOpt.Netmask);
 
   db[count] = this;
 
@@ -154,6 +156,15 @@ Taps::Tap::operator<< (Network::Packet * packet)
 }
 
 bool
+Taps::Tap::isRoutableAddress(int address)
+{
+  if (_network == get_ip_address_network(address, _netmask))
+    return true;
+
+  return false;
+}
+
+bool
 Taps::Tap::isActive ()
 {
   if (_state == TAP_ACTIVE)
@@ -163,9 +174,9 @@ Taps::Tap::isActive ()
 }
 
 bool
-Taps::Tap::isReadyToRead(fd_set *rd_sel)
+Taps::Tap::isReadyToRead(fd_set *rdSel)
 {
-  if (FD_ISSET (_fd, rd_sel))
+  if (FD_ISSET (_fd, rdSel))
     return true;
 
   return false;
@@ -203,6 +214,12 @@ Taps::Tap::device ()
 
 }
 
+std::string
+Taps::Tap::NetworkName ()
+{
+  return _NetworkName;
+
+}
 void
 Taps::FreeNonActive ()
 {
@@ -242,14 +259,14 @@ Taps::RebuildDb ()
 int
 Taps::getDefaultNetmask (int address)
 {
-  u_char *cAddr;
+  uChar *cAddr;
   int netmask;
 
-  cAddr = (u_char *) & address;
+  cAddr = (uChar *) & address;
 
-  if (cAddr[0] < (u_char) 128)
+  if (cAddr[0] < (uChar) 128)
     netmask = 0xff000000;
-  else if (cAddr[0] < (u_char) 192)
+  else if (cAddr[0] < (uChar) 192)
     netmask = 0xffff0000;
   else
     netmask = 0xffffff00;
@@ -287,14 +304,13 @@ Taps::configureDevice (std::string device, std::string address, std::string netm
   return 1;
 }
 
-netLsT
+networkListT
 Taps::getUserAllowedNetworks (std::string user __attribute__ ((unused)))
 {
   int i;
-  netLsT nl;
+  networkListT nl;
 
-  /* TODO: free all this stuff */
-  nl.device = new std::string[count];
+  nl.NetworkName = new std::string[count];
   nl.address = new int[count];
   nl.netmask = new int[count];
 
@@ -302,8 +318,13 @@ Taps::getUserAllowedNetworks (std::string user __attribute__ ((unused)))
 
   for (i = 0; i < count; i++)
     {
-      /* TODO:add acl check */
-      nl.device[i] = db[i]->device();
+      /*
+      AllowedUsers = GetTapAllowedUsers(db[i]->device());
+      while(AllowedUsers++){
+           if(AllowedUsers->compare(user) {
+       	}
+         */
+      nl.NetworkName[i] = db[i]->NetworkName();
       nl.address[i] = db[i]->address();
       nl.netmask[i] = db[i]->netmask();
     }
@@ -320,8 +341,8 @@ Taps::setSystemRouting (Peers::Peer * peer, char op)
   char network[ADDRESS_LEN + 1];
   char netmask[ADDRESS_LEN + 1];
 
-  netLsT local_nl;
-  netLsT remote_nl;
+  networkListT local_nl;
+  networkListT remote_nl;
 
   int i;
   int j;
@@ -335,24 +356,25 @@ Taps::setSystemRouting (Peers::Peer * peer, char op)
       inet_ntop (AF_INET, &local_nl.address[i], gateway, ADDRESS_LEN);
 
       for (j = 0; j < remote_nl.count; j++)
-        {
-          inet_ntop (AF_INET, &remote_nl.network[j], network, ADDRESS_LEN);
-          inet_ntop (AF_INET, &remote_nl.netmask[j], netmask, ADDRESS_LEN);
+        if (!local_nl.NetworkName[i].compare(remote_nl.NetworkName[j]))
+          {
+            inet_ntop (AF_INET, &remote_nl.network[j], network, ADDRESS_LEN);
+            inet_ntop (AF_INET, &remote_nl.netmask[j], netmask, ADDRESS_LEN);
 
-          if (op == ADD_ROUTING)
-            sprintf (route_command,
-                     "route add -net %s netmask %s gw %s", network,
-                     netmask, gateway);
-          else
-            sprintf (route_command,
-                     "route del -net %s netmask %s gw %s", network,
-                     netmask, gateway);
+            if (op == ADD_ROUTING)
+              sprintf (route_command,
+                       "route add -net %s netmask %s gw %s", network,
+                       netmask, gateway);
+            else
+              sprintf (route_command,
+                       "route del -net %s netmask %s gw %s", network,
+                       netmask, gateway);
 
 #ifdef DEBUG
-          Log::Debug2("Route command: %s",route_command);
+            Log::Debug2("Route command: %s",route_command);
 #endif
-          system (route_command);
-        }
+            system (route_command);
+          }
     }
 }
 

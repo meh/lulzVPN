@@ -31,8 +31,8 @@ namespace PacketInspection
 /* MAC header */
 struct eth_header
 {
-  u_char dst_adr[ETH_ADDR_LEN];
-  u_char src_adr[ETH_ADDR_LEN];
+  uChar dst_adr[ETH_ADDR_LEN];
+  uChar src_adr[ETH_ADDR_LEN];
   u_short eth_type;
 } __attribute__ ((packed));
 
@@ -41,32 +41,32 @@ struct arp_header
 {
   u_short hw_type;
   u_short proto_type;
-  u_char hw_size;
-  u_char proto_size;
+  uChar hw_size;
+  uChar proto_size;
   u_short opcode;
-  u_char src_mac_adr[ETH_ADDR_LEN];
-  u_int src_ip_adr;
-  u_char dst_mac_adr[ETH_ADDR_LEN];
-  u_int dst_ip_adr;
+  uChar src_mac_adr[ETH_ADDR_LEN];
+  uInt src_ip_adr;
+  uChar dst_mac_adr[ETH_ADDR_LEN];
+  uInt dst_ip_adr;
 } __attribute__ ((packed));
 
 /* ip header */
 struct ip_header
 {
-  u_char ver_and_hdr_len;
-  u_char tos;
+  uChar ver_and_hdr_len;
+  uChar tos;
   u_short len;
   u_short id;
   u_short frag_offset;
-  u_char ttl;
-  u_char type;
+  uChar ttl;
+  uChar type;
   u_short checksum;
-  u_int src_adr;
-  u_int dst_adr;
+  uInt src_adr;
+  uInt dst_adr;
 } __attribute__ ((packed));
 
 /* return int network ordered address of the packet dest */
-u_int get_destination_ip (Network::Packet *packet);
+uInt get_destination_ip (Network::Packet *packet);
 
 }
 

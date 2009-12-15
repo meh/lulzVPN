@@ -28,24 +28,24 @@
 #include <lulznet/tap.h>
 #include <lulznet/xfunc.h>
 
-Config options;
+Config Options;
 
 int main (int argc, char *argv[])
 {
 
   int address;
-  Taps::Tap * tap;
+  int i;
   pthread_t serverT;	/* Listening thread */
 
-  /* Wellcome!1!1ONE */
+  /* Welcome!1!1ONE */
   std::cout << "Welcome to lulzNet ¯\\_(O_o)_/¯" << std::endl;
   std::cout << "Lulz p2p Virtual Priv8 Net" << std::endl;
   std::cout << "Version: " << VERSION << std::endl;
 
   /* Config Parsing */
-  options.ParseConfigFile ((char *) CONFIG_FILE);
-  options.ParseArgs (argc, argv);
-  options.ChecEmptyConfigEntry ();
+  Options.ParseConfigFile ((char *) CONFIG_FILE);
+  Options.ParseArgs (argc, argv);
+  Options.ChecEmptyConfigEntry ();
 
   /* Check faggot user */
   if (getuid ())
@@ -54,15 +54,16 @@ int main (int argc, char *argv[])
   /* initialize db and other stuff */
   LulznetInit ();
 
-  /* ??? black magic (don't know) */
-  tap = new Taps::Tap (options.tap_address (), options.tap_netmask ());
+  for (i = 0; i < Options.TapDevicesCount(); i++)
+    /* ??? black magic (don't know) */
+    new Taps::Tap (Options.TapDevice(i));
 
-  /* Prompt for password */
-  if (options.password().empty())
+  /* Prompt for password if no ones is specified in config file*/
+  if (Options.Password().empty())
     Auth::PasswordPrompt();
 
   /* Start (or not) the listening service */
-  if (options.flags () & LISTEN_MODE)
+  if (Options.Flags () & LISTENING_MODE)
     pthread_create (&serverT, NULL, Network::Server::ServerLoop, NULL);
 #ifdef DEBUG
   else
@@ -70,25 +71,25 @@ int main (int argc, char *argv[])
 #endif
 
   /* Autoconnection */
-  if (!options.connecting_address ().empty ())
+  if (!Options.ConnectingAddress ().empty ())
     {
-      address = Network::LookupAddress (options.connecting_address ());
+      address = Network::LookupAddress (Options.ConnectingAddress ());
       if (address != 0)
-        Network::Client::PeerConnect (address, options.connectingPort ());
+        Network::Client::PeerConnect (address, Options.ConnectingPort ());
     }
 
   /* ??? (another black magic) */
   pthread_create (&Network::Server::select_t, NULL, Network::Server::SelectLoop, NULL);
 
   /* A lovable shell */
-  if (options.flags () & INTERPEER_ACTIVE_MODE)
+  if (Options.Flags () & INTERACTIVE_MODE)
     Shell::Start ();
 #ifdef DEBUG
   else
     Log::Debug1 ("Non interactive mode");
 #endif
 
-  /* cause we don't like it exits as soon as it starts :| */
+  /* cause I don't enjoy when it exits as soon as it starts :| */
   pthread_join (Network::Server::select_t, NULL);
   pthread_join (serverT, NULL);
 
@@ -115,19 +116,17 @@ void LulznetInit ()
   SSLeay_add_ssl_algorithms ();
   OpenSSL_add_all_digests ();
 
-  Network::Server::SslInit ();
-  Network::Client::SslInit ();
+  Network::Server::sslInit ();
+  Network::Client::sslInit ();
 
   signal (SIGINT, sigint_handler);
 }
 
 void help ()
 {
-  std::cout << "lulznet :: lulz p2p vpn" << std::endl;
-  std::cout << "version " << VERSION << std::endl;
-  std::cout << "usage: lulznet [options]" << std::endl;
+  std::cout << "usage: lulznet [Options]" << std::endl;
   std::cout << "OPTIONS:" << std::endl;
-  std::cout << "-b\t specify server binding address" << std::endl;
+  std::cout << "-b\tspecify server binding address" << std::endl;
   std::cout << "-c\tspecify a server to connect" << std::endl;
   std::cout << "-h\tdisplay this help" << std::endl;
   std::cout << "-i\tstart interactive shell" << std::endl;

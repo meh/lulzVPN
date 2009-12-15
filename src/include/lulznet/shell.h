@@ -36,6 +36,8 @@ void PeerKill (Cmd * cmd);
 
 void TapList ();
 
+void CredList ();
+
 void Help();
 
 /* Parsing command stuff */

@@ -24,14 +24,14 @@
 int xSSL_read (SSL * ssl, void *buf, int max_len, const char *item)
 {
 
-  int rd_len;
+  int rdLen;
 
-  rd_len = SSL_read (ssl, buf, max_len);
+  rdLen = SSL_read (ssl, buf, max_len);
 
-  if (!rd_len)
+  if (!rdLen)
     Log::Error ("cannot recv %s",item);
 
-  return rd_len;
+  return rdLen;
 }
 
 int xSSL_write (SSL * ssl, void *buf, int max_len, const char *item)

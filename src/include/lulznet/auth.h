@@ -20,9 +20,6 @@
 #ifndef _LNET_AUTH_H
 #define _LNET_AUTH_H
 
-/* This is where lulznet saves users credentials */
-#define CREDENTIAL_FILE "/etc/lulznet/credential"
-
 #define AUTHENTICATION_FAILED		'\x00'
 #define AUTHENTICATION_SUCCESSFULL 	'\x01'
 
@@ -33,32 +30,19 @@
 namespace Auth
 {
 
-/* Global var where we save password so you don't have
-   to retype it everytime */
-extern std::string saved_password;
+/* Check if hash match username */
+int DoAuthentication (std::string Username, uChar *Hash);
 
-/* Check if hash match username (local for now */
-int DoAuthentication (std::string username, u_char * hash);
-
-/* Ask for password (disable echo */
+/* Ask for password (disable echo) */
 void PasswordPrompt ();
 
-namespace File
-{
-
-/* Function to return a line of the credential file */
-int GetUserCredentials (FILE * fp, std::string * username,
-                         std::string * hash);
-
-/* Parse each line of credential file to get username and hash */
-std::string get_hash (std::string request_user);
-}
+std::string GetHash (std::string RequestedUser);
 
 namespace Crypt
 {
 
 /* return string's md5 */
-u_char *CalculateMd5 (std::string string);
+uChar *CalculateMd5 (std::string string);
 
 /* return a string with ssl'peer certificate fingerprint */
 char *GetFingerprintFromCtx (SSL * ssl);

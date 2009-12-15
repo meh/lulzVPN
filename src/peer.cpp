@@ -44,7 +44,7 @@ Peers::SetMaxFd ()
       maxFd = db[i]->fd();
 }
 
-Peers::Peer::Peer (int fd, SSL * ssl, std::string user, int address, netLsT nl, char type)
+Peers::Peer::Peer (int fd, SSL * ssl, std::string user, int address, networkListT nl, char type)
 {
   _fd = fd;
   _ssl = ssl;
@@ -139,9 +139,9 @@ bool Peers::Peer::isActive()
   return false;
 }
 
-bool Peers::Peer::isReadyToRead(fd_set *rd_sel)
+bool Peers::Peer::isReadyToRead(fd_set *rdSel)
 {
-  if (FD_ISSET (_fd, rd_sel))
+  if (FD_ISSET (_fd, rdSel))
     return true;
 
   return false;
@@ -168,7 +168,7 @@ int Peers::Peer::address ()
   return _address;
 }
 
-netLsT Peers::Peer::nl ()
+networkListT Peers::Peer::nl ()
 {
   return _nl;
 }

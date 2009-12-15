@@ -51,10 +51,10 @@ private:
   std::string _user;
   int _address;
   int _virtualAddress;
-  netLsT _nl;
+  networkListT _nl;
 
 public:
-  Peer (int fd, SSL * ssl, std::string user, int address, netLsT nl,
+  Peer (int fd, SSL * ssl, std::string user, int address, networkListT nl,
         char type);
   ~Peer ();
   bool operator>> (Network::Packet * packet);
@@ -62,7 +62,7 @@ public:
 
   bool isRoutableAddress(int address);
   bool isActive();
-  bool isReadyToRead(fd_set *rd_sel);
+  bool isReadyToRead(fd_set *rdSel);
   void setClosing();
   void Disassociate();
 
@@ -70,7 +70,7 @@ public:
   int fd();
   std::string user();
   int address();
-  netLsT nl();
+  networkListT nl();
 };
 
 extern Peer *db[MAX_PEERS];

@@ -53,6 +53,9 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+#include <libxml/xmlmemory.h>
+#include <libxml/parser.h>
+
 #include "_config.h"
 
 #define DEBUG
@@ -66,9 +69,9 @@
 #define FAIL	0
 #define DONE	1
 
-#define u_char	unsigned char
+#define uChar	unsigned char
 #define u_short	unsigned short
-#define u_int 	unsigned int
+#define uInt 	unsigned int
 
 #define MAX_ACCEPTED_PEERS_CONNECTIONS	4
 #define	MAX_CONNECTIONS_TO_PEER		4

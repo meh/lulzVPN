@@ -43,23 +43,28 @@ private:
   int _fd;
   char _state;
   std::string _device;
+  std::string _NetworkName;
+
   int _address;
   int _netmask;
+  int _network;
 
-  int alloc (std::string *dev);
+  int alloc (std::string NetName, std::string *dev);
 
 public:
-  Tap (std::string address, std::string netmask);
+  Tap (TapDeviceT TapOpt);
   ~Tap ();
   bool operator>> (Network::Packet * packet);
   bool operator<< (Network::Packet * packet);
   bool isActive ();
-  bool isReadyToRead(fd_set *rd_sel);
+  bool isRoutableAddress(int address);
+  bool isReadyToRead(fd_set *rdSel);
   void showInfo();
 
 public:
   int fd ();
   std::string device ();
+  std::string NetworkName ();
   int address ();
   int netmask ();
 };
@@ -90,7 +95,7 @@ int getCidrNotation(int netmask);
 
 #define get_ip_address_network(address, netmask) ((address) & (netmask))
 
-netLsT getUserAllowedNetworks (std::string user);
+networkListT getUserAllowedNetworks (std::string user);
 
 }
 #endif

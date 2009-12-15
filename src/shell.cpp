@@ -134,11 +134,20 @@ void Shell::TapList ()
     }
 }
 
+void Shell::CredList ()
+{
+  int i;
+
+  for (i = 0; i < Options.UserCredentialsCount(); i++)
+    std::cout << Options.UserCredentials(i).Name << "\t" << Options.UserCredentials(i).Hash << std::endl;
+}
+
 void
 Shell::Help()
 {
-  std::cout << "peer: handle peer"<< std::endl ;
-  std::cout << "tap: handle tap device" << std::endl;
+  std::cout << "peer: handle peers"<< std::endl ;
+  std::cout << "tap: handle tap devices" << std::endl;
+  std::cout << "cred: handle user credentials" << std::endl;
   std::cout << "connect: connect to a peer" << std::endl;
   std::cout << "whoami: display local peer name" << std::endl;
   std::cout << "password: reset password" << std::endl;
@@ -151,9 +160,9 @@ Shell::PreparseCommand (std::string line)
   int i;
   char tmp_str[65];
   char *linePtr;
-  u_int lineLen;
-  u_int tmpLen;
-  u_int parsedBytes;
+  uInt lineLen;
+  uInt tmpLen;
+  uInt parsedBytes;
 
   command = new Cmd;
   parsedBytes = 0;
@@ -212,6 +221,17 @@ void Shell::ParseCommand (Shell::Cmd * cmd)
         std::cout << "Usage: tap (list | add | del)" << std::endl;
     }
 
+  /* credential command */
+  else if (!cmd->command.compare ("cred"))
+    {
+      if (!cmd->argc)
+        std::cout << "Usage: cred (list | add | del)" << std::endl;
+      else if (!cmd->argv[0].compare ("list"))
+        CredList ();
+      else
+        std::cout << "Usage: cred (list | add | del)" << std::endl;
+    }
+
   /* connect peer command */
   else if (!cmd->command.compare ("connect"))
     {
@@ -223,7 +243,7 @@ void Shell::ParseCommand (Shell::Cmd * cmd)
 
   /* useless command */
   else if (!cmd->command.compare ("whoami"))
-    std::cout << options.username() << std::endl;
+    std::cout << Options.Username() << std::endl;
 
   /* reset password */
   else if (!cmd->command.compare ("password"))

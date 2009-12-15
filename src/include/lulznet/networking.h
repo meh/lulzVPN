@@ -32,14 +32,14 @@ namespace Network
 {
 
 extern fd_set master;
-extern int free_fd_flag;
+extern int freeFdFlag;
 
 namespace Client
 {
 
-extern SSL_CTX *sslCtx;
+extern SSL_CTX *sslCTX;
 /* Initialize ssl client's context */
-void SslInit ();
+void sslInit ();
 
 /* Function for connecting to a peer */
 void PeerConnect (int address, short port);
@@ -49,14 +49,14 @@ void PeerConnect (int address, short port);
 namespace Server
 {
 
-extern SSL_CTX *sslCtx;
+extern SSL_CTX *sslCTX;
 
 /* mutex used to prevent fd_db structure's modifies
    while select() main cycle is running */
 extern pthread_t select_t;
 
 /* Initialize ssl server's context */
-void SslInit ();
+void sslInit ();
 
 /* Main server thread, accepting connection */
 void *ServerLoop (void *arg);
@@ -79,7 +79,7 @@ void disassociation_request (Peers::Peer *peer);
 int VerifySslCert (SSL * ssl);
 
 /* check if we have to connect to another peer after handshake */
-void *check_connections_queue (void *arg);
+void *CheckConnectionsQueue (void *arg);
 }
 
 #endif

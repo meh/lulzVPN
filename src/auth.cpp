@@ -24,40 +24,40 @@
 #include <lulznet/log.h>
 
 int
-Auth::DoAuthentication (std::string username, u_char * hash)
+Auth::DoAuthentication (std::string Username, uChar * Hash)
 {
-  std::string strHash;
-  std::string localHash;
+  std::string StrHash;
+  std::string LocalHash;
   char tmp[3];
-  int response;
+  int Response;
   int i;
 
-  response = FALSE;
+  Response = FALSE;
 
-  localHash = File::get_hash (username);
-  if (!localHash.empty ())
+  LocalHash = GetHash (Username);
+  if (!LocalHash.empty ())
     {
       for (i = 0; i < MD5_DIGEST_LENGTH; i++)
         {
-          sprintf (tmp, "%02x", hash[i]);
-          strHash.append (tmp);
+          sprintf (tmp, "%02x", Hash[i]);
+          StrHash.append (tmp);
         }
-      if (!strHash.compare (localHash))
-        response = TRUE;
+      if (!StrHash.compare (LocalHash))
+        Response = TRUE;
       else
-        Log::Error ("Wrong password");
+        Log::Error ("Wrong Password");
     }
   else
     Log::Error ("Cannot find user");
 
-  return response;
+  return Response;
 }
 
 void
 Auth::PasswordPrompt ()
 {
 
-  std::string password;
+  std::string Password;
   struct termio tty, oldtty;
 
   ioctl (0, TCGETA, &oldtty);
@@ -70,81 +70,56 @@ Auth::PasswordPrompt ()
   ioctl (0, TCSETA, &tty);
 
   std::cout << "Password: ";
-  std::cin >> password;
+  std::cin >> Password;
   std::cout << std::endl;
 
   ioctl (0, TCSETA, &oldtty);
 
-  options.password(password);
-}
-
-int
-Auth::File::GetUserCredentials (FILE * fp, std::string * username, std::string * hash)
-{
-  char tmp[50];
-  int i;
-
-  if (fscanf (fp, "%49s", tmp) == -1)
-    return 0;
-
-  for (i = 0; tmp[i] != ':' && i < MAX_USERNAME_LEN; i++)
-    username->append (1, tmp[i]);
-
-  hash->assign (tmp + i + 1, PW_HASH_STRING_LEN);
-  return 1;
+  Options.Password(Password);
 }
 
 std::string
-Auth::File::get_hash (std::string request_user)
+Auth::GetHash (std::string RequestedUser)
 {
+  std::string Hash;
+  int i;
 
-  FILE *cred;
-  std::string user;
-  std::string hash;
+  for (i = 0; i < Options.UserCredentialsCount(); i++)
+    if (!Options.UserCredentials(i).Name.compare(RequestedUser))
+      return Options.UserCredentials(i).Hash;
 
-  cred = fopen (CREDENTIAL_FILE, "r");
-
-  if (cred == NULL)
-    Log::Error ("Cannot open credential file %s", CREDENTIAL_FILE);
-  else
-    while (GetUserCredentials (cred, &user, &hash))
-      if (!user.compare (request_user))
-        return hash;
-      else
-        user.clear ();
-
-  hash.clear();
-  return hash;
+  Hash.clear();
+  return Hash;
 }
 
-u_char *
+uChar *
 Auth::Crypt::CalculateMd5 (std::string string)
 {
   EVP_MD_CTX mdctx;
   const EVP_MD *md;
-  u_int md_len;
-  u_char *hexHash;
+  uInt md_len;
+  uChar *HexHash;
 
-  hexHash = new u_char[MD5_DIGEST_LENGTH];
+  HexHash = new uChar[MD5_DIGEST_LENGTH];
 
   md = EVP_get_digestbyname ("MD5");
   EVP_MD_CTX_init (&mdctx);
   EVP_DigestInit_ex (&mdctx, md, NULL);
   EVP_DigestUpdate (&mdctx, string.c_str (), string.length ());
-  EVP_DigestFinal_ex (&mdctx, hexHash, &md_len);
+  EVP_DigestFinal_ex (&mdctx, HexHash, &md_len);
   EVP_MD_CTX_cleanup (&mdctx);
 
-  return hexHash;
+  return HexHash;
 }
 
 char *
 Auth::Crypt::GetFingerprintFromCtx (SSL * ssl)
 {
-  u_char digest[SHA_DIGEST_LENGTH];
+  uChar digest[SHA_DIGEST_LENGTH];
   char hex[] = "0123456789ABCDEF";
   char *fp = new char[EVP_MAX_MD_SIZE * 3];
-  u_int len;
-  u_int i;
+  uInt len;
+  uInt i;
   X509 *cert;
 
   cert = SSL_get_peer_certificate (ssl);

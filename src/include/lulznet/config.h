@@ -22,57 +22,88 @@
 #ifndef _LNET_CONFIG_H
 #define _LNET_CONFIG_H
 
-#define CONFIG_FILE "/etc/lulznet/config"
+#define CONFIG_FILE "/etc/lulznet/config.xml"
 
-#define LISTEN_MODE 0x01
+#define LISTENING_MODE 0x01
 #define AUTH_SERVICE 0x02
-#define INTERPEER_ACTIVE_MODE 0x04
+#define INTERACTIVE_MODE 0x04
+
+struct TapDeviceT {
+     std::string NetworkName;
+     std::string Address;
+     std::string Netmask;
+};
+
+struct UserCredentialT {
+     std::string Name;
+     std::string Hash;
+};
 
 class Config
 {
 
 private:
-  int _flags;
-  short _connectingPort;
-  short _bindingPort;
-  std::string _connecting_address;
-  std::string _binding_address;
-  std::string _tap_address;
-  std::string _tap_netmask;
-  std::string _username;
-  std::string _password;
+  int _Flags;
+
+  std::string _ConnectingAddress;
+  short _ConnectingPort;
+  std::string _BindingAddress;
+  short _BindingPort;
+
+  std::string _Username;
+  std::string _Password;
+
 #ifdef DEBUG
-  int _debugLevel;
+  int _DebugLevel;
 #endif
+
+  TapDeviceT _TapDevices[8];
+  int _TapDevicesCount;
+
+  UserCredentialT _UserCredentials[8];
+  int _UserCredentialsCount;
 
 public:
   Config ();
-  int flags ();
-  short connectingPort ();
-  short bindingPort ();
-  std::string connecting_address ();
-  std::string binding_address ();
-  std::string tap_address ();
-  std::string tap_netmask ();
-  std::string username ();
-  std::string password ();
-  void password (std::string password);
+  int Flags ();
+  std::string ConnectingAddress ();
+  std::string BindingAddress ();
+  short ConnectingPort ();
+  short BindingPort ();
+  std::string Username ();
+  std::string Password ();
+  void Password (std::string password);
 #ifdef DEBUG
-  int debugLevel ();
+  int DebugLevel ();
 #endif
+
+  int TapDevicesCount();
+  TapDeviceT TapDevice(int i);
+
+  int UserCredentialsCount();
+  UserCredentialT UserCredentials(int i);
 
 public:
   /* parse console args */
   void ParseArgs (int argc, char **argv);
   /* parse config file */
   void ParseConfigFile (char *filename);
+
+  /* Xml Parser */
+  void ParseConfig (xmlDocPtr doc, xmlNodePtr curNode);
+  void ParseUserNet (xmlDocPtr doc, xmlNodePtr curNode);
+  void ParseUser (xmlDocPtr doc, xmlNodePtr curNode);
+  void ParseUsers (xmlDocPtr doc, xmlNodePtr curNode);
+  void ParseTap (xmlDocPtr doc, xmlNodePtr curNode);
+  void ParseTaps (xmlDocPtr doc, xmlNodePtr curNode);
+
   /* initialize struct opt */
-  void set_default_options ();
+  void set_default_Options ();
   /* check if something configuration is missing */
   void ChecEmptyConfigEntry ();
 
 };
 
-extern Config options;
+extern Config Options;
 
 #endif

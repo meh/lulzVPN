@@ -21,12 +21,12 @@
 #include <lulznet/log.h>
 #include <lulznet/packet.h>
 
-u_int PacketInspection::get_destination_ip (Network::Packet *packet)
+uInt PacketInspection::get_destination_ip (Network::Packet *packet)
 {
   eth_header *ethHdr;
   arp_header *arpHdr;
   ip_header *ipHdr;
-  u_int address;
+  uInt address;
   u_short protocol;
 
 #ifdef DEBUG

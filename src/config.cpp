@@ -25,70 +25,89 @@
 
 Config::Config ()
 {
-  _flags = 0;
-  _connectingPort = PORT;
-  _bindingPort = PORT;
+  _Flags = 0;
+  _ConnectingPort = PORT;
+  _BindingPort = PORT;
 #ifdef DEBUG
-  _debugLevel = 0;
+  _DebugLevel = 0;
+
+  _TapDevicesCount = 0;
+  _UserCredentialsCount = 0;
+
 #endif
 }
 
-int Config::flags ()
+int Config::Flags ()
 {
-  return _flags;
+  return _Flags;
 }
 
-short Config::connectingPort ()
+short Config::ConnectingPort ()
 {
-  return _connectingPort;
+  return _ConnectingPort;
 }
 
-short Config::bindingPort ()
+short Config::BindingPort ()
 {
-  return _bindingPort;
+  return _BindingPort;
 }
 
-std::string Config::connecting_address ()
+std::string Config::ConnectingAddress ()
 {
-  return _connecting_address;
+  return _ConnectingAddress;
 }
 
-std::string Config::binding_address ()
+std::string Config::BindingAddress ()
 {
-  return _binding_address;
+  return _BindingAddress;
 }
 
-std::string Config::tap_address ()
+std::string Config::Username ()
 {
-  return _tap_address;
+  return _Username;
 }
 
-std::string Config::tap_netmask ()
+std::string Config::Password ()
 {
-  return _tap_netmask;
+  return _Password;
 }
 
-std::string Config::username ()
+void Config::Password (std::string password)
 {
-  return _username;
-}
-
-std::string Config::password ()
-{
-  return _password;
-}
-
-void Config::password (std::string password)
-{
-  _password = password;
+  _Password = password;
 }
 
 #ifdef DEBUG
-int Config::debugLevel ()
+int Config::DebugLevel ()
 {
-  return _debugLevel;
+  return _DebugLevel;
 }
 #endif
+
+int
+Config::TapDevicesCount()
+{
+  return _TapDevicesCount;
+}
+
+TapDeviceT
+Config::TapDevice(int i)
+{
+  return _TapDevices[i];
+}
+
+int
+Config::UserCredentialsCount()
+{
+  return _UserCredentialsCount;
+}
+
+UserCredentialT
+Config::UserCredentials(int i)
+{
+  return _UserCredentials[i];
+}
+
 
 void Config::ParseArgs (int argc, char **argv)
 {
@@ -103,47 +122,35 @@ void Config::ParseArgs (int argc, char **argv)
         if (!*optarg)
           Log::Fatal ("You must specify an address");
         else
-          _connecting_address = optarg;
+          _ConnectingAddress = optarg;
         break;
       case 'd':
-        _flags ^= LISTEN_MODE;
+        _Flags ^= LISTENING_MODE;
         break;
       case 'h':
         help ();
         break;
       case 'i':
-        _flags |= INTERPEER_ACTIVE_MODE;
+        _Flags |= INTERACTIVE_MODE;
         break;
       case 'l':
-        _username = optarg;
-        break;
-      case 'n':
-        if (!*optarg)
-          Log::Fatal ("You must specify a netmask");
-        else
-          _tap_netmask = optarg;
+        _Username = optarg;
         break;
       case 'p':
         if (!*optarg)
           Log::Fatal ("You must specify a port");
         else
-          _connectingPort = (short) atoi (optarg);
+          _ConnectingPort = (short) atoi (optarg);
         break;
       case 'P':
         if (!*optarg)
           Log::Fatal ("You must specify a port");
         else
-          _bindingPort = (short) atoi (optarg);
-        break;
-      case 't':
-        if (!*optarg)
-          Log::Fatal ("You must specify an address");
-        else
-          _tap_address = optarg;
+          _BindingPort = (short) atoi (optarg);
         break;
 #ifdef DEBUG
       case 'v':
-        _debugLevel++;
+        _DebugLevel++;
         break;
 #endif
       case '?':
@@ -158,86 +165,247 @@ void Config::ParseArgs (int argc, char **argv)
 
 void Config::ParseConfigFile (char *filename)
 {
-  FILE *fp;
-  char tmp[33];
-  char c;
+  xmlDocPtr doc;
+  xmlNodePtr curNode;
 
-  fp = fopen (filename, "r");
+  doc = xmlParseFile (filename);
 
-  if (fp == NULL)
-    Log::Fatal ("Cannot open config file %s", filename);
-  else
+  if (doc == NULL)
     {
-      while (fscanf (fp, "%32s", tmp) != -1)
-        {
-          if (!strcmp (tmp, "user"))
-            {
-              fscanf (fp, "%32s", tmp);
-              _username = tmp;
-            }
-          if (!strcmp (tmp, "password"))
-            {
-              fscanf (fp, "%32s", tmp);
-              _password = tmp;
-            }
-          else if (!strcmp (tmp, "tap_addr"))
-            {
-              fscanf (fp, "%32s", tmp);
-              _tap_address = tmp;
-            }
-          else if (!strcmp (tmp, "tap_netm"))
-            {
-              fscanf (fp, "%32s", tmp);
-              _tap_netmask = tmp;
-            }
-          else if (!strcmp (tmp, "interactive"))
-            {
-              fscanf (fp, "%32s", tmp);
-              if (!strcmp (tmp, "yes"))
-                _flags |= INTERPEER_ACTIVE_MODE;
-              else if (!strcmp (tmp, "no"))
-                {
-                  if (_flags & INTERPEER_ACTIVE_MODE)
-                    _flags ^= INTERPEER_ACTIVE_MODE;
-                }
-              else
-                Log::Error ("Invalid option");
-            }
-          else if (!strcmp (tmp, "listening"))
-            {
-              fscanf (fp, "%32s", tmp);
-              if (!strcmp (tmp, "yes"))
-                _flags |= '\x01';
-              else if (!strcmp (tmp, "no"))
-                {
-                  if (_flags & LISTEN_MODE)
-                    _flags ^= LISTEN_MODE;
-                }
-              else
-                Log::Error ("Invalid option");
-            }
-#ifdef DEBUG
-          else if (!strcmp (tmp, "debug"))
-            {
-              fscanf (fp, "%32s", tmp);
-              _debugLevel = atoi (tmp);
-            }
-#endif
-          else if (!tmp[0] == '#')
-            Log::Error ("Invalid option in configfile");
-
-          do
-            fscanf (fp, "%c", &c);
-          while (c != '\n');
-        }
+      Log::Error ("Document not parsed successfully.");
+      return;
     }
+
+  curNode = xmlDocGetRootElement (doc);
+  if (curNode == NULL)
+    {
+      Log::Fatal ("Empty config file");
+      xmlFreeDoc (doc);
+      return;
+    }
+
+  if (xmlStrcmp (curNode->name, (const xmlChar *) "lulzNetConfig"))
+    {
+      Log::Fatal ("This is not a valid lulznet config file.\nRoot node != lulzNetConfig");
+      xmlFreeDoc (doc);
+      return;
+    }
+
+  curNode = curNode->xmlChildrenNode;
+  while (curNode != NULL)
+    {
+      if ((!xmlStrcmp (curNode->name, (const xmlChar *) "config")))
+        ParseConfig (doc, curNode);
+      else if ((!xmlStrcmp (curNode->name, (const xmlChar *) "users")))
+        ParseUsers (doc, curNode);
+      else if ((!xmlStrcmp (curNode->name, (const xmlChar *) "taps")))
+        ParseTaps (doc, curNode);
+
+      curNode = curNode->next;
+    }
+
+  xmlFreeDoc (doc);
+  return;
+
 }
 
 void Config::ChecEmptyConfigEntry ()
 {
-  if (_tap_address.empty ())
+  if (!_TapDevicesCount)
     Log::Fatal ("You must specify a tap address");
 
-  if (_username.empty ())
+  if (_Username.empty ())
     Log::Fatal ("You must specify an username");
 }
+
+void
+Config::ParseConfig (xmlDocPtr doc, xmlNodePtr curNode)
+{
+  xmlChar *key;
+  curNode = xmlFirstElementChild (curNode);
+
+  while (curNode != NULL)
+    {
+      if ((!xmlStrcmp (curNode->name, (const xmlChar *) "username")))
+        {
+          key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 1);
+          _Username = (char *) key;
+          xmlFree (key);
+        }
+      else if ((!xmlStrcmp (curNode->name, (const xmlChar *) "password")))
+        {
+          key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 1);
+          _Password = (char *) key;
+          xmlFree (key);
+        }
+      else if ((!xmlStrcmp (curNode->name, (const xmlChar *) "listening")))
+        {
+          key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 1);
+          if (!strcmp((char *) key, "yes"))
+            _Flags |= LISTENING_MODE;
+          else if (!strcmp ((char *) key, "no"))
+            {
+              if (_Flags & LISTENING_MODE)
+                _Flags ^= LISTENING_MODE;
+            }
+          xmlFree (key);
+        }
+      else if ((!xmlStrcmp (curNode->name, (const xmlChar *) "interactive")))
+        {
+          key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 1);
+          if (!strcmp((char *) key, "yes"))
+            _Flags |= INTERACTIVE_MODE;
+          else if (!strcmp ((char *) key, "no"))
+            {
+              if (_Flags & INTERACTIVE_MODE)
+                _Flags ^= INTERACTIVE_MODE;
+            }
+          xmlFree (key);
+        }
+#ifdef DEBUG
+      else if ((!xmlStrcmp (curNode->name, (const xmlChar *) "debug")))
+        {
+          key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 1);
+          _DebugLevel = atoi ((char *) key);
+          xmlFree (key);
+        }
+#endif
+      else
+        Log::Error ("Invalid option in lulznet config");
+
+      curNode = xmlNextElementSibling (curNode);
+    }
+  return;
+}
+
+void
+Config::ParseUserNet (xmlDocPtr doc, xmlNodePtr curNode)
+{
+  xmlChar *key;
+  curNode = xmlFirstElementChild (curNode);
+
+  while (curNode != NULL)
+    {
+      if ((!xmlStrcmp (curNode->name, (const xmlChar *) "name")))
+        {
+          key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 1);
+          xmlFree (key);
+        }
+      else
+        Log::Error ("Invalid option in allowed net config");
+
+      curNode = xmlNextElementSibling (curNode);
+    }
+  return;
+}
+
+void
+Config::ParseUser (xmlDocPtr doc, xmlNodePtr curNode)
+{
+  xmlChar *key;
+  curNode = xmlFirstElementChild (curNode);
+
+  while (curNode != NULL)
+    {
+      if ((!xmlStrcmp (curNode->name, (const xmlChar *) "name")))
+        {
+          key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 1);
+          _UserCredentials[_UserCredentialsCount].Name = (char *) key;
+          xmlFree (key);
+        }
+      else if ((!xmlStrcmp (curNode->name, (const xmlChar *) "hash")))
+        {
+          key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 1);
+          _UserCredentials[_UserCredentialsCount].Hash = (char *) key;
+          xmlFree (key);
+        }
+      else if ((!xmlStrcmp (curNode->name, (const xmlChar *) "allowedTap")))
+        ParseUserNet(doc,curNode);
+      else
+        Log::Error ("Invalid option in user config");
+
+      curNode = xmlNextElementSibling (curNode);
+    }
+
+  if (!(_UserCredentials[_UserCredentialsCount].Name.empty() ||
+        _UserCredentials[_UserCredentialsCount].Hash.empty()))
+    _UserCredentialsCount++;
+
+  return;
+}
+
+void
+Config::ParseUsers (xmlDocPtr doc, xmlNodePtr curNode)
+{
+  curNode = xmlFirstElementChild (curNode);
+
+  while (curNode != NULL)
+    {
+      if ((!xmlStrcmp (curNode->name, (const xmlChar *) "user")))
+        ParseUser(doc, curNode);
+      else
+        Log::Error ("Invalid option in users config");
+
+      curNode = xmlNextElementSibling (curNode);
+    }
+  return;
+}
+
+void
+Config::ParseTap (xmlDocPtr doc, xmlNodePtr curNode)
+{
+  xmlChar *key;
+  curNode = xmlFirstElementChild (curNode);
+
+  while (curNode != NULL)
+    {
+      if ((!xmlStrcmp (curNode->name, (const xmlChar *) "name")))
+        {
+          key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 2);
+          _TapDevices[_TapDevicesCount].NetworkName = (char *) key;
+          xmlFree (key);
+        }
+      else if ((!xmlStrcmp (curNode->name, (const xmlChar *) "address")))
+        {
+          key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 1);
+          _TapDevices[_TapDevicesCount].Address = (char *) key;
+          xmlFree (key);
+        }
+      else if ((!xmlStrcmp (curNode->name, (const xmlChar *) "netmask")))
+        {
+          key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 1);
+          _TapDevices[_TapDevicesCount].Netmask = (char *) key;
+          xmlFree (key);
+        }
+      else
+        Log::Error ("Invalid option in tap config");
+
+      curNode = xmlNextElementSibling (curNode);
+    }
+
+  if (!(_TapDevices[_TapDevicesCount].NetworkName.empty() ||
+        _TapDevices[_TapDevicesCount].Address.empty() ||
+        _TapDevices[_TapDevicesCount].Netmask.empty()))
+    _TapDevicesCount++;
+
+  return;
+
+}
+
+void
+Config::ParseTaps (xmlDocPtr doc, xmlNodePtr curNode)
+{
+  curNode = xmlFirstElementChild (curNode);
+
+  while (curNode != NULL)
+    {
+      if ((!xmlStrcmp (curNode->name, (const xmlChar *) "tap")))
+        ParseTap(doc,curNode);
+      else
+        Log::Error ("Invalid option in taps config");
+
+      curNode = xmlNextElementSibling (curNode);
+    }
+  return;
+}
+

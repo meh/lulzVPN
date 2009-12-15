@@ -1,12 +1,12 @@
 /*
  * "protocol.h" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
- * lulzNet is free software; you can redistribute it and/or modify
+ * LulzNet is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- * lulzNet is distributed in the hope that it will be useful,
+ * LulzNet is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -28,30 +28,32 @@
 
 #define CLOSE_CONNECTION	'\x01'
 
+#define MAX_NETWORKNAME_LEN	16
+
 typedef struct
 {
   std::string * user;
   int *address;
 
   int count;
-} userLsT;
+} userListT;
 
 typedef struct
 {
   int count;
 
-  std::string *device;
+  std::string *NetworkName;
   int *address;
   int *netmask;
   int *network;
-} netLsT;
+} networkListT;
 
 typedef struct
 {
   std::string peer_username;
-  userLsT userLs;
-  netLsT netLs;
-} hsOptT;
+  userListT userLs;
+  networkListT netLs;
+} HandshakeOptionT;
 
 namespace Protocol
 {
@@ -60,30 +62,30 @@ namespace Protocol
 void SendBanner (int fd);
 void RecvBanner (int fd);
 
-namespace server
+namespace Server
 {
-int Handshake (SSL * ssl, hsOptT * hsOpt);
-int LnUserExchange (SSL * ssl, hsOptT * hsOpt);
-int LnAuth (SSL * ssl, hsOptT * hsOpt);
+int Handshake (SSL * ssl, HandshakeOptionT * hsOpt);
+int LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt);
+int LulzNetAuth (SSL * ssl, HandshakeOptionT * hsOpt);
 }
 
-namespace client
+namespace Client
 {
 /* peer and server handshake */
-int Handshake (SSL * ssl, hsOptT * hsOpt);
-int LnUserExchange (SSL * ssl, hsOptT * hsOpt);
-int LnAuth (SSL * ssl);
+int Handshake (SSL * ssl, HandshakeOptionT * hsOpt);
+int LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt);
+int LulzNetAuth (SSL * ssl);
 }
 
 /* Networks exchange */
-int LnSendNetworks (SSL * ssl, hsOptT * hsOpt);
-int LnRecvNetworks (SSL * ssl, hsOptT * hsOpt);
+int LulzNetSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt);
+int LulzNetReciveNetworks (SSL * ssl, HandshakeOptionT * hsOpt);
 
 /* User exchange */
-int LnSendUserlist (SSL * ssl);
-int LnRecvUserlist (SSL * ssl, hsOptT * hsOpt);
+int LulzNetSendUserlist (SSL * ssl);
+int LulzNetReciveUserlist (SSL * ssl, HandshakeOptionT * hsOpt);
 
 /* Return a list with all the users connected */
-userLsT GetUserlist ();
+userListT GetUserlist ();
 }
 #endif
