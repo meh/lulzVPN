@@ -18,6 +18,7 @@
    */
 #include <iostream>
 #include <string>
+#include <vector>
 
 #ifndef _LNET_CONFIG_H
 #define _LNET_CONFIG_H
@@ -28,15 +29,17 @@
 #define AUTH_SERVICE 0x02
 #define INTERACTIVE_MODE 0x04
 
-struct TapDeviceT {
-     std::string NetworkName;
-     std::string Address;
-     std::string Netmask;
+struct TapDeviceT
+{
+  std::string NetworkName;
+  std::string Address;
+  std::string Netmask;
 };
 
-struct UserCredentialT {
-     std::string Name;
-     std::string Hash;
+struct UserCredentialT
+{
+  std::string Name;
+  std::string Hash;
 };
 
 class Config
@@ -57,11 +60,8 @@ private:
   int _DebugLevel;
 #endif
 
-  TapDeviceT _TapDevices[8];
-  int _TapDevicesCount;
-
-  UserCredentialT _UserCredentials[8];
-  int _UserCredentialsCount;
+  std::vector<TapDeviceT> _TapDevices;
+  std::vector<UserCredentialT> _UserCredentials;
 
 public:
   Config ();

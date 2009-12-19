@@ -123,8 +123,8 @@ Peers::Peer::operator<< (Network::Packet * packet)
 bool
 Peers::Peer::isRoutableAddress(int address)
 {
-  int i;
-  for (i = 0; i < _nl.count; i++)
+  unsigned int i;
+  for (i = 0; i < _nl.NetworkName.size(); i++)
     if (_nl.network[i] == get_ip_address_network(address, _nl.netmask[i]))
       return true;
 
@@ -184,7 +184,7 @@ void Peers::FreeNonActive ()
   for (i = 0; i < count; i++)
     if (!db[i]->isActive ())
       {
-        Taps::setSystemRouting (db[i], DEL_ROUTING);
+        Taps::setSystemRouting (db[i], Taps::getUserAllowedNetworks(db[i]->user()), DEL_ROUTING);
         delete db[i];
         db[i] = NULL;
       }
@@ -221,7 +221,7 @@ Peers::Peer::Disassociate ()
   packet[1] =  CLOSE_CONNECTION;
   xSSL_write (_ssl, packet, 2, "disconnection packet");
 
-  Taps::setSystemRouting (this, DEL_ROUTING);
+  Taps::setSystemRouting (this, Taps::getUserAllowedNetworks(_user), DEL_ROUTING);
   delete this;
 }
 

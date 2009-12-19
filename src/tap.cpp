@@ -305,16 +305,10 @@ Taps::configureDevice (std::string device, std::string address, std::string netm
 }
 
 networkListT
-Taps::getUserAllowedNetworks (std::string user __attribute__ ((unused)))
+Taps::getUserAllowedNetworks (std::string user)
 {
   int i;
   networkListT nl;
-
-  nl.NetworkName = new std::string[count];
-  nl.address = new int[count];
-  nl.netmask = new int[count];
-
-  nl.count = count;
 
   for (i = 0; i < count; i++)
     {
@@ -324,16 +318,16 @@ Taps::getUserAllowedNetworks (std::string user __attribute__ ((unused)))
            if(AllowedUsers->compare(user) {
        	}
          */
-      nl.NetworkName[i] = db[i]->NetworkName();
-      nl.address[i] = db[i]->address();
-      nl.netmask[i] = db[i]->netmask();
+      nl.NetworkName.push_back(db[i]->NetworkName());
+      nl.address.push_back(db[i]->address());
+      nl.netmask.push_back(db[i]->netmask());
     }
 
   return nl;
 }
 
 void
-Taps::setSystemRouting (Peers::Peer * peer, char op)
+Taps::setSystemRouting (Peers::Peer * peer, networkListT allowedNets, char op)
 {
   char route_command[256];
 
@@ -341,40 +335,47 @@ Taps::setSystemRouting (Peers::Peer * peer, char op)
   char network[ADDRESS_LEN + 1];
   char netmask[ADDRESS_LEN + 1];
 
-  networkListT local_nl;
-  networkListT remote_nl;
+  networkListT remoteNets;
 
   int i;
   int j;
+  int allowedNetsCount;
+  int remoteNetsCount;
 
-  local_nl = getUserAllowedNetworks (peer->user());
-  remote_nl = peer->nl();
+  remoteNets = peer->nl();
 
-  for (i = 0; i < local_nl.count; i++)
+  allowedNetsCount = allowedNets.NetworkName.size();
+  remoteNetsCount = remoteNets.NetworkName.size();
+
+  for (i = 0; i < allowedNetsCount; i++)
     {
 
-      inet_ntop (AF_INET, &local_nl.address[i], gateway, ADDRESS_LEN);
+      inet_ntop (AF_INET, &allowedNets.address[i], gateway, ADDRESS_LEN);
 
-      for (j = 0; j < remote_nl.count; j++)
-        if (!local_nl.NetworkName[i].compare(remote_nl.NetworkName[j]))
-          {
-            inet_ntop (AF_INET, &remote_nl.network[j], network, ADDRESS_LEN);
-            inet_ntop (AF_INET, &remote_nl.netmask[j], netmask, ADDRESS_LEN);
+      for (j = 0; j < remoteNetsCount; j++)
+        {
+          std::cout << "Here: " << allowedNets.NetworkName[i] << std::endl;
+          std::cout << "There: " << remoteNets.NetworkName[j] << std::endl;
+          if (!allowedNets.NetworkName[i].compare(remoteNets.NetworkName[j]))
+            {
+              inet_ntop (AF_INET, &remoteNets.network[j], network, ADDRESS_LEN);
+              inet_ntop (AF_INET, &remoteNets.netmask[j], netmask, ADDRESS_LEN);
 
-            if (op == ADD_ROUTING)
-              sprintf (route_command,
-                       "route add -net %s netmask %s gw %s", network,
-                       netmask, gateway);
-            else
-              sprintf (route_command,
-                       "route del -net %s netmask %s gw %s", network,
-                       netmask, gateway);
+              if (op == ADD_ROUTING)
+                sprintf (route_command,
+                         "route add -net %s netmask %s gw %s", network,
+                         netmask, gateway);
+              else
+                sprintf (route_command,
+                         "route del -net %s netmask %s gw %s", network,
+                         netmask, gateway);
 
 #ifdef DEBUG
-            Log::Debug2("Route command: %s",route_command);
+              Log::Debug2("Route command: %s",route_command);
 #endif
-            system (route_command);
-          }
+              system (route_command);
+            }
+        }
     }
 }
 

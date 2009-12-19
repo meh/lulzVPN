@@ -87,7 +87,7 @@ Tap *get_fd_related (int fd);
 /* Set address of tap device */
 int configureDevice (std::string device, std::string address, std::string netmask);
 
-void setSystemRouting (Peers::Peer * peer, char op);
+void setSystemRouting (Peers::Peer * peer, networkListT allowedNets, char op);
 
 int getDefaultNetmask (int address);
 

@@ -56,7 +56,7 @@ void Shell::PeerPreconnect (Cmd * cmd)
 void Shell::PeerList ()
 {
   int i;
-  int j;
+  unsigned int j;
   int nAddr;
   int n_vAddress;
   char pAddr[ADDRESS_LEN + 1];
@@ -71,9 +71,9 @@ void Shell::PeerList ()
       nAddr = peer->address ();
       inet_ntop (AF_INET, &nAddr, pAddr, ADDRESS_LEN);
 
-      std::cout << peer->user() << "\taddr: " << pAddr << " networks: " << peer->nl().count << std::endl;
+      std::cout << peer->user() << "\taddr: " << pAddr << " networks: " << peer->nl().NetworkName.size() << std::endl;
 
-      for (j = 0; j < peer->nl().count; j++)
+      for (j = 0; j < peer->nl().NetworkName.size(); j++)
         {
           n_vAddress = peer->nl().address[j];
           inet_ntop (AF_INET, &n_vAddress, p_vAddress, ADDRESS_LEN);

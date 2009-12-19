@@ -17,14 +17,13 @@
  * MA 02110-1301, USA.
 */
 
+#include <vector>
+
 #ifndef _LNET_PROTOCOL_H
 #define _LNET_PROTOCOL_H
 
 #define DATA_PACKET		'\x00'
 #define CONTROL_PACKET		'\x01'
-
-#define NEW_PEER		0x01
-#define AUTH_SERVICE		0x02
 
 #define CLOSE_CONNECTION	'\x01'
 
@@ -32,27 +31,26 @@
 
 typedef struct
 {
-  std::string * user;
-  int *address;
-
-  int count;
+  std::vector<std::string> user;
+  std::vector<int> address;
 } userListT;
 
 typedef struct
 {
-  int count;
+  std::vector<std::string> NetworkName;
+  std::vector<int> address;
+  std::vector<int> netmask;
+  std::vector<int> network;
 
-  std::string *NetworkName;
-  int *address;
-  int *netmask;
-  int *network;
 } networkListT;
 
 typedef struct
 {
   std::string peer_username;
   userListT userLs;
-  networkListT netLs;
+
+  networkListT remoteNets;
+  networkListT allowedNets;
 } HandshakeOptionT;
 
 namespace Protocol

@@ -130,7 +130,7 @@ void *Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
                   pthread_mutex_lock (&Peers::db_mutex);
 
                   newPeer = new Peers::Peer (peerSock, peerSsl, hsOpt.peer_username,
-                                             peer.sin_addr.s_addr, hsOpt.netLs,
+                                             peer.sin_addr.s_addr, hsOpt.remoteNets,
                                              INCOMING_CONNECTION);
                   inet_ntop (AF_INET, &peer.sin_addr.s_addr, peer_address,
                              ADDRESS_LEN);
@@ -138,7 +138,7 @@ void *Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
                              peerSock);
 
                   /* Set routing */
-                  Taps::setSystemRouting (newPeer, ADD_ROUTING);
+                  Taps::setSystemRouting (newPeer, hsOpt.allowedNets, ADD_ROUTING);
 
                   pthread_mutex_unlock (&Peers::db_mutex);
 
@@ -246,10 +246,10 @@ void Network::Client::PeerConnect (int address, short port)
 
                   newPeer =
                     new Peers::Peer (peerSock, peerSsl, hsOpt.peer_username, address,
-                                     hsOpt.netLs, OUTGOING_CONNECTION);
+                                     hsOpt.remoteNets, OUTGOING_CONNECTION);
                   Log::Info ("Connected");
 
-                  Taps::setSystemRouting (newPeer, ADD_ROUTING);
+                  Taps::setSystemRouting (newPeer, hsOpt.allowedNets, ADD_ROUTING);
 
                   pthread_mutex_unlock (&Peers::db_mutex);
 
@@ -445,14 +445,14 @@ int Network::VerifySslCert (SSL * ssl)
 void *Network::CheckConnectionsQueue (void *arg)
 {
 
-  int i;
+  unsigned int i;
   userListT *userLs;
   userLs = (userListT *) arg;
 
-  if (userLs->count == 0)
+  if (userLs->user.size() == 0)
     return NULL;
 
-  for (i = 0; i < userLs->count; i++)
+  for (i = 0; i < userLs->user.size(); i++)
 
     /* check if we're connected to peer */
     if (!Peers::UserIsConnected (userLs->user[i]))

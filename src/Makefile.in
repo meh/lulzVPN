@@ -6,8 +6,8 @@ version	= @PACKAGE_VERSION@
 srcdir	= @srcdir@
 VPATH	= @srcdir@
 CC	= g++
-CFLAGS	= -Wall -Wextra -pedantic -g -I $(srcdir)/include
-LDFLAGS	= -lpthread -lssl -lreadline
+CFLAGS	= -Wall -Wextra -pedantic -g -I $(srcdir)/include `xml2-config --cflags`
+LDFLAGS	= -lpthread -lssl -lreadline `xml2-config --libs`
 
 source	= $(srcdir)/auth.cpp\
 	  $(srcdir)/config.cpp\

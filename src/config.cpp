@@ -30,10 +30,6 @@ Config::Config ()
   _BindingPort = PORT;
 #ifdef DEBUG
   _DebugLevel = 0;
-
-  _TapDevicesCount = 0;
-  _UserCredentialsCount = 0;
-
 #endif
 }
 
@@ -87,7 +83,7 @@ int Config::DebugLevel ()
 int
 Config::TapDevicesCount()
 {
-  return _TapDevicesCount;
+  return _TapDevices.size();
 }
 
 TapDeviceT
@@ -99,7 +95,7 @@ Config::TapDevice(int i)
 int
 Config::UserCredentialsCount()
 {
-  return _UserCredentialsCount;
+  return _UserCredentials.size();
 }
 
 UserCredentialT
@@ -211,7 +207,7 @@ void Config::ParseConfigFile (char *filename)
 
 void Config::ChecEmptyConfigEntry ()
 {
-  if (!_TapDevicesCount)
+  if (!_TapDevices.size())
     Log::Fatal ("You must specify a tap address");
 
   if (_Username.empty ())
@@ -303,6 +299,8 @@ void
 Config::ParseUser (xmlDocPtr doc, xmlNodePtr curNode)
 {
   xmlChar *key;
+  UserCredentialT UserCredTmp;
+
   curNode = xmlFirstElementChild (curNode);
 
   while (curNode != NULL)
@@ -310,13 +308,13 @@ Config::ParseUser (xmlDocPtr doc, xmlNodePtr curNode)
       if ((!xmlStrcmp (curNode->name, (const xmlChar *) "name")))
         {
           key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 1);
-          _UserCredentials[_UserCredentialsCount].Name = (char *) key;
+          UserCredTmp.Name = (char *) key;
           xmlFree (key);
         }
       else if ((!xmlStrcmp (curNode->name, (const xmlChar *) "hash")))
         {
           key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 1);
-          _UserCredentials[_UserCredentialsCount].Hash = (char *) key;
+          UserCredTmp.Hash = (char *) key;
           xmlFree (key);
         }
       else if ((!xmlStrcmp (curNode->name, (const xmlChar *) "allowedTap")))
@@ -327,9 +325,8 @@ Config::ParseUser (xmlDocPtr doc, xmlNodePtr curNode)
       curNode = xmlNextElementSibling (curNode);
     }
 
-  if (!(_UserCredentials[_UserCredentialsCount].Name.empty() ||
-        _UserCredentials[_UserCredentialsCount].Hash.empty()))
-    _UserCredentialsCount++;
+  if (!(UserCredTmp.Name.empty() || UserCredTmp.Hash.empty()))
+    _UserCredentials.push_back(UserCredTmp);
 
   return;
 }
@@ -357,24 +354,26 @@ Config::ParseTap (xmlDocPtr doc, xmlNodePtr curNode)
   xmlChar *key;
   curNode = xmlFirstElementChild (curNode);
 
+  TapDeviceT TapDeviceTmp;
+
   while (curNode != NULL)
     {
       if ((!xmlStrcmp (curNode->name, (const xmlChar *) "name")))
         {
           key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 2);
-          _TapDevices[_TapDevicesCount].NetworkName = (char *) key;
+          TapDeviceTmp.NetworkName = (char *) key;
           xmlFree (key);
         }
       else if ((!xmlStrcmp (curNode->name, (const xmlChar *) "address")))
         {
           key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 1);
-          _TapDevices[_TapDevicesCount].Address = (char *) key;
+          TapDeviceTmp.Address = (char *) key;
           xmlFree (key);
         }
       else if ((!xmlStrcmp (curNode->name, (const xmlChar *) "netmask")))
         {
           key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 1);
-          _TapDevices[_TapDevicesCount].Netmask = (char *) key;
+          TapDeviceTmp.Netmask = (char *) key;
           xmlFree (key);
         }
       else
@@ -383,10 +382,8 @@ Config::ParseTap (xmlDocPtr doc, xmlNodePtr curNode)
       curNode = xmlNextElementSibling (curNode);
     }
 
-  if (!(_TapDevices[_TapDevicesCount].NetworkName.empty() ||
-        _TapDevices[_TapDevicesCount].Address.empty() ||
-        _TapDevices[_TapDevicesCount].Netmask.empty()))
-    _TapDevicesCount++;
+  if (!(TapDeviceTmp.NetworkName.empty() || TapDeviceTmp.Address.empty() || TapDeviceTmp.Netmask.empty()))
+    _TapDevices.push_back(TapDeviceTmp);
 
   return;
 

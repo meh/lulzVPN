@@ -71,6 +71,8 @@ int Protocol::Server::Handshake (SSL * ssl, HandshakeOptionT * hsOpt)
   if (!LulzNetAuth (ssl, hsOpt))
     return FAIL;
 
+  hsOpt->allowedNets = Taps::getUserAllowedNetworks(hsOpt->peer_username);
+
 #ifdef DEBUG
   Log::Debug2 ("Recving listening status");
 #endif
@@ -106,6 +108,8 @@ int Protocol::Client::Handshake (SSL * ssl, HandshakeOptionT * hsOpt)
 
   if (!LulzNetAuth (ssl))
     return FAIL;
+
+  hsOpt->allowedNets = Taps::getUserAllowedNetworks(hsOpt->peer_username);
 
   /*
    * Hanshake
@@ -299,43 +303,39 @@ int Protocol::Client::LulzNetAuth (SSL * ssl)
 int Protocol::LulzNetSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
 {
   int i;
-  networkListT LocalNetLs;
+  int netCount;
 
-  LocalNetLs = Taps::getUserAllowedNetworks ((char *) hsOpt->peer_username.c_str ());
+  netCount = hsOpt->allowedNets.NetworkName.size();
 
 #ifdef DEBUG
   Log::Debug2 ("Sending available network count");
 #endif
-  if (LocalNetLs.count == 0)
+  if (netCount == 0)
     {
 #ifdef DEBUG
       Log::Debug2 ("Peer cannot access any networks");
 #endif
-      xSSL_write (ssl, &LocalNetLs.count, sizeof (int), "network count");
+      xSSL_write (ssl, &netCount, sizeof (int), "network count");
       return FAIL;
     }
 
-  if (!xSSL_write (ssl, &LocalNetLs.count, sizeof (int), "network count"))
+  if (!xSSL_write (ssl, &netCount, sizeof (int), "network count"))
     return FAIL;
 
   /* TODO: add max remote peer capabilities */
 
-  for (i = 0; i < LocalNetLs.count; i++)
+  for (i = 0; i < netCount; i++)
     {
       if (!xSSL_write
-          (ssl, (char *) LocalNetLs.NetworkName[i].c_str(), LocalNetLs.NetworkName[i].length(), "address list"))
+          (ssl, (char *) hsOpt->allowedNets.NetworkName[i].c_str(), hsOpt->allowedNets.NetworkName[i].length(), "address list"))
         return FAIL;
       if (!xSSL_write
-          (ssl, &LocalNetLs.address[i], sizeof (int), "address list"))
+          (ssl, &hsOpt->allowedNets.address[i], sizeof (int), "address list"))
         return FAIL;
       if (!xSSL_write
-          (ssl, &LocalNetLs.netmask[i], sizeof (int), "netmask list"))
+          (ssl, &hsOpt->allowedNets.netmask[i], sizeof (int), "netmask list"))
         return FAIL;
-
     }
-
-  delete[] LocalNetLs.address;
-  delete[] LocalNetLs.netmask;
 
   return DONE;
 
@@ -345,39 +345,43 @@ int Protocol::LulzNetReciveNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
 {
   int i;
   int rdLen;
+  int netCount;
+  int address;
+  int netmask;
 
 #ifdef DEBUG
   Log::Debug2 ("Recving available network count");
 #endif
   if (!
       (rdLen =
-         xSSL_read (ssl, &hsOpt->netLs.count, sizeof (int), "network count")))
+         xSSL_read (ssl, &netCount, sizeof (int), "network count")))
     return FAIL;
 
-  if (hsOpt->netLs.count == 0)
+  if (netCount == 0)
     {
       Log::Error ("No network available");
       return FAIL;
     }
 
-  hsOpt->netLs.address = new int[hsOpt->netLs.count];
-  hsOpt->netLs.netmask = new int[hsOpt->netLs.count];
-  hsOpt->netLs.network = new int[hsOpt->netLs.count];
-  hsOpt->netLs.NetworkName = new std::string[hsOpt->netLs.count];
-
-  for (i = 0; i < hsOpt->netLs.count && i < MAX_TAPS; i++)
+  for (i = 0; i < netCount && i < MAX_TAPS; i++)
     {
       if (!(rdLen = xSSL_read (ssl, packet, MAX_NETWORKNAME_LEN, "network name list")))
         return FAIL;
 
       packet[rdLen] = '\x00';
-      hsOpt->netLs.NetworkName[i] = packet;
+      hsOpt->remoteNets.NetworkName.push_back(packet);
 
-      if (!(rdLen = xSSL_read (ssl, &hsOpt->netLs.address[i], sizeof (int), "address list")))
+      if (!(rdLen = xSSL_read (ssl, &address, sizeof (int), "address list")))
         return FAIL;
-      if (!(rdLen = xSSL_read (ssl, &hsOpt->netLs.netmask[i], sizeof (int), "netmask list")))
+
+      hsOpt->remoteNets.address.push_back(address);
+
+      if (!(rdLen = xSSL_read (ssl, &netmask, sizeof (int), "netmask list")))
         return FAIL;
-      hsOpt->netLs.network[i] = get_ip_address_network(hsOpt->netLs.address[i],hsOpt->netLs.netmask[i]);
+
+      hsOpt->remoteNets.netmask.push_back(netmask);
+
+      hsOpt->remoteNets.network.push_back(get_ip_address_network(address, netmask));
     }
 
   return DONE;
@@ -386,17 +390,20 @@ int Protocol::LulzNetReciveNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
 int Protocol::LulzNetSendUserlist (SSL * ssl)
 {
   int i;
+  int userCount;
   userListT userLs;
+
   userLs = Protocol::GetUserlist ();
+  userCount = userLs.user.size();
 
 #ifdef DEBUG
   Log::Debug2 ("Sending peer count");
 #endif
-  if (!xSSL_write (ssl, &userLs.count, sizeof (int), "peer count"))
+  if (!xSSL_write (ssl, &userCount, sizeof (int), "peer count"))
     return FAIL;
 
   /* And send peers address */
-  for (i = 0; i < userLs.count; i++)
+  for (i = 0; i < userCount; i++)
     {
       sprintf (packet, "%s", userLs.user[i].c_str ());
       if (!xSSL_write (ssl, packet, strlen (packet), "user list"))
@@ -412,26 +419,26 @@ int Protocol::LulzNetSendUserlist (SSL * ssl)
 int Protocol::LulzNetReciveUserlist (SSL * ssl, HandshakeOptionT * hsOpt)
 {
   int i;
-
   int rdLen;
+  int userCount;
+  int address;
 
-  if (!xSSL_read (ssl, &hsOpt->userLs.count, sizeof (int), "peer count"))
+  if (!xSSL_read (ssl, &userCount, sizeof (int), "peer count"))
     return FAIL;
 
-  hsOpt->userLs.user = new std::string[hsOpt->userLs.count];
-  hsOpt->userLs.address = new int[hsOpt->userLs.count];
-
   /* And recv peers Log::Info */
-  for (i = 0; i < hsOpt->userLs.count && i < MAX_PEERS; i++)
+  for (i = 0; i < userCount && i < MAX_PEERS; i++)
     {
       if (!(rdLen = xSSL_read (ssl, packet, MAX_USERNAME_LEN, "user list")))
         return FAIL;
 
       packet[rdLen] = '\x00';
-      hsOpt->userLs.user[i].assign (packet);
+      hsOpt->userLs.user.push_back(packet);
 
-      if (!(rdLen = xSSL_read (ssl, &hsOpt->userLs.address[i], sizeof (int), "address list")))
+      if (!(rdLen = xSSL_read (ssl, &address, sizeof (int), "address list")))
         return FAIL;
+
+      hsOpt->userLs.address.push_back(address);
 
     }
   return DONE;
@@ -446,16 +453,12 @@ userListT Protocol::GetUserlist ()
 
   userListT userLs;
 
-  userLs.user = new std::string[Peers::count];
-  userLs.address = new int[Peers::count];
-  userLs.count = Peers::count;
-
   for (i = 0; i < Peers::count; i++)
     {
       peer = Peers::db[i];
 
-      userLs.user[i] = peer->user ();
-      userLs.address[i] = peer->address ();
+      userLs.user.push_back(peer->user ());
+      userLs.address.push_back(peer->address ());
     }
 
   return userLs;

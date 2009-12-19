@@ -100,8 +100,8 @@ void LulznetInit ()
 {
   memset (Peers::db, '\x00', MAX_PEERS * sizeof (Peers::Peer *));
   Peers::count = 0;
-  Peers::conections_to_peer = 0;
   Peers::maxFd = 0;
+  Peers::conections_to_peer = 0;
 
   memset (Taps::db, '\x00', MAX_TAPS * sizeof (Taps::Tap *));
   Taps::count = 0;
