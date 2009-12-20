@@ -24,7 +24,7 @@
 
 pthread_mutex_t Log::mutex;
 
-void Log::Info (const char *msg, ...)
+void Log::Info (const char *msg , ...)
 {
   va_list args;
 
@@ -33,9 +33,10 @@ void Log::Info (const char *msg, ...)
   va_end (args);
 }
 
-#ifdef DEBUG
-void Log::Debug1 (const char *msg, ...)
+
+void Log::Debug1 (const char *msg __attribute__((unused)), ...)
 {
+#ifdef DEBUG
   va_list args;
 
   if (Options.DebugLevel () < 1)
@@ -44,10 +45,12 @@ void Log::Debug1 (const char *msg, ...)
   va_start (args, msg);
   DoLog (msg, args, DEBUG_1);
   va_end (args);
+#endif
 }
 
-void Log::Debug2 (const char *msg, ...)
+void Log::Debug2 (const char *msg __attribute__((unused)), ...)
 {
+#ifdef DEBUG
   va_list args;
 
   if (Options.DebugLevel () < 2)
@@ -56,10 +59,12 @@ void Log::Debug2 (const char *msg, ...)
   va_start (args, msg);
   DoLog (msg, args, DEBUG_2);
   va_end (args);
+#endif
 }
 
-void Log::Debug3 (const char *msg, ...)
+void Log::Debug3 (const char *msg __attribute__((unused)), ...)
 {
+#ifdef DEBUG
   va_list args;
 
   if (Options.DebugLevel () < 3)
@@ -68,8 +73,8 @@ void Log::Debug3 (const char *msg, ...)
   va_start (args, msg);
   DoLog (msg, args, DEBUG_3);
   va_end (args);
-}
 #endif
+}
 
 void Log::Error (const char *msg, ...)
 {
@@ -132,9 +137,10 @@ void Log::DoLog (const char *fmt, va_list args, int level)
 
 }
 
-#ifdef DEBUG
-void Log::Dump (unsigned char *data_buffer, int length)
+
+void Log::Dump (unsigned char *data_buffer __attribute__((unused)), int length __attribute__((unused)))
 {
+#ifdef DEBUG
   char byte;
   int i;
   int j;
@@ -165,7 +171,6 @@ void Log::Dump (unsigned char *data_buffer, int length)
         }
 
     }
-
+#endif
   pthread_mutex_unlock (&mutex);
 }
-#endif

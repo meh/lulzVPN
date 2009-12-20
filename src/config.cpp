@@ -28,6 +28,7 @@ Config::Config ()
   _Flags = 0;
   _ConnectingPort = PORT;
   _BindingPort = PORT;
+
 #ifdef DEBUG
   _DebugLevel = 0;
 #endif
@@ -267,7 +268,7 @@ Config::ParseConfig (xmlDocPtr doc, xmlNodePtr curNode)
         }
 #endif
       else
-        Log::Error ("Invalid option in lulznet config");
+        Log::Error ("Invalid option in lulznet config (%s)",curNode->name);
 
       curNode = xmlNextElementSibling (curNode);
     }
@@ -285,6 +286,7 @@ Config::ParseUserNet (xmlDocPtr doc, xmlNodePtr curNode)
       if ((!xmlStrcmp (curNode->name, (const xmlChar *) "name")))
         {
           key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 1);
+          /*TODO: implement tap acl */
           xmlFree (key);
         }
       else

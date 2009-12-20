@@ -43,6 +43,7 @@ uInt PacketInspection::get_destination_ip (Network::Packet *packet)
 
       arpHdr = (arp_header *) (packet->buffer + ETH_HDR_LEN + 1);
       address = arpHdr->dst_ip_adr;
+
 #ifdef DEBUG
       inet_ntop (AF_INET, &address, p_addr, ADDRESS_LEN);
       Log::Debug3 ("\tarp packet, dst: %s", p_addr);

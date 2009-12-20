@@ -65,10 +65,9 @@ int main (int argc, char *argv[])
   /* Start (or not) the listening service */
   if (Options.Flags () & LISTENING_MODE)
     pthread_create (&serverT, NULL, Network::Server::ServerLoop, NULL);
-#ifdef DEBUG
+
   else
     Log::Debug1 ("Not listening");
-#endif
 
   /* Autoconnection */
   if (!Options.ConnectingAddress ().empty ())
@@ -84,10 +83,8 @@ int main (int argc, char *argv[])
   /* A lovable shell */
   if (Options.Flags () & INTERACTIVE_MODE)
     Shell::Start ();
-#ifdef DEBUG
   else
     Log::Debug1 ("Non interactive mode");
-#endif
 
   /* cause I don't enjoy when it exits as soon as it starts :| */
   pthread_join (Network::Server::select_t, NULL);

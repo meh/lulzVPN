@@ -20,11 +20,6 @@
 #ifndef _LNET_AUTH_H
 #define _LNET_AUTH_H
 
-#define AUTHENTICATION_FAILED		'\x00'
-#define AUTHENTICATION_SUCCESSFULL 	'\x01'
-
-#define MAX_USERNAME_LEN	16
-#define MAX_PASSWORD_LEN	32
 #define PW_HASH_STRING_LEN	32
 
 namespace Auth

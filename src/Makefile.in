@@ -1,33 +1,30 @@
 # @configure_input@
 
 # Package-related substitution variables
-package	= @PACKAGE_NAME@
-version	= @PACKAGE_VERSION@
-srcdir	= @srcdir@
-VPATH	= @srcdir@
-CC	= g++
-CFLAGS	= -Wall -Wextra -pedantic -g -I $(srcdir)/include `xml2-config --cflags`
-LDFLAGS	= -lpthread -lssl -lreadline `xml2-config --libs`
+package		= @PACKAGE_NAME@
+version		= @PACKAGE_VERSION@
+srcdir		= @srcdir@
+VPATH		= @srcdir@
+CXX		= g++
+CXXFLAGS	= -Wall -Wextra -pedantic -g -I $(srcdir)/include `xml2-config --cflags`
+LDFLAGS		= -lpthread -lssl -lreadline `xml2-config --libs`
 
-source	= $(srcdir)/auth.cpp\
-	  $(srcdir)/config.cpp\
-	  $(srcdir)/main.cpp\
-	  $(srcdir)/peer.cpp\
-	  $(srcdir)/shell.cpp\
-	  $(srcdir)/xfunc.cpp\
-	  $(srcdir)/log.cpp\
-	  $(srcdir)/networking.cpp\
-	  $(srcdir)/protocol.cpp\
-	  $(srcdir)/tap.cpp\
-	  $(srcdir)/packet.cpp
+SOURCES	= $(srcdir)/auth.o\
+	  $(srcdir)/config.o\
+	  $(srcdir)/main.o\
+	  $(srcdir)/peer.o\
+	  $(srcdir)/shell.o\
+	  $(srcdir)/xfunc.o\
+	  $(srcdir)/log.o\
+	  $(srcdir)/networking.o\
+	  $(srcdir)/protocol.o\
+	  $(srcdir)/tap.o\
+	  $(srcdir)/packet.o
 
-all:lulznet 
-	${CC} ${LDFLAGS} -o ../${package} $(source:.cpp=.o)
-      
-lulznet: $(source:.cpp=.o)
+all: link
 
-$(source:.cpp=.o): $(source)
-	${CC} -c ${CFLAGS} -o $*.o $*.cpp
+link: $(SOURCES)
+	$(CXX) $(LDFLAGS) -o ../lulznet $(SOURCES)
 
 clean:
 	rm -f $(srcdir)/*.o

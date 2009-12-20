@@ -67,9 +67,8 @@ Taps::Tap::alloc (std::string NetName, std::string *dev)
     }
 
   dev->assign(ifr.ifr_name);
-#ifdef DEBUG
+
   Log::Debug1 ("%s device create (fd %d).", dev->c_str(), fd);
-#endif
   return fd;
 }
 
@@ -106,9 +105,8 @@ Taps::Tap::Tap (TapDeviceT TapOpt)
   SetMaxFd ();
 
   FD_SET (_fd, &Network::master);
-#ifdef DEBUG
+
   Log::Debug2 ("Added fd %d to fd_set master (1st free fd: %d)", _fd, count);
-#endif
 
   Network::Server::RestartSelectLoop();
 }
@@ -120,9 +118,8 @@ Taps::Tap::~Tap()
   FD_CLR (_fd, &Network::master);
   close (_fd);
 
-#ifdef DEBUG
+
   Log::Debug2 ("Removed fd %d from fd_set master (current fd %d)", _fd, count);
-#endif
 }
 
 bool
@@ -134,9 +131,8 @@ Taps::Tap::operator>> (Network::Packet * packet)
       return FAIL;
     }
 
-#ifdef DEBUG
+
   Log::Debug3 ("Read %d bytes packet from tap %s", packet->length, _device.c_str());
-#endif
   return DONE;
 }
 
@@ -149,9 +145,8 @@ Taps::Tap::operator<< (Network::Packet * packet)
       return FAIL;
     }
 
-#ifdef DEBUG
+
   Log::Debug3 ("\tForwarded to tap %s", _device.c_str());
-#endif
   return DONE;
 }
 
@@ -297,15 +292,14 @@ Taps::configureDevice (std::string device, std::string address, std::string netm
   sprintf (ifconfig_command, "ifconfig %s %s netmask %s", device.c_str(), address.c_str(), netmask.c_str());
   system (ifconfig_command);
 
-#ifdef DEBUG
+
   Log::Debug2("Ifconfig command: %s",ifconfig_command);
-#endif
 
   return 1;
 }
 
 networkListT
-Taps::getUserAllowedNetworks (std::string user)
+Taps::getUserAllowedNetworks (std::string user __attribute__((unused)))
 {
   int i;
   networkListT nl;
@@ -353,29 +347,24 @@ Taps::setSystemRouting (Peers::Peer * peer, networkListT allowedNets, char op)
       inet_ntop (AF_INET, &allowedNets.address[i], gateway, ADDRESS_LEN);
 
       for (j = 0; j < remoteNetsCount; j++)
-        {
-          std::cout << "Here: " << allowedNets.NetworkName[i] << std::endl;
-          std::cout << "There: " << remoteNets.NetworkName[j] << std::endl;
-          if (!allowedNets.NetworkName[i].compare(remoteNets.NetworkName[j]))
-            {
-              inet_ntop (AF_INET, &remoteNets.network[j], network, ADDRESS_LEN);
-              inet_ntop (AF_INET, &remoteNets.netmask[j], netmask, ADDRESS_LEN);
+        if (!allowedNets.NetworkName[i].compare(remoteNets.NetworkName[j]))
+          {
+            inet_ntop (AF_INET, &remoteNets.network[j], network, ADDRESS_LEN);
+            inet_ntop (AF_INET, &remoteNets.netmask[j], netmask, ADDRESS_LEN);
 
-              if (op == ADD_ROUTING)
-                sprintf (route_command,
-                         "route add -net %s netmask %s gw %s", network,
-                         netmask, gateway);
-              else
-                sprintf (route_command,
-                         "route del -net %s netmask %s gw %s", network,
-                         netmask, gateway);
+            if (op == ADD_ROUTING)
+              sprintf (route_command,
+                       "route add -net %s netmask %s gw %s", network,
+                       netmask, gateway);
+            else
+              sprintf (route_command,
+                       "route del -net %s netmask %s gw %s", network,
+                       netmask, gateway);
 
-#ifdef DEBUG
-              Log::Debug2("Route command: %s",route_command);
-#endif
-              system (route_command);
-            }
-        }
+
+            Log::Debug2("Route command: %s",route_command);
+            system (route_command);
+          }
     }
 }
 

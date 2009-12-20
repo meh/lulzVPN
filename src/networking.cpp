@@ -42,16 +42,14 @@ void Network::Server::sslInit ()
   if (!Network::Server::sslCTX)
     Log::Fatal ("Failed to do SSL CTX new");
 
-#ifdef DEBUG
+
   Log::Debug2 ("Loading SSL certificate");
-#endif
   if (SSL_CTX_use_certificate_file
       (Network::Server::sslCTX, CERT_FILE, SSL_FILETYPE_PEM) <= 0)
     Log::Fatal ("Failed to load SSL certificate %s", CERT_FILE);
 
-#ifdef DEBUG
+
   Log::Debug2 ("Loading SSL private key");
-#endif
   if (SSL_CTX_use_PrivateKey_file
       (Network::Server::sslCTX, KEY_FILE, SSL_FILETYPE_PEM) <= 0)
     Log::Fatal ("Failed to load SSL private key %s", KEY_FILE);
@@ -74,15 +72,14 @@ void *Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
   struct sockaddr_in peer;
   socklen_t addrSize;
   pthread_t connectQueueT;
-  HandshakeOptionT hsOpt;
-  Peers::Peer * newPeer;
+  HandshakeOptionT *hsOpt;
+  Peers::Peer *newPeer;
 
   if ((listenSock = socket (PF_INET, SOCK_STREAM, 0)) == -1)
     Log::Fatal ("cannot create socket");
 
-#ifdef DEBUG
+
   Log::Debug2 ("listenSock (fd %d) created", listenSock);
-#endif
   if (setsockopt (listenSock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof (on)) ==
       -1)
     Log::Error ("setsockopt SO_REUSEADDR: %s", strerror (errno));
@@ -92,17 +89,15 @@ void *Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
   server.sin_addr.s_addr = INADDR_ANY;	/*(server_opt->binding_address); */
   memset (&(server.sin_zero), '\0', 8);
 
-#ifdef DEBUG
+
   Log::Debug2 ("Binding port %d", PORT);
-#endif
   if (bind
       (listenSock, (struct sockaddr *) &server,
        sizeof (struct sockaddr)) == -1)
     Log::Fatal ("cannot binding to socket");
 
-#ifdef DEBUG
+
   Log::Debug1 ("Listening");
-#endif
   if (listen (listenSock, MAX_ACCEPTED_PEERS_CONNECTIONS) == -1)
     Log::Fatal ("cannot listen");
 
@@ -116,21 +111,21 @@ void *Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
         Log::Fatal ("cannot accept");
 
       Protocol::SendBanner (peerSock);
+      hsOpt = new HandshakeOptionT;
 
       if ((peerSsl = SSL_new (Network::Server::sslCTX)) != NULL)
         {
           SSL_set_fd (peerSsl, peerSock);
-#ifdef DEBUG
+
           Log::Debug2 ("SSL Handshake");
-#endif
           if (SSL_accept (peerSsl) > 0)
             {
-              if (Protocol::Server::Handshake (peerSsl, &hsOpt))
+              if (Protocol::Server::Handshake (peerSsl, hsOpt))
                 {
                   pthread_mutex_lock (&Peers::db_mutex);
 
-                  newPeer = new Peers::Peer (peerSock, peerSsl, hsOpt.peer_username,
-                                             peer.sin_addr.s_addr, hsOpt.remoteNets,
+                  newPeer = new Peers::Peer (peerSock, peerSsl, hsOpt->peer_username,
+                                             peer.sin_addr.s_addr, hsOpt->remoteNets,
                                              INCOMING_CONNECTION);
                   inet_ntop (AF_INET, &peer.sin_addr.s_addr, peer_address,
                              ADDRESS_LEN);
@@ -138,25 +133,29 @@ void *Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
                              peerSock);
 
                   /* Set routing */
-                  Taps::setSystemRouting (newPeer, hsOpt.allowedNets, ADD_ROUTING);
+                  Log::Debug2 ("Setting Routing");
+                  Taps::setSystemRouting (newPeer, hsOpt->allowedNets, ADD_ROUTING);
 
                   pthread_mutex_unlock (&Peers::db_mutex);
 
                   pthread_create (&connectQueueT, NULL, CheckConnectionsQueue,
-                                  &hsOpt.userLs);
+                                  &hsOpt->userLs);
                   pthread_join (connectQueueT, NULL);
+                  delete hsOpt;
                 }
               else
                 {
                   Log::Error("Cannot complete handshake");
                   SSL_free (peerSsl);
                   close (peerSock);
+                  delete hsOpt;
                 }
             }
           else
             {
               Log::Error ("Cannot complete SSL handshake");
               close (peerSock);
+              delete hsOpt;
             }
         }
       else
@@ -164,6 +163,7 @@ void *Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
 
           Log::Error ("Cannot create new SSL");
           close (peerSock);
+          delete hsOpt;
         }
     }
   return NULL;
@@ -174,9 +174,8 @@ int Network::LookupAddress (std::string address)
 
   struct hostent *host_info;
 
-#ifdef DEBUG
+
   Log::Debug1 ("Looking up client %s", address.c_str ());
-#endif
   host_info = gethostbyname (address.c_str ());
 
   if (host_info == NULL)
@@ -213,9 +212,8 @@ void Network::Client::PeerConnect (int address, short port)
       return;
     }
 
-#ifdef DEBUG
+
   Log::Debug2 ("peer sock (fd %d) created", peerSock);
-#endif
 
   peer.sin_family = AF_INET;
   peer.sin_port = htons (port ? port : PORT);
@@ -233,9 +231,8 @@ void Network::Client::PeerConnect (int address, short port)
   if ((peerSsl = SSL_new (Network::Client::sslCTX)) != NULL)
     {
       SSL_set_fd (peerSsl, peerSock);
-#ifdef DEBUG
+
       Log::Debug2 ("SSL Handshake");
-#endif
       if (SSL_connect (peerSsl) > 0)
         {
           if (Network::VerifySslCert (peerSsl))
@@ -249,6 +246,7 @@ void Network::Client::PeerConnect (int address, short port)
                                      hsOpt.remoteNets, OUTGOING_CONNECTION);
                   Log::Info ("Connected");
 
+                  Log::Debug2 ("Setting Routing");
                   Taps::setSystemRouting (newPeer, hsOpt.allowedNets, ADD_ROUTING);
 
                   pthread_mutex_unlock (&Peers::db_mutex);
@@ -331,9 +329,8 @@ void *Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
                         case CONTROL_PACKET:
                           if (packet.buffer[1] == CLOSE_CONNECTION)
                             {
-#ifdef DEBUG
+
                               Log::Debug3 ("control_packet: closing connection");
-#endif
                               freeFdFlag = 1;
                               peer->setClosing ();
                             }
@@ -368,9 +365,8 @@ void *Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
 
 void Network::Server::RestartSelectLoop ()
 {
-#ifdef DEBUG
+
   Log::Debug2 ("Restarting select()");
-#endif
   if (Network::Server::select_t != (pthread_t) NULL)
     {
       if (pthread_cancel (Network::Server::select_t))
@@ -394,9 +390,8 @@ inline void Network::Server::ForwardToTap (Network::Packet * packet)
       if (Taps::db[i]->isRoutableAddress(nAddr))
         *Taps::db[i] << packet;
 
-#ifdef DEBUG
+
   Log::Dump (packet->buffer, packet->length);
-#endif
 }
 
 inline void Network::Server::ForwardToPeer (Network::Packet * packet)
@@ -413,30 +408,29 @@ inline void Network::Server::ForwardToPeer (Network::Packet * packet)
       if (Peers::db[i]->isRoutableAddress(nAddr))
         *Peers::db[i] << packet;
 
-#ifdef DEBUG
+
   Log::Dump (packet->buffer, packet->length);
-#endif
 }
 
 int Network::VerifySslCert (SSL * ssl)
 {
   char *fingerprint;
-  char answer;
+  //char answer;
 
   if (SSL_get_verify_result (ssl) != X509_V_OK)
     {
       fingerprint = Auth::Crypt::GetFingerprintFromCtx (ssl);
       std::cout << "Could not verify SSL servers certificate (self signed)." << std::endl;
       std::cout << "Fingerprint is: "<< fingerprint << std::endl;
-      std::cout << "Do you want to continue? [y|n]: ";
-      std::cin >> answer;
+      std::cout << "Do you want to continue? [y|n]: y\n";
+      //    std::cin >> answer;
 
       delete[] fingerprint;
 
-      if (answer == 'y' || answer == 'Y')
-        return TRUE;
-      else
-        return FALSE;
+//      if (answer == 'y' || answer == 'Y')
+      return TRUE;
+//      else
+      //      return FALSE;
     }
 
   return TRUE;
