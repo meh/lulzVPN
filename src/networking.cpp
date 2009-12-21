@@ -125,8 +125,7 @@ void *Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
                   pthread_mutex_lock (&Peers::db_mutex);
 
                   newPeer = new Peers::Peer (peerSock, peerSsl, hsOpt->peer_username,
-                                             peer.sin_addr.s_addr, hsOpt->remoteNets,
-                                             INCOMING_CONNECTION);
+                                             peer.sin_addr.s_addr, hsOpt->remoteNets);
                   inet_ntop (AF_INET, &peer.sin_addr.s_addr, peer_address,
                              ADDRESS_LEN);
                   Log::Info ("Connection accepted from %s (fd %d)", peer_address,
@@ -199,13 +198,6 @@ void Network::Client::PeerConnect (int address, short port)
   pthread_t connectQueueT;
   Peers::Peer * newPeer;
 
-  /* check if is there any free Peer */
-  if (Peers::conections_to_peer == MAX_CONNECTIONS_TO_PEER)
-    {
-      Log::Error ("Exceded max connections to peer");
-      return;
-    }
-
   if ((peerSock = socket (AF_INET, SOCK_STREAM, 0)) == -1)
     {
       Log::Error ("cannot create socket", 1);
@@ -242,8 +234,7 @@ void Network::Client::PeerConnect (int address, short port)
                   pthread_mutex_lock (&Peers::db_mutex);
 
                   newPeer =
-                    new Peers::Peer (peerSock, peerSsl, hsOpt.peer_username, address,
-                                     hsOpt.remoteNets, OUTGOING_CONNECTION);
+                    new Peers::Peer (peerSock, peerSsl, hsOpt.peer_username, address, hsOpt.remoteNets);
                   Log::Info ("Connected");
 
                   Log::Debug2 ("Setting Routing");
@@ -291,7 +282,7 @@ void *Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
   int ret;
   fd_set readSelect;
   int maxFd;
-  int i;
+  uInt i;
   Peers::Peer * peer;
   Taps::Tap * tap;
 
@@ -313,7 +304,7 @@ void *Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
       else
         {
           /* 0,1 and 2 are stdin-out-err and we don't care about them */
-          for (i = 0; i < Peers::count; i++)
+          for (i = 0; i < Peers::db.size(); i++)
             {
               peer = Peers::db[i];
               if (peer->isActive () && peer->isReadyToRead(&readSelect))
@@ -346,7 +337,7 @@ void *Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
           if (freeFdFlag)
             Peers::FreeNonActive ();
 
-          for (i = 0; i < Taps::count; i++)
+          for (i = 0; i < Taps::db.size(); i++)
             {
               tap = Taps::db[i];
               if (tap->isActive() && tap->isReadyToRead(&readSelect))
@@ -380,12 +371,12 @@ void Network::Server::RestartSelectLoop ()
 inline void Network::Server::ForwardToTap (Network::Packet * packet)
 {
 
-  int i;
+  uInt i;
   int nAddr;
 
   nAddr = PacketInspection::get_destination_ip(packet);
 
-  for (i = 0; i < Taps::count; i++)
+  for (i = 0; i < Taps::db.size(); i++)
     if (Taps::db[i]->isActive())
       if (Taps::db[i]->isRoutableAddress(nAddr))
         *Taps::db[i] << packet;
@@ -397,13 +388,13 @@ inline void Network::Server::ForwardToTap (Network::Packet * packet)
 inline void Network::Server::ForwardToPeer (Network::Packet * packet)
 {
 
-  int i;
+  uInt i;
   int nAddr;
 
   nAddr = PacketInspection::get_destination_ip(packet);
   packet->buffer[0] = DATA_PACKET;
 
-  for (i = 0; i < Peers::count; i++)
+  for (i = 0; i < Peers::db.size(); i++)
     if (Peers::db[i]->isActive())
       if (Peers::db[i]->isRoutableAddress(nAddr))
         *Peers::db[i] << packet;
@@ -439,7 +430,7 @@ int Network::VerifySslCert (SSL * ssl)
 void *Network::CheckConnectionsQueue (void *arg)
 {
 
-  unsigned int i;
+  uInt i;
   userListT *userLs;
   userLs = (userListT *) arg;
 

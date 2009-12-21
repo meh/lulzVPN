@@ -4,7 +4,7 @@
  * LulzNet is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
- * (at your hsOption) any later version.
+ * (at your option) any later version.
  *
  * LulzNet is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -346,7 +346,7 @@ int Protocol::LulzNetSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
 int Protocol::LulzNetReciveNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
 {
   int i;
-  unsigned int j;
+  uInt j;
   int rdLen;
   int netCount;
   char networkName[MAX_NETWORKNAME_LEN + 1];
@@ -460,12 +460,12 @@ int Protocol::LulzNetReciveUserlist (SSL * ssl, HandshakeOptionT * hsOpt)
 userListT Protocol::GetUserlist ()
 {
 
-  int i;
+  uInt i;
   Peers::Peer * peer;
 
   userListT userLs;
 
-  for (i = 0; i < Peers::count; i++)
+  for (i = 0; i < Peers::db.size(); i++)
     {
       peer = Peers::db[i];
 

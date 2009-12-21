@@ -70,17 +70,15 @@ public:
 };
 
 /* A structure that keep file descriptors information */
-extern Tap *db[MAX_TAPS];
+extern std::vector<Tap *>db;
 extern pthread_mutex_t db_mutex;
-extern int count;
+
 extern int maxFd;
 
 /* set global var max_tap_fd to proper value */
 void SetMaxFd ();
 
 void FreeNonActive ();
-
-void RebuildDb ();
 
 Tap *get_fd_related (int fd);
 

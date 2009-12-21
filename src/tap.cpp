@@ -27,19 +27,19 @@
 #include <lulznet/tap.h>
 #include <lulznet/xfunc.h>
 
-Taps::Tap  *Taps::db[MAX_TAPS];
+std::vector<Taps::Tap  *>Taps::db;
 pthread_mutex_t Taps::db_mutex;
-int Taps::count;
+
 int Taps::maxFd;
 
 void
 Taps::SetMaxFd ()
 {
 
-  int i;
+  uInt i;
   maxFd = 0;
 
-  for (i = 0; i < count; i++)
+  for (i = 0; i < db.size(); i++)
     if (db[i]->fd() > maxFd)
       maxFd = db[i]->fd();
 }
@@ -99,14 +99,13 @@ Taps::Tap::Tap (TapDeviceT TapOpt)
 
   configureDevice (device, TapOpt.Address, TapOpt.Netmask);
 
-  db[count] = this;
+  db.push_back(this);
 
-  count++;
   SetMaxFd ();
 
   FD_SET (_fd, &Network::master);
 
-  Log::Debug2 ("Added fd %d to fd_set master (1st free fd: %d)", _fd, count);
+  Log::Debug2 ("Added fd %d to fd_set master (1st free fd: %d)", _fd, db.size());
 
   Network::Server::RestartSelectLoop();
 }
@@ -119,7 +118,7 @@ Taps::Tap::~Tap()
   close (_fd);
 
 
-  Log::Debug2 ("Removed fd %d from fd_set master (current fd %d)", _fd, count);
+  Log::Debug2 ("Removed fd %d from fd_set master (current fd %d)", _fd, db.size());
 }
 
 bool
@@ -219,36 +218,20 @@ void
 Taps::FreeNonActive ()
 {
 
-  int i;
+  uInt i;
+  std::vector<Taps::Tap *>::iterator it;
 
-  for (i = 0; i < MAX_TAPS; i++)
+  for (i = 0; i < db.size(); i++)
     if (!db[i]->isActive())
       {
         delete db[i];
         db[i] = NULL;
+
+        it = db.begin();
+        it+=i;
+        db.erase(it);
+        SetMaxFd();
       }
-
-  RebuildDb();
-}
-
-void
-Taps::RebuildDb ()
-{
-  int i;
-  int j;
-  int freedTap;
-
-  freedTap = 0;
-  j = 0;
-
-  for (i = 0; i < count; i++)
-    if (db[i] != NULL)
-      db[j++] = db[i];
-    else
-      freedTap++;
-
-  count -= freedTap;
-  SetMaxFd ();
 }
 
 int
@@ -301,10 +284,10 @@ Taps::configureDevice (std::string device, std::string address, std::string netm
 networkListT
 Taps::getUserAllowedNetworks (std::string user __attribute__((unused)))
 {
-  int i;
+  uInt i;
   networkListT nl;
 
-  for (i = 0; i < count; i++)
+  for (i = 0; i < db.size(); i++)
     {
       /*
       AllowedUsers = GetTapAllowedUsers(db[i]->device());

@@ -29,6 +29,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include <sys/socket.h>
 #include <sys/ioctl.h>
@@ -70,7 +71,7 @@
 #define DONE	1
 
 #define uChar	unsigned char
-#define u_short	unsigned short
+#define uShort	unsigned short
 #define uInt 	unsigned int
 
 #define MAX_ACCEPTED_PEERS_CONNECTIONS	4

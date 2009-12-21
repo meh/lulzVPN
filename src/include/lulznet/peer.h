@@ -47,15 +47,13 @@ private:
   int _fd;
   SSL *_ssl;
   char _state;
-  char _type;
   std::string _user;
   int _address;
   int _virtualAddress;
   networkListT _nl;
 
 public:
-  Peer (int fd, SSL * ssl, std::string user, int address, networkListT nl,
-        char type);
+  Peer (int fd, SSL * ssl, std::string user, int address, networkListT nl);
   ~Peer ();
   bool operator>> (Network::Packet * packet);
   bool operator<< (Network::Packet * packet);
@@ -73,11 +71,9 @@ public:
   networkListT nl();
 };
 
-extern Peer *db[MAX_PEERS];
+extern std::vector<Peer *> db;
 extern pthread_mutex_t db_mutex;
 
-extern int count;
-extern int conections_to_peer;
 extern int maxFd;
 
 /* set global var max_peer_fd to proper value (we use it with select() ) */
@@ -85,9 +81,6 @@ void SetMaxFd ();
 
 /* Check for non active peer and reomve them */
 void FreeNonActive ();
-
-/* Delete empty entry */
-void RebuildDb ();
 
 /* Check if user is connected */
 int UserIsConnected (std::string user);

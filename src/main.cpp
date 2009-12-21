@@ -95,13 +95,7 @@ int main (int argc, char *argv[])
 
 void LulznetInit ()
 {
-  memset (Peers::db, '\x00', MAX_PEERS * sizeof (Peers::Peer *));
-  Peers::count = 0;
   Peers::maxFd = 0;
-  Peers::conections_to_peer = 0;
-
-  memset (Taps::db, '\x00', MAX_TAPS * sizeof (Taps::Tap *));
-  Taps::count = 0;
   Taps::maxFd = 0;
 
   FD_ZERO (&Network::master);
@@ -139,14 +133,14 @@ void help ()
 
 void LulznetExit ()
 {
-  int i;
+  uInt i;
 
   pthread_mutex_lock(&Peers::db_mutex);
   if (Network::Server::select_t != (pthread_t) NULL)
     pthread_cancel (Network::Server::select_t);
 
   Log::Info ("Closing lulznet");
-  for (i = 0; i < Peers::count; i++)
+  for (i = 0; i < Peers::db.size(); i++)
     Peers::db[i]->Disassociate();
 
   exit (0);

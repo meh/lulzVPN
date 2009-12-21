@@ -55,8 +55,8 @@ void Shell::PeerPreconnect (Cmd * cmd)
 
 void Shell::PeerList ()
 {
-  int i;
-  unsigned int j;
+  uInt i;
+  uInt j;
   int nAddr;
   int n_vAddress;
   char pAddr[ADDRESS_LEN + 1];
@@ -64,7 +64,7 @@ void Shell::PeerList ()
   int cidrNetmask;
   Peers::Peer * peer;
 
-  for (i = 0; i < Peers::count; i++)
+  for (i = 0; i < Peers::db.size(); i++)
     {
       peer = Peers::db[i];
 
@@ -87,20 +87,24 @@ void Shell::PeerList ()
 
 void Shell::PeerKill (Cmd * cmd)
 {
-  int i;
+  uInt i;
+  std::vector<Peers::Peer *>::iterator it;
 
   if (cmd->argc != 2)
     std::cout << "Usage: peer kill peer_name" << std::endl;
   else
     {
-      for ( i = 0; i < Peers::count; i++)
+      for ( i = 0; i < Peers::db.size(); i++)
         if (!Peers::db[i]->user().compare(cmd->argv[1]))
           {
             if (Peers::db[i]->isActive())
               {
                 Peers::db[i]->Disassociate();
-                Peers::db[i] = NULL;
-                Peers::RebuildDb();
+
+                it = Peers::db.begin();
+                it+=i;
+                Peers::db.erase(it);
+                Peers::SetMaxFd();
               }
             else
               std::cout << "Peer is not active" << std::endl;
@@ -113,14 +117,14 @@ void Shell::PeerKill (Cmd * cmd)
 
 void Shell::TapList ()
 {
-  int i;
+  uInt i;
   int nAddr;
   int nNetm;
   int cidr;
   char pAddr[ADDRESS_LEN + 1];
   Taps::Tap * tap;
 
-  for (i = 0; i < Taps::count; i++)
+  for (i = 0; i < Taps::db.size(); i++)
     {
       tap = Taps::db[i];
 

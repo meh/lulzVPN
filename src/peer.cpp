@@ -27,47 +27,41 @@
 #include <lulznet/tap.h>
 #include <lulznet/xfunc.h>
 
-Peers::Peer * Peers::db[MAX_PEERS];
+std::vector<Peers::Peer *>Peers::db;
 pthread_mutex_t Peers::db_mutex;
-int Peers::count;
-int Peers::conections_to_peer;
+
 int Peers::maxFd;
 
 void
 Peers::SetMaxFd ()
 {
-  int i;
+  uInt i;
   maxFd = 0;
 
-  for (i = 0; i < count; i++)
+  for (i = 0; i < db.size(); i++)
     if (db[i]->fd() > maxFd)
       maxFd = db[i]->fd();
 }
 
-Peers::Peer::Peer (int fd, SSL * ssl, std::string user, int address, networkListT nl, char type)
+Peers::Peer::Peer (int fd, SSL * ssl, std::string user, int address, networkListT nl)
 {
   _fd = fd;
   _ssl = ssl;
 
   _state = PEER_ACTIVE;
-  _type = type;
-
-  if (type == OUTGOING_CONNECTION)
-    conections_to_peer++;
 
   _address = address;
   _user = user;
 
   _nl = nl;
 
-  db[count] = this;
+  db.push_back(this);
 
-  count++;
   SetMaxFd ();
 
   FD_SET (_fd, &Network::master);
 
-  Log::Debug2 ("Added fd %d to fd_set master (1st free fd: %d)", fd, count);
+  Log::Debug2 ("Added fd %d to fd_set master (1st free fd: %d)", fd, db.size());
 
   /* restart select thread so select() won't block world */
   Network::Server::RestartSelectLoop ();
@@ -78,15 +72,11 @@ Peers::Peer::~Peer ()
 {
   SSL_free (_ssl);
 
-  if (_type == OUTGOING_CONNECTION)
-    conections_to_peer--;
-
   FD_CLR (_fd, &Network::master);
   close (_fd);
 
 
-  Log::Debug2 ("Removed fd %d from fd_set master (current fd %d)", _fd,
-               count);
+  Log::Debug2 ("Removed fd %d from fd_set master (current fd %d)", _fd, db.size());
 }
 
 bool
@@ -119,7 +109,7 @@ Peers::Peer::operator<< (Network::Packet * packet)
 bool
 Peers::Peer::isRoutableAddress(int address)
 {
-  unsigned int i;
+  uInt i;
   for (i = 0; i < _nl.NetworkName.size(); i++)
     if (_nl.network[i] == get_ip_address_network(address, _nl.netmask[i]))
       return true;
@@ -172,39 +162,21 @@ networkListT Peers::Peer::nl ()
 
 void Peers::FreeNonActive ()
 {
-  int i;
-
+  uInt i;
+  std::vector<Peers::Peer *>::iterator it;
 
   Log::Debug2 ("freeing non active fd");
-  for (i = 0; i < count; i++)
+  for (i = 0; i < db.size(); i++)
     if (!db[i]->isActive ())
       {
         Taps::setSystemRouting (db[i], Taps::getUserAllowedNetworks(db[i]->user()), DEL_ROUTING);
         delete db[i];
-        db[i] = NULL;
+
+        it = db.begin();
+        it+=i;
+        db.erase(it);
+        SetMaxFd();
       }
-
-  RebuildDb ();
-}
-
-void
-Peers::RebuildDb ()
-{
-  int i;
-  int j;
-  int freedPeer;
-
-  freedPeer = 0;
-  j = 0;
-
-  for (i = 0; i < count; i++)
-    if (db[i] != NULL)
-      db[j++] = db[i];
-    else
-      freedPeer++;
-
-  count -= freedPeer;
-  SetMaxFd ();
 }
 
 void
@@ -222,9 +194,9 @@ Peers::Peer::Disassociate ()
 
 int Peers::UserIsConnected (std::string user)
 {
-  int i;
+  unsigned  int i;
 
-  for (i = 0; i < count; i++)
+  for (i = 0; i < db.size(); i++)
     if (db[i]->isActive())
       if (!db[i]->user ().compare (user))
         return TRUE;
