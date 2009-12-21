@@ -289,12 +289,6 @@ Taps::getUserAllowedNetworks (std::string user __attribute__((unused)))
 
   for (i = 0; i < db.size(); i++)
     {
-      /*
-      AllowedUsers = GetTapAllowedUsers(db[i]->device());
-      while(AllowedUsers++){
-           if(AllowedUsers->compare(user) {
-       	}
-         */
       nl.NetworkName.push_back(db[i]->NetworkName());
       nl.address.push_back(db[i]->address());
       nl.netmask.push_back(db[i]->netmask());

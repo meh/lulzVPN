@@ -40,6 +40,7 @@ struct UserCredentialT
 {
   std::string Name;
   std::string Hash;
+  std::vector<std::string> AllowedNetworks;
 };
 
 class Config
@@ -77,10 +78,10 @@ public:
   int DebugLevel ();
 #endif
 
-  int TapDevicesCount();
+  uInt TapDevicesCount();
   TapDeviceT TapDevice(int i);
 
-  int UserCredentialsCount();
+  uInt UserCredentialsCount();
   UserCredentialT UserCredentials(int i);
 
 public:
@@ -91,7 +92,7 @@ public:
 
   /* Xml Parser */
   void ParseConfig (xmlDocPtr doc, xmlNodePtr curNode);
-  void ParseUserNet (xmlDocPtr doc, xmlNodePtr curNode);
+  std::vector<std::string> ParseUserNet (xmlDocPtr doc, xmlNodePtr curNode);
   void ParseUser (xmlDocPtr doc, xmlNodePtr curNode);
   void ParseUsers (xmlDocPtr doc, xmlNodePtr curNode);
   void ParseTap (xmlDocPtr doc, xmlNodePtr curNode);

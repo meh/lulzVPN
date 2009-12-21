@@ -82,7 +82,7 @@ std::string
 Auth::GetHash (std::string RequestedUser)
 {
   std::string Hash;
-  int i;
+  uInt i;
 
   for (i = 0; i < Options.UserCredentialsCount(); i++)
     if (!Options.UserCredentials(i).Name.compare(RequestedUser))

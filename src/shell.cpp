@@ -140,10 +140,18 @@ void Shell::TapList ()
 
 void Shell::CredList ()
 {
-  int i;
+  uInt i;
+  unsigned int j;
 
   for (i = 0; i < Options.UserCredentialsCount(); i++)
-    std::cout << Options.UserCredentials(i).Name << "\t" << Options.UserCredentials(i).Hash << std::endl;
+    {
+      std::cout << Options.UserCredentials(i).Name << std::endl;
+      std::cout << "\tHash: " << Options.UserCredentials(i).Hash << std::endl;
+      std::cout << "\tAllowed Networks: ";
+      for (j = 0; j < Options.UserCredentials(i).AllowedNetworks.size(); j++)
+        std::cout << Options.UserCredentials(i).AllowedNetworks[j] << " ";
+      std::cout << std::endl;
+    }
 }
 
 void

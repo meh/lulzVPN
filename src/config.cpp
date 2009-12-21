@@ -81,7 +81,7 @@ int Config::DebugLevel ()
 }
 #endif
 
-int
+uInt
 Config::TapDevicesCount()
 {
   return _TapDevices.size();
@@ -93,7 +93,7 @@ Config::TapDevice(int i)
   return _TapDevices[i];
 }
 
-int
+uInt
 Config::UserCredentialsCount()
 {
   return _UserCredentials.size();
@@ -275,10 +275,11 @@ Config::ParseConfig (xmlDocPtr doc, xmlNodePtr curNode)
   return;
 }
 
-void
+std::vector<std::string>
 Config::ParseUserNet (xmlDocPtr doc, xmlNodePtr curNode)
 {
   xmlChar *key;
+  std::vector<std::string> AllowedNetworks;
   curNode = xmlFirstElementChild (curNode);
 
   while (curNode != NULL)
@@ -286,7 +287,7 @@ Config::ParseUserNet (xmlDocPtr doc, xmlNodePtr curNode)
       if ((!xmlStrcmp (curNode->name, (const xmlChar *) "name")))
         {
           key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 1);
-          /*TODO: implement tap acl */
+          AllowedNetworks.push_back((char *) key);
           xmlFree (key);
         }
       else
@@ -294,7 +295,7 @@ Config::ParseUserNet (xmlDocPtr doc, xmlNodePtr curNode)
 
       curNode = xmlNextElementSibling (curNode);
     }
-  return;
+  return AllowedNetworks;
 }
 
 void
@@ -320,7 +321,7 @@ Config::ParseUser (xmlDocPtr doc, xmlNodePtr curNode)
           xmlFree (key);
         }
       else if ((!xmlStrcmp (curNode->name, (const xmlChar *) "allowedTap")))
-        ParseUserNet(doc,curNode);
+        UserCredTmp.AllowedNetworks = ParseUserNet(doc,curNode);
       else
         Log::Error ("Invalid option in user config");
 
@@ -347,6 +348,7 @@ Config::ParseUsers (xmlDocPtr doc, xmlNodePtr curNode)
 
       curNode = xmlNextElementSibling (curNode);
     }
+
   return;
 }
 

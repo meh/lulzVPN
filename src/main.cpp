@@ -34,7 +34,7 @@ int main (int argc, char *argv[])
 {
 
   int address;
-  int i;
+  uInt i;
   pthread_t serverT;	/* Listening thread */
 
   /* Welcome!1!1ONE */
