@@ -285,14 +285,25 @@ networkListT
 Taps::getUserAllowedNetworks (std::string user __attribute__((unused)))
 {
   uInt i;
+  uInt j;
+  uInt k;
   networkListT nl;
 
-  for (i = 0; i < db.size(); i++)
-    {
-      nl.NetworkName.push_back(db[i]->NetworkName());
-      nl.address.push_back(db[i]->address());
-      nl.netmask.push_back(db[i]->netmask());
-    }
+  /* Get current user config */
+  for (i = 0; i < Options.UserCredentialsCount(); i++)
+    if (!Options.UserCredentials(i).Name.compare(user))
+      break;
+
+  /* For each network check if it is allowed in the AllowedNetworks list */
+  for (j = 0; j < db.size(); j++)
+    for (k = 0; k < Options.UserCredentials(i).AllowedNetworks.size(); k++)
+      if (!Options.UserCredentials(i).AllowedNetworks[k].compare(db[j]->NetworkName()))
+        {
+          nl.NetworkName.push_back(db[j]->NetworkName());
+          nl.address.push_back(db[j]->address());
+          nl.netmask.push_back(db[j]->netmask());
+	  break;
+        }
 
   return nl;
 }
