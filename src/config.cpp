@@ -15,7 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
-*/
+ */
 
 #include <lulznet/lulznet.h>
 
@@ -81,26 +81,22 @@ int Config::DebugLevel ()
 }
 #endif
 
-uInt
-Config::TapDevicesCount()
+uInt Config::TapDevicesCount ()
 {
-  return _TapDevices.size();
+  return _TapDevices.size ();
 }
 
-TapDeviceT
-Config::TapDevice(int i)
+TapDeviceT Config::TapDevice (int i)
 {
   return _TapDevices[i];
 }
 
-uInt
-Config::UserCredentialsCount()
+uInt Config::UserCredentialsCount ()
 {
-  return _UserCredentials.size();
+  return _UserCredentials.size ();
 }
 
-UserCredentialT
-Config::UserCredentials(int i)
+UserCredentialT Config::UserCredentials (int i)
 {
   return _UserCredentials[i];
 }
@@ -183,7 +179,8 @@ void Config::ParseConfigFile (char *filename)
 
   if (xmlStrcmp (curNode->name, (const xmlChar *) "lulzNetConfig"))
     {
-      Log::Fatal ("This is not a valid lulznet config file.\nRoot node != lulzNetConfig");
+      Log::Fatal
+      ("This is not a valid lulznet config file.\nRoot node != lulzNetConfig");
       xmlFreeDoc (doc);
       return;
     }
@@ -208,15 +205,14 @@ void Config::ParseConfigFile (char *filename)
 
 void Config::ChecEmptyConfigEntry ()
 {
-  if (!_TapDevices.size())
+  if (!_TapDevices.size ())
     Log::Fatal ("You must specify a tap address");
 
   if (_Username.empty ())
     Log::Fatal ("You must specify an username");
 }
 
-void
-Config::ParseConfig (xmlDocPtr doc, xmlNodePtr curNode)
+void Config::ParseConfig (xmlDocPtr doc, xmlNodePtr curNode)
 {
   xmlChar *key;
   curNode = xmlFirstElementChild (curNode);
@@ -238,7 +234,7 @@ Config::ParseConfig (xmlDocPtr doc, xmlNodePtr curNode)
       else if ((!xmlStrcmp (curNode->name, (const xmlChar *) "listening")))
         {
           key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 1);
-          if (!strcmp((char *) key, "yes"))
+          if (!strcmp ((char *) key, "yes"))
             _Flags |= LISTENING_MODE;
           else if (!strcmp ((char *) key, "no"))
             {
@@ -250,7 +246,7 @@ Config::ParseConfig (xmlDocPtr doc, xmlNodePtr curNode)
       else if ((!xmlStrcmp (curNode->name, (const xmlChar *) "interactive")))
         {
           key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 1);
-          if (!strcmp((char *) key, "yes"))
+          if (!strcmp ((char *) key, "yes"))
             _Flags |= INTERACTIVE_MODE;
           else if (!strcmp ((char *) key, "no"))
             {
@@ -268,18 +264,18 @@ Config::ParseConfig (xmlDocPtr doc, xmlNodePtr curNode)
         }
 #endif
       else
-        Log::Error ("Invalid option in lulznet config (%s)",curNode->name);
+        Log::Error ("Invalid option in lulznet config (%s)", curNode->name);
 
       curNode = xmlNextElementSibling (curNode);
     }
   return;
 }
 
-std::vector<std::string>
+std::vector < std::string >
 Config::ParseUserNet (xmlDocPtr doc, xmlNodePtr curNode)
 {
   xmlChar *key;
-  std::vector<std::string> AllowedNetworks;
+  std::vector < std::string > AllowedNetworks;
   curNode = xmlFirstElementChild (curNode);
 
   while (curNode != NULL)
@@ -287,7 +283,7 @@ Config::ParseUserNet (xmlDocPtr doc, xmlNodePtr curNode)
       if ((!xmlStrcmp (curNode->name, (const xmlChar *) "name")))
         {
           key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 1);
-          AllowedNetworks.push_back((char *) key);
+          AllowedNetworks.push_back ((char *) key);
           xmlFree (key);
         }
       else
@@ -298,8 +294,7 @@ Config::ParseUserNet (xmlDocPtr doc, xmlNodePtr curNode)
   return AllowedNetworks;
 }
 
-void
-Config::ParseUser (xmlDocPtr doc, xmlNodePtr curNode)
+void Config::ParseUser (xmlDocPtr doc, xmlNodePtr curNode)
 {
   xmlChar *key;
   UserCredentialT UserCredTmp;
@@ -321,28 +316,27 @@ Config::ParseUser (xmlDocPtr doc, xmlNodePtr curNode)
           xmlFree (key);
         }
       else if ((!xmlStrcmp (curNode->name, (const xmlChar *) "allowedTap")))
-        UserCredTmp.AllowedNetworks = ParseUserNet(doc,curNode);
+        UserCredTmp.AllowedNetworks = ParseUserNet (doc, curNode);
       else
         Log::Error ("Invalid option in user config");
 
       curNode = xmlNextElementSibling (curNode);
     }
 
-  if (!(UserCredTmp.Name.empty() || UserCredTmp.Hash.empty()))
-    _UserCredentials.push_back(UserCredTmp);
+  if (!(UserCredTmp.Name.empty () || UserCredTmp.Hash.empty ()))
+    _UserCredentials.push_back (UserCredTmp);
 
   return;
 }
 
-void
-Config::ParseUsers (xmlDocPtr doc, xmlNodePtr curNode)
+void Config::ParseUsers (xmlDocPtr doc, xmlNodePtr curNode)
 {
   curNode = xmlFirstElementChild (curNode);
 
   while (curNode != NULL)
     {
       if ((!xmlStrcmp (curNode->name, (const xmlChar *) "user")))
-        ParseUser(doc, curNode);
+        ParseUser (doc, curNode);
       else
         Log::Error ("Invalid option in users config");
 
@@ -352,8 +346,7 @@ Config::ParseUsers (xmlDocPtr doc, xmlNodePtr curNode)
   return;
 }
 
-void
-Config::ParseTap (xmlDocPtr doc, xmlNodePtr curNode)
+void Config::ParseTap (xmlDocPtr doc, xmlNodePtr curNode)
 {
   xmlChar *key;
   curNode = xmlFirstElementChild (curNode);
@@ -365,7 +358,7 @@ Config::ParseTap (xmlDocPtr doc, xmlNodePtr curNode)
       if ((!xmlStrcmp (curNode->name, (const xmlChar *) "name")))
         {
           key = xmlNodeListGetString (doc, curNode->xmlChildrenNode, 2);
-          TapDeviceTmp.NetworkName = (char *) key;
+          TapDeviceTmp.networkName = (char *) key;
           xmlFree (key);
         }
       else if ((!xmlStrcmp (curNode->name, (const xmlChar *) "address")))
@@ -386,22 +379,23 @@ Config::ParseTap (xmlDocPtr doc, xmlNodePtr curNode)
       curNode = xmlNextElementSibling (curNode);
     }
 
-  if (!(TapDeviceTmp.NetworkName.empty() || TapDeviceTmp.Address.empty() || TapDeviceTmp.Netmask.empty()))
-    _TapDevices.push_back(TapDeviceTmp);
+  if (!
+      (TapDeviceTmp.networkName.empty () || TapDeviceTmp.Address.empty ()
+       || TapDeviceTmp.Netmask.empty ()))
+    _TapDevices.push_back (TapDeviceTmp);
 
   return;
 
 }
 
-void
-Config::ParseTaps (xmlDocPtr doc, xmlNodePtr curNode)
+void Config::ParseTaps (xmlDocPtr doc, xmlNodePtr curNode)
 {
   curNode = xmlFirstElementChild (curNode);
 
   while (curNode != NULL)
     {
       if ((!xmlStrcmp (curNode->name, (const xmlChar *) "tap")))
-        ParseTap(doc,curNode);
+        ParseTap (doc, curNode);
       else
         Log::Error ("Invalid option in taps config");
 
@@ -409,4 +403,3 @@ Config::ParseTaps (xmlDocPtr doc, xmlNodePtr curNode)
     }
   return;
 }
-

@@ -15,7 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
-*/
+ */
 
 #include <lulznet/lulznet.h>
 
@@ -35,7 +35,7 @@ int main (int argc, char *argv[])
 
   int address;
   uInt i;
-  pthread_t serverT;	/* Listening thread */
+  pthread_t serverT;		/* Listening thread */
 
   /* Welcome!1!1ONE */
   std::cout << "Welcome to lulzNet ¯\\_(O_o)_/¯" << std::endl;
@@ -54,13 +54,13 @@ int main (int argc, char *argv[])
   /* initialize db and other stuff */
   LulznetInit ();
 
-  for (i = 0; i < Options.TapDevicesCount(); i++)
+  for (i = 0; i < Options.TapDevicesCount (); i++)
     /* ??? black magic (don't know) */
-    new Taps::Tap (Options.TapDevice(i));
+    new Taps::Tap (Options.TapDevice (i));
 
-  /* Prompt for password if no ones is specified in config file*/
-  if (Options.Password().empty())
-    Auth::PasswordPrompt();
+  /* Prompt for password if no ones is specified in config file */
+  if (Options.Password ().empty ())
+    Auth::PasswordPrompt ();
 
   /* Start (or not) the listening service */
   if (Options.Flags () & LISTENING_MODE)
@@ -78,7 +78,8 @@ int main (int argc, char *argv[])
     }
 
   /* ??? (another black magic) */
-  pthread_create (&Network::Server::select_t, NULL, Network::Server::SelectLoop, NULL);
+  pthread_create (&Network::Server::select_t, NULL,
+                  Network::Server::SelectLoop, NULL);
 
   /* A lovable shell */
   if (Options.Flags () & INTERACTIVE_MODE)
@@ -110,7 +111,7 @@ void LulznetInit ()
   Network::Server::sslInit ();
   Network::Client::sslInit ();
 
-  signal (SIGINT, sigint_handler);
+  signal (SIGINT, sigintHandler);
 }
 
 void help ()
@@ -135,18 +136,18 @@ void LulznetExit ()
 {
   uInt i;
 
-  pthread_mutex_lock(&Peers::db_mutex);
+  pthread_mutex_lock (&Peers::db_mutex);
   if (Network::Server::select_t != (pthread_t) NULL)
     pthread_cancel (Network::Server::select_t);
 
   Log::Info ("Closing lulznet");
-  for (i = 0; i < Peers::db.size(); i++)
-    Peers::db[i]->Disassociate();
+  for (i = 0; i < Peers::db.size (); i++)
+    Peers::db[i]->Disassociate ();
 
   exit (0);
 }
 
-void sigint_handler (int signal __attribute__ ((unused)))
+void sigintHandler (int signal __attribute__ ((unused)))
 {
   LulznetExit ();
 }

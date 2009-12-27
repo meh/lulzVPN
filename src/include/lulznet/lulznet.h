@@ -94,6 +94,6 @@ void LulznetInit ();
 void LulznetExit ();
 
 /* Don't close lulznet with signal */
-void sigint_handler (int signal __attribute__ ((unused)));
+void sigintHandler (int signal __attribute__ ((unused)));
 
 #endif

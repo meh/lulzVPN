@@ -44,24 +44,27 @@ typedef struct
 {
   std::vector<std::string> user;
   std::vector<int> address;
-} userListT;
+} userT;
 
 typedef struct
 {
-  std::vector<std::string> NetworkName;
+  std::vector<std::string> networkName;
+  std::vector<uChar> remoteId;
+  std::vector<uChar> localId;
+
   std::vector<int> address;
   std::vector<int> netmask;
   std::vector<int> network;
 
-} networkListT;
+} networkT;
 
 typedef struct
 {
   std::string peer_username;
-  userListT userLs;
+  userT userLs;
 
-  networkListT remoteNets;
-  networkListT allowedNets;
+  networkT remoteNets;
+  networkT allowedNets;
 } HandshakeOptionT;
 
 namespace Protocol
@@ -95,6 +98,6 @@ int LulzNetSendUserlist (SSL * ssl);
 int LulzNetReciveUserlist (SSL * ssl, HandshakeOptionT * hsOpt);
 
 /* Return a list with all the users connected */
-userListT GetUserlist ();
+userT GetUserlist ();
 }
 #endif

@@ -67,7 +67,7 @@ int Protocol::Server::Handshake (SSL * ssl, HandshakeOptionT * hsOpt)
   if (!LulzNetAuth (ssl, hsOpt))
     return FAIL;
 
-  hsOpt->allowedNets = Taps::getUserAllowedNetworks(hsOpt->peer_username);
+  hsOpt->allowedNets = Taps::getUserAllowedNetworks (hsOpt->peer_username);
 
   Log::Debug2 ("Recving listening status");
   if (!xSSL_read (ssl, &listeningStatus, sizeof (char), "listening status"))
@@ -112,7 +112,7 @@ int Protocol::Client::Handshake (SSL * ssl, HandshakeOptionT * hsOpt)
   if (!LulzNetAuth (ssl))
     return FAIL;
 
-  hsOpt->allowedNets = Taps::getUserAllowedNetworks(hsOpt->peer_username);
+  hsOpt->allowedNets = Taps::getUserAllowedNetworks (hsOpt->peer_username);
 
   /*
    * Hanshake
@@ -151,7 +151,8 @@ int Protocol::Client::Handshake (SSL * ssl, HandshakeOptionT * hsOpt)
   return DONE;
 }
 
-int Protocol::Server::LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt)
+int
+Protocol::Server::LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt)
 {
   int rdLen;
   char username[MAX_USERNAME_LEN + 1];
@@ -164,10 +165,10 @@ int Protocol::Server::LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt)
   username[rdLen] = '\x00';
   hsOpt->peer_username.assign (username);
 
-  Log::Debug2("Sending user check");
+  Log::Debug2 ("Sending user check");
   if (Peers::UserIsConnected ((char *) hsOpt->peer_username.c_str ()))
     {
-      Log::Error("User is connected");
+      Log::Error ("User is connected");
       userCheck = USER_CONNECTED;
       xSSL_write (ssl, &userCheck, 1, "user info");
       return FAIL;
@@ -175,7 +176,7 @@ int Protocol::Server::LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt)
 
   if ((!hsOpt->peer_username.compare (Options.Username ())))
     {
-      Log::Error("User is connected (same as local peer)");
+      Log::Error ("User is connected (same as local peer)");
       userCheck = USER_CONNECTED;
       xSSL_write (ssl, &userCheck, 1, "user info");
       return FAIL;
@@ -187,13 +188,16 @@ int Protocol::Server::LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt)
 
   /* And send its username */
   Log::Debug2 ("Sending username");
-  if (!xSSL_write (ssl, (void *) Options.Username ().c_str (), Options.Username ().length (), "username"))
+  if (!xSSL_write
+      (ssl, (void *) Options.Username ().c_str (),
+       Options.Username ().length (), "username"))
     return FAIL;
 
   return DONE;
 }
 
-int Protocol::Client::LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt)
+int
+Protocol::Client::LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt)
 {
   int rdLen;
   char username[MAX_USERNAME_LEN + 1];
@@ -202,7 +206,9 @@ int Protocol::Client::LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt)
   /* Peer send its username */
 
   Log::Debug2 ("Sending username");
-  if (!xSSL_write(ssl, (char *) Options.Username ().c_str (), Options.Username ().length (), "username"))
+  if (!xSSL_write
+      (ssl, (char *) Options.Username ().c_str (),
+       Options.Username ().length (), "username"))
     return FAIL;
 
   xSSL_read (ssl, &userCheck, 1, "user info");
@@ -262,7 +268,7 @@ int Protocol::Client::LulzNetAuth (SSL * ssl)
   uChar *hex_hash;
   char auth;
 
-  hex_hash = Auth::Crypt::CalculateMd5 (Options.Password());
+  hex_hash = Auth::Crypt::CalculateMd5 (Options.Password ());
 
   /* Then send password's hash */
   Log::Debug2 ("Sending hash");
@@ -272,7 +278,7 @@ int Protocol::Client::LulzNetAuth (SSL * ssl)
       return FAIL;
     }
 
-  delete[] hex_hash;
+  delete[]hex_hash;
 
   /* And recv authentication response */
 
@@ -280,7 +286,8 @@ int Protocol::Client::LulzNetAuth (SSL * ssl)
   if (!xSSL_read (ssl, &auth, sizeof (char), "auth response"))
     return FAIL;
 
-  Log::Debug2 ("Server response: %s (%x)",(auth ? "auth successfull" : "auth failed"), auth);
+  Log::Debug2 ("Server response: %s (%x)",
+               (auth ? "auth successfull" : "auth failed"), auth);
   if (auth == AUTHENTICATION_FAILED)
     {
       Log::Error ("Authentication failed");
@@ -296,7 +303,7 @@ int Protocol::LulzNetSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
   int answer;
   int netCount;
 
-  netCount = hsOpt->allowedNets.NetworkName.size();
+  netCount = hsOpt->allowedNets.networkName.size ();
 
   Log::Debug2 ("Sending available network count");
   if (netCount == 0)
@@ -315,7 +322,15 @@ int Protocol::LulzNetSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
     {
 
       Log::Debug2 ("Sending network name");
-      if (!xSSL_write (ssl, (char *) hsOpt->allowedNets.NetworkName[i].c_str(), hsOpt->allowedNets.NetworkName[i].length(), "network name"))
+      if (!xSSL_write
+          (ssl, (char *) hsOpt->allowedNets.networkName[i].c_str (),
+           hsOpt->allowedNets.networkName[i].length (), "network name"))
+        return FAIL;
+
+      Log::Debug2 ("Sending network id");
+      if (!xSSL_write
+          (ssl, &hsOpt->allowedNets.remoteId[i], sizeof (uChar),
+           "address id"))
         return FAIL;
 
       Log::Debug2 ("Sending address");
@@ -329,12 +344,13 @@ int Protocol::LulzNetSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
         return FAIL;
 
       Log::Debug2 ("Recving net conflict answer");
-      if (!xSSL_read(ssl, &answer, sizeof(int), "net conflict check"))
+      if (!xSSL_read (ssl, &answer, sizeof (int), "net conflict check"))
         return FAIL;
 
       if (answer == NETWORK_NOT_ALLOWED)
         {
-          Log::Error ("Network %s is not allowed on remote peer",hsOpt->allowedNets.NetworkName[i].c_str());
+          Log::Error ("Network %s is not allowed on remote peer",
+                      hsOpt->allowedNets.networkName[i].c_str ());
           return FAIL;
         }
     }
@@ -350,6 +366,7 @@ int Protocol::LulzNetReciveNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
   int rdLen;
   int netCount;
   char networkName[MAX_NETWORKNAME_LEN + 1];
+  uChar id;
   int address;
   int netmask;
   int answer;
@@ -366,38 +383,50 @@ int Protocol::LulzNetReciveNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
 
   for (i = 0; i < netCount && i < MAX_TAPS; i++)
     {
-      if (!(rdLen = xSSL_read (ssl, networkName, MAX_NETWORKNAME_LEN, "network name")))
+      if (!
+          (rdLen =
+             xSSL_read (ssl, networkName, MAX_NETWORKNAME_LEN, "network name")))
         return FAIL;
 
       networkName[rdLen] = '\x00';
-      hsOpt->remoteNets.NetworkName.push_back(networkName);
+      hsOpt->remoteNets.networkName.push_back (networkName);
+
+      if (!(rdLen = xSSL_read (ssl, &id, sizeof (uChar), "network id")))
+        return FAIL;
+
+      hsOpt->remoteNets.remoteId.push_back (id);
 
       if (!(rdLen = xSSL_read (ssl, &address, sizeof (int), "address")))
         return FAIL;
 
-      hsOpt->remoteNets.address.push_back(address);
+      hsOpt->remoteNets.address.push_back (address);
 
       if (!(rdLen = xSSL_read (ssl, &netmask, sizeof (int), "netmask")))
         return FAIL;
 
-      hsOpt->remoteNets.netmask.push_back(netmask);
+      hsOpt->remoteNets.netmask.push_back (netmask);
 
-      hsOpt->remoteNets.network.push_back(get_ip_address_network(address, netmask));
+      hsOpt->remoteNets.
+      network.push_back (get_ip_address_network (address, netmask));
 
       answer = NETWORK_NOT_ALLOWED;
 
-      for (j = 0; j < hsOpt->allowedNets.NetworkName.size(); j++)
-        if (!hsOpt->allowedNets.NetworkName[j].compare(hsOpt->remoteNets.NetworkName.back()))
+      for (j = 0; j < hsOpt->allowedNets.networkName.size (); j++)
+        if (!hsOpt->allowedNets.
+            networkName[j].compare (hsOpt->remoteNets.networkName.back ()))
           {
             answer = NETWORK_ALLOWED;
             break;
           }
 
-      if (!xSSL_write(ssl, &answer, sizeof(int), "net conflict check"))
+      if (!xSSL_write (ssl, &answer, sizeof (int), "net conflict check"))
         return FAIL;
 
       if (answer == NETWORK_NOT_ALLOWED)
         return FAIL;
+
+      id = Taps::getNetworkId (networkName);
+      hsOpt->remoteNets.localId.push_back (id);
     }
 
   return DONE;
@@ -407,10 +436,10 @@ int Protocol::LulzNetSendUserlist (SSL * ssl)
 {
   int i;
   int userCount;
-  userListT userLs;
+  userT userLs;
 
   userLs = Protocol::GetUserlist ();
-  userCount = userLs.user.size();
+  userCount = userLs.user.size ();
 
 
   Log::Debug2 ("Sending peer count");
@@ -420,10 +449,11 @@ int Protocol::LulzNetSendUserlist (SSL * ssl)
   /* And send peers address */
   for (i = 0; i < userCount; i++)
     {
-      if (!xSSL_write (ssl, (char *) userLs.user[i].c_str(), userLs.user[i].length(), "user"))
-        return FAIL;
       if (!xSSL_write
-          (ssl, &userLs.address[i], sizeof (int), "address"))
+          (ssl, (char *) userLs.user[i].c_str (), userLs.user[i].length (),
+           "user"))
+        return FAIL;
+      if (!xSSL_write (ssl, &userLs.address[i], sizeof (int), "address"))
         return FAIL;
     }
   return DONE;
@@ -447,32 +477,31 @@ int Protocol::LulzNetReciveUserlist (SSL * ssl, HandshakeOptionT * hsOpt)
         return FAIL;
 
       username[rdLen] = '\x00';
-      hsOpt->userLs.user.push_back(username);
+      hsOpt->userLs.user.push_back (username);
 
       if (!(rdLen = xSSL_read (ssl, &address, sizeof (int), "address")))
         return FAIL;
 
-      hsOpt->userLs.address.push_back(address);
+      hsOpt->userLs.address.push_back (address);
     }
   return DONE;
 }
 
-userListT Protocol::GetUserlist ()
+userT Protocol::GetUserlist ()
 {
 
   uInt i;
   Peers::Peer * peer;
 
-  userListT userLs;
+  userT userLs;
 
-  for (i = 0; i < Peers::db.size(); i++)
+  for (i = 0; i < Peers::db.size (); i++)
     {
       peer = Peers::db[i];
 
-      userLs.user.push_back(peer->user ());
-      userLs.address.push_back(peer->address ());
+      userLs.user.push_back (peer->user ());
+      userLs.address.push_back (peer->address ());
     }
 
   return userLs;
 }
-

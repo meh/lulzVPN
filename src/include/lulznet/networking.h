@@ -63,8 +63,8 @@ void *ServerLoop (void *arg);
 
 /* Main forwarding function */
 void *SelectLoop (void *arg);
-inline void ForwardToTap (Packet * packet);
-inline void ForwardToPeer (Packet * packet);
+inline void ForwardToTap (Packet * packet, Peers::Peer *src);
+inline void ForwardToPeer (Packet * packet, uChar localId);
 void RestartSelectLoop ();
 
 }

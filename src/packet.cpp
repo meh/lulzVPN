@@ -21,7 +21,7 @@
 #include <lulznet/log.h>
 #include <lulznet/packet.h>
 
-uInt PacketInspection::get_destination_ip (Network::Packet *packet)
+uInt PacketInspection::get_destination_ip (Network::Packet * packet)
 {
   eth_header *ethHdr;
   arp_header *arpHdr;
@@ -33,7 +33,7 @@ uInt PacketInspection::get_destination_ip (Network::Packet *packet)
   char p_addr[ADDRESS_LEN];
 #endif
 
-  ethHdr = (eth_header *) (packet->buffer + 1);
+  ethHdr = (eth_header *) (packet->buffer + 2);
   protocol = ethHdr->eth_type;
   protocol = ntohs (protocol);
 
@@ -41,7 +41,7 @@ uInt PacketInspection::get_destination_ip (Network::Packet *packet)
     {
       /*arp packet */
 
-      arpHdr = (arp_header *) (packet->buffer + ETH_HDR_LEN + 1);
+      arpHdr = (arp_header *) (packet->buffer + ETH_HDR_LEN + 2);
       address = arpHdr->dst_ip_adr;
 
 #ifdef DEBUG
@@ -54,7 +54,7 @@ uInt PacketInspection::get_destination_ip (Network::Packet *packet)
     {
       /* ip packet */
 
-      ipHdr = (ip_header *) (packet->buffer + ETH_HDR_LEN + 1);
+      ipHdr = (ip_header *) (packet->buffer + ETH_HDR_LEN + 2);
       address = ipHdr->dst_adr;
 
 #ifdef DEBUG
@@ -70,4 +70,3 @@ uInt PacketInspection::get_destination_ip (Network::Packet *packet)
 
   return address;
 }
-

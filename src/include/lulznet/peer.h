@@ -50,10 +50,10 @@ private:
   std::string _user;
   int _address;
   int _virtualAddress;
-  networkListT _nl;
+  networkT _nl;
 
 public:
-  Peer (int fd, SSL * ssl, std::string user, int address, networkListT nl);
+  Peer (int fd, SSL * ssl, std::string user, int address, networkT nl);
   ~Peer ();
   bool operator>> (Network::Packet * packet);
   bool operator<< (Network::Packet * packet);
@@ -68,7 +68,7 @@ public:
   int fd();
   std::string user();
   int address();
-  networkListT nl();
+  networkT nl();
 };
 
 extern std::vector<Peer *> db;

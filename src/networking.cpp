@@ -15,7 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
-*/
+ */
 
 #include <lulznet/lulznet.h>
 
@@ -73,7 +73,7 @@ void *Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
   socklen_t addrSize;
   pthread_t connectQueueT;
   HandshakeOptionT *hsOpt;
-  Peers::Peer *newPeer;
+  Peers::Peer * newPeer;
 
   if ((listenSock = socket (PF_INET, SOCK_STREAM, 0)) == -1)
     Log::Fatal ("cannot create socket");
@@ -124,16 +124,18 @@ void *Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
                 {
                   pthread_mutex_lock (&Peers::db_mutex);
 
-                  newPeer = new Peers::Peer (peerSock, peerSsl, hsOpt->peer_username,
-                                             peer.sin_addr.s_addr, hsOpt->remoteNets);
+                  newPeer =
+                    new Peers::Peer (peerSock, peerSsl, hsOpt->peer_username,
+                                     peer.sin_addr.s_addr, hsOpt->remoteNets);
                   inet_ntop (AF_INET, &peer.sin_addr.s_addr, peer_address,
                              ADDRESS_LEN);
-                  Log::Info ("Connection accepted from %s (fd %d)", peer_address,
-                             peerSock);
+                  Log::Info ("Connection accepted from %s (fd %d)",
+                             peer_address, peerSock);
 
                   /* Set routing */
                   Log::Debug2 ("Setting Routing");
-                  Taps::setSystemRouting (newPeer, hsOpt->allowedNets, ADD_ROUTING);
+                  Taps::setSystemRouting (newPeer, hsOpt->allowedNets,
+                                          ADD_ROUTING);
 
                   pthread_mutex_unlock (&Peers::db_mutex);
 
@@ -144,7 +146,7 @@ void *Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
                 }
               else
                 {
-                  Log::Error("Cannot complete handshake");
+                  Log::Error ("Cannot complete handshake");
                   SSL_free (peerSsl);
                   close (peerSock);
                   delete hsOpt;
@@ -234,16 +236,19 @@ void Network::Client::PeerConnect (int address, short port)
                   pthread_mutex_lock (&Peers::db_mutex);
 
                   newPeer =
-                    new Peers::Peer (peerSock, peerSsl, hsOpt.peer_username, address, hsOpt.remoteNets);
+                    new Peers::Peer (peerSock, peerSsl, hsOpt.peer_username,
+                                     address, hsOpt.remoteNets);
                   Log::Info ("Connected");
 
                   Log::Debug2 ("Setting Routing");
-                  Taps::setSystemRouting (newPeer, hsOpt.allowedNets, ADD_ROUTING);
+                  Taps::setSystemRouting (newPeer, hsOpt.allowedNets,
+                                          ADD_ROUTING);
 
                   pthread_mutex_unlock (&Peers::db_mutex);
 
                   pthread_create (&connectQueueT, NULL,
-                                  Network::CheckConnectionsQueue, &hsOpt.userLs);
+                                  Network::CheckConnectionsQueue,
+                                  &hsOpt.userLs);
                   pthread_join (connectQueueT, NULL);
 
                 }
@@ -304,24 +309,26 @@ void *Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
       else
         {
           /* 0,1 and 2 are stdin-out-err and we don't care about them */
-          for (i = 0; i < Peers::db.size(); i++)
+          for (i = 0; i < Peers::db.size (); i++)
             {
               peer = Peers::db[i];
-              if (peer->isActive () && peer->isReadyToRead(&readSelect))
+              if (peer->isActive () && peer->isReadyToRead (&readSelect))
                 {
                   /* Read from it */
-                  if ( *peer >> &packet )
+                  if (*peer >> &packet)
                     {
                       switch (packet.buffer[0])
                         {
                         case DATA_PACKET:
-                          Network::Server::ForwardToTap (&packet);
+                          Network::Server::ForwardToTap (&packet, peer);
                           break;
+
                         case CONTROL_PACKET:
                           if (packet.buffer[1] == CLOSE_CONNECTION)
                             {
 
-                              Log::Debug3 ("control_packet: closing connection");
+                              Log::Debug3
+                              ("control_packet: closing connection");
                               freeFdFlag = 1;
                               peer->setClosing ();
                             }
@@ -337,14 +344,12 @@ void *Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
           if (freeFdFlag)
             Peers::FreeNonActive ();
 
-          for (i = 0; i < Taps::db.size(); i++)
+          for (i = 0; i < Taps::db.size (); i++)
             {
               tap = Taps::db[i];
-              if (tap->isActive() && tap->isReadyToRead(&readSelect))
-                {
-                  if (*tap >> &packet)
-                    Network::Server::ForwardToPeer (&packet);
-                }
+              if (tap->isActive () && tap->isReadyToRead (&readSelect))
+                if (*tap >> &packet)
+                  Network::Server::ForwardToPeer (&packet, (char) i);
             }
         }
 
@@ -368,37 +373,49 @@ void Network::Server::RestartSelectLoop ()
     }
 }
 
-inline void Network::Server::ForwardToTap (Network::Packet * packet)
+inline void
+Network::Server::ForwardToTap (Network::Packet * packet, Peers::Peer * src)
 {
 
-  uInt i;
+  uChar i;
+  uInt j;
   int nAddr;
 
-  nAddr = PacketInspection::get_destination_ip(packet);
+  nAddr = PacketInspection::get_destination_ip (packet);
+  i = packet->buffer[1];
 
-  for (i = 0; i < Taps::db.size(); i++)
-    if (Taps::db[i]->isActive())
-      if (Taps::db[i]->isRoutableAddress(nAddr))
-        *Taps::db[i] << packet;
-
+  if (Taps::db[i]->isActive ())
+    if (Taps::db[i]->isRoutableAddress (nAddr))
+      for (j = 0; j < src->nl ().localId.size (); j++)
+        if (src->nl ().localId[j] == i)
+          {
+            *Taps::db[i] << packet;
+            break;
+          }
 
   Log::Dump (packet->buffer, packet->length);
 }
 
-inline void Network::Server::ForwardToPeer (Network::Packet * packet)
+inline void
+Network::Server::ForwardToPeer (Network::Packet * packet, uChar localId)
 {
 
   uInt i;
+  uInt j;
   int nAddr;
 
-  nAddr = PacketInspection::get_destination_ip(packet);
+  nAddr = PacketInspection::get_destination_ip (packet);
   packet->buffer[0] = DATA_PACKET;
 
-  for (i = 0; i < Peers::db.size(); i++)
-    if (Peers::db[i]->isActive())
-      if (Peers::db[i]->isRoutableAddress(nAddr))
-        *Peers::db[i] << packet;
-
+  for (i = 0; i < Peers::db.size (); i++)
+    if (Peers::db[i]->isActive ())
+      if (Peers::db[i]->isRoutableAddress (nAddr))
+        for (j = 0; j < Peers::db[i]->nl ().localId.size (); i++)
+          if (Peers::db[i]->nl ().localId[j] == localId)
+            {
+              *Peers::db[i] << packet;
+              break;
+            }
 
   Log::Dump (packet->buffer, packet->length);
 }
@@ -411,16 +428,17 @@ int Network::VerifySslCert (SSL * ssl)
   if (SSL_get_verify_result (ssl) != X509_V_OK)
     {
       fingerprint = Auth::Crypt::GetFingerprintFromCtx (ssl);
-      std::cout << "Could not verify SSL servers certificate (self signed)." << std::endl;
-      std::cout << "Fingerprint is: "<< fingerprint << std::endl;
+      std::cout << "Could not verify SSL servers certificate (self signed)."
+                << std::endl;
+      std::cout << "Fingerprint is: " << fingerprint << std::endl;
       std::cout << "Do you want to continue? [y|n]: y\n";
       //    std::cin >> answer;
 
-      delete[] fingerprint;
+      delete[]fingerprint;
 
-//      if (answer == 'y' || answer == 'Y')
+      //      if (answer == 'y' || answer == 'Y')
       return TRUE;
-//      else
+      //      else
       //      return FALSE;
     }
 
@@ -431,13 +449,13 @@ void *Network::CheckConnectionsQueue (void *arg)
 {
 
   uInt i;
-  userListT *userLs;
-  userLs = (userListT *) arg;
+  userT *userLs;
+  userLs = (userT *) arg;
 
-  if (userLs->user.size() == 0)
+  if (userLs->user.size () == 0)
     return NULL;
 
-  for (i = 0; i < userLs->user.size(); i++)
+  for (i = 0; i < userLs->user.size (); i++)
 
     /* check if we're connected to peer */
     if (!Peers::UserIsConnected (userLs->user[i]))

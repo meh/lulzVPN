@@ -31,7 +31,7 @@
 
 struct TapDeviceT
 {
-  std::string NetworkName;
+  std::string networkName;
   std::string Address;
   std::string Netmask;
 };

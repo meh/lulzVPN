@@ -15,7 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
-*/
+ */
 
 #include <lulznet/lulznet.h>
 
@@ -23,8 +23,7 @@
 #include <lulznet/config.h>
 #include <lulznet/log.h>
 
-int
-Auth::DoAuthentication (std::string Username, uChar * Hash)
+int Auth::DoAuthentication (std::string Username, uChar * Hash)
 {
   std::string StrHash;
   std::string LocalHash;
@@ -53,8 +52,7 @@ Auth::DoAuthentication (std::string Username, uChar * Hash)
   return Response;
 }
 
-void
-Auth::PasswordPrompt ()
+void Auth::PasswordPrompt ()
 {
 
   std::string Password;
@@ -75,25 +73,23 @@ Auth::PasswordPrompt ()
 
   ioctl (0, TCSETA, &oldtty);
 
-  Options.Password(Password);
+  Options.Password (Password);
 }
 
-std::string
-Auth::GetHash (std::string RequestedUser)
+std::string Auth::GetHash (std::string RequestedUser)
 {
   std::string Hash;
   uInt i;
 
-  for (i = 0; i < Options.UserCredentialsCount(); i++)
-    if (!Options.UserCredentials(i).Name.compare(RequestedUser))
-      return Options.UserCredentials(i).Hash;
+  for (i = 0; i < Options.UserCredentialsCount (); i++)
+    if (!Options.UserCredentials (i).Name.compare (RequestedUser))
+      return Options.UserCredentials (i).Hash;
 
-  Hash.clear();
+  Hash.clear ();
   return Hash;
 }
 
-uChar *
-Auth::Crypt::CalculateMd5 (std::string string)
+uChar *Auth::Crypt::CalculateMd5 (std::string string)
 {
   EVP_MD_CTX mdctx;
   const EVP_MD *md;
@@ -112,8 +108,7 @@ Auth::Crypt::CalculateMd5 (std::string string)
   return HexHash;
 }
 
-char *
-Auth::Crypt::GetFingerprintFromCtx (SSL * ssl)
+char *Auth::Crypt::GetFingerprintFromCtx (SSL * ssl)
 {
   uChar digest[SHA_DIGEST_LENGTH];
   char hex[] = "0123456789ABCDEF";

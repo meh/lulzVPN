@@ -15,7 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
-*/
+ */
 
 #include <lulznet/lulznet.h>
 
@@ -24,7 +24,7 @@
 
 pthread_mutex_t Log::mutex;
 
-void Log::Info (const char *msg , ...)
+void Log::Info (const char *msg, ...)
 {
   va_list args;
 
@@ -34,7 +34,7 @@ void Log::Info (const char *msg , ...)
 }
 
 
-void Log::Debug1 (const char *msg __attribute__((unused)), ...)
+void Log::Debug1 (const char *msg __attribute__ ((unused)),...)
 {
 #ifdef DEBUG
   va_list args;
@@ -48,7 +48,7 @@ void Log::Debug1 (const char *msg __attribute__((unused)), ...)
 #endif
 }
 
-void Log::Debug2 (const char *msg __attribute__((unused)), ...)
+void Log::Debug2 (const char *msg __attribute__ ((unused)),...)
 {
 #ifdef DEBUG
   va_list args;
@@ -62,7 +62,7 @@ void Log::Debug2 (const char *msg __attribute__((unused)), ...)
 #endif
 }
 
-void Log::Debug3 (const char *msg __attribute__((unused)), ...)
+void Log::Debug3 (const char *msg __attribute__ ((unused)),...)
 {
 #ifdef DEBUG
   va_list args;
@@ -138,7 +138,9 @@ void Log::DoLog (const char *fmt, va_list args, int level)
 }
 
 
-void Log::Dump (unsigned char *data_buffer __attribute__((unused)), int length __attribute__((unused)))
+void
+Log::Dump (unsigned char *data_buffer __attribute__ ((unused)), int length
+           __attribute__ ((unused)))
 {
 #ifdef DEBUG
   char byte;
