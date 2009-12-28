@@ -15,30 +15,30 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
-*/
+ */
 
 #include <vector>
 
 #ifndef _LNET_PROTOCOL_H
 #define _LNET_PROTOCOL_H
 
-#define DATA_PACKET			'\x00'
+#define DATA_PACKET                     '\x00'
 
-#define CONTROL_PACKET			'\x01'
-#define CLOSE_CONNECTION		'\x01'
+#define CONTROL_PACKET                  '\x01'
+#define CLOSE_CONNECTION                '\x01'
 
-#define USER_CONNECTED			'\x00'
-#define USER_NOT_CONNECTED		'\x01'
+#define USER_CONNECTED                  '\x00'
+#define USER_NOT_CONNECTED              '\x01'
 
-#define NETWORK_NOT_ALLOWED		'\x00'
-#define NETWORK_ALLOWED			'\x01'
+#define NETWORK_NOT_ALLOWED             '\x00'
+#define NETWORK_ALLOWED                 '\x01'
 
-#define AUTHENTICATION_FAILED		'\x00'
-#define AUTHENTICATION_SUCCESSFULL 	'\x01'
+#define AUTHENTICATION_FAILED           '\x00'
+#define AUTHENTICATION_SUCCESSFULL      '\x01'
 
-#define MAX_NETWORKNAME_LEN		16
-#define MAX_USERNAME_LEN		16
-#define MAX_PASSWORD_LEN		32
+#define MAX_NETWORKNAME_LEN             16
+#define MAX_USERNAME_LEN                16
+#define MAX_PASSWORD_LEN                32
 
 typedef struct
 {

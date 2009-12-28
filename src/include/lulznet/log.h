@@ -15,7 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
-*/
+ */
 
 #include <pthread.h>
 
@@ -25,13 +25,13 @@
 namespace Log
 {
 
-#define INFO		1
-#define DEBUG_1		2
-#define DEBUG_2		3
-#define DEBUG_3		4
-#define ERROR		5
-#define FATAL		6
-#define MAXLOGSIZE	512
+#define INFO            1
+#define DEBUG_1         2
+#define DEBUG_2         3
+#define DEBUG_3         4
+#define ERROR           5
+#define FATAL           6
+#define MAXLOGSIZE      512
 
 extern pthread_mutex_t mutex;
 

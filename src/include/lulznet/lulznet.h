@@ -15,7 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
-*/
+ */
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -64,25 +64,25 @@
 #ifndef _LNET_LULZNET_H
 #define _LNET_LULZNET_H
 
-#define FALSE	0
-#define TRUE	1
+#define FALSE   0
+#define TRUE    1
 
-#define FAIL	0
-#define DONE	1
+#define FAIL    0
+#define DONE    1
 
-#define uChar	unsigned char
-#define uShort	unsigned short
-#define uInt 	unsigned int
+#define uChar   unsigned char
+#define uShort  unsigned short
+#define uInt    unsigned int
 
-#define MAX_ACCEPTED_PEERS_CONNECTIONS	4
-#define	MAX_CONNECTIONS_TO_PEER		4
-#define MAX_PEERS 			8
+#define MAX_ACCEPTED_PEERS_CONNECTIONS  4
+#define MAX_CONNECTIONS_TO_PEER         4
+#define MAX_PEERS                       8
 
-#define MAX_TAPS	8
-#define ADDRESS_LEN	16
+#define MAX_TAPS        8
+#define ADDRESS_LEN     16
 
 #define VERSION "0.0.1 [+ssl]"
-#define MAX(A,B) ((A)>(B) ? (A):(B))
+#define MAX(A,B) ((A)>(B) ? (A) : (B))
 
 /* Show a little help */
 void help ();

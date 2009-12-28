@@ -15,20 +15,20 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
-*/
+ */
 
 #ifndef _LNET_TAP_H
 #define _LNET_TAP_H
 
-#define TAP_ACTIVE	0x01
-#define TAP_CLOSING	0x02
+#define TAP_ACTIVE      0x01
+#define TAP_CLOSING     0x02
 
-#define ADD_ROUTING 	0x01
-#define DEL_ROUTING	0x02
+#define ADD_ROUTING     0x01
+#define DEL_ROUTING     0x02
 
-#define CLASS_A		1
-#define CLASS_B		2
-#define CLASS_C		3
+#define CLASS_A         1
+#define CLASS_B         2
+#define CLASS_C         3
 
 namespace Taps
 {
@@ -40,33 +40,33 @@ namespace Taps
 class Tap
 {
 private:
-  int _fd;
-  char _state;
-  std::string _device;
-  std::string _networkName;
+int _fd;
+char _state;
+std::string _device;
+std::string _networkName;
 
-  int _address;
-  int _netmask;
-  int _network;
+int _address;
+int _netmask;
+int _network;
 
-  int alloc (std::string NetName, std::string *dev);
-
-public:
-  Tap (TapDeviceT TapOpt);
-  ~Tap ();
-  bool operator>> (Network::Packet * packet);
-  bool operator<< (Network::Packet * packet);
-  bool isActive ();
-  bool isRoutableAddress(int address);
-  bool isReadyToRead(fd_set *rdSel);
-  void showInfo();
+int alloc (std::string NetName, std::string *dev);
 
 public:
-  int fd ();
-  std::string device ();
-  std::string networkName ();
-  int address ();
-  int netmask ();
+Tap (TapDeviceT TapOpt);
+~Tap ();
+bool operator>> (Network::Packet * packet);
+bool operator<< (Network::Packet * packet);
+bool isActive ();
+bool isRoutableAddress(int address);
+bool isReadyToRead(fd_set *rdSel);
+void showInfo();
+
+public:
+int fd ();
+std::string device ();
+std::string networkName ();
+int address ();
+int netmask ();
 };
 
 /* A structure that keep file descriptors information */

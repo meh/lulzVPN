@@ -15,12 +15,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
-*/
+ */
 
 #ifndef _LNET_AUTH_H
 #define _LNET_AUTH_H
 
-#define PW_HASH_STRING_LEN	32
+#define PW_HASH_STRING_LEN      32
 
 namespace Auth
 {

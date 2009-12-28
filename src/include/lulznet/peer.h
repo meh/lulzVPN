@@ -15,7 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
-*/
+ */
 
 #include "protocol.h"
 #include "packet_buffer.h"
@@ -23,11 +23,11 @@
 #ifndef _LNET_PEER_H
 #define _LNET_PEER_H
 
-#define PEER_ACTIVE	1
-#define PEER_CLOSING	2
+#define PEER_ACTIVE     1
+#define PEER_CLOSING    2
 
-#define INCOMING_CONNECTION	1
-#define	OUTGOING_CONNECTION	2
+#define INCOMING_CONNECTION     1
+#define OUTGOING_CONNECTION     2
 
 namespace Peers
 {
@@ -44,31 +44,31 @@ namespace Peers
 class Peer
 {
 private:
-  int _fd;
-  SSL *_ssl;
-  char _state;
-  std::string _user;
-  int _address;
-  int _virtualAddress;
-  networkT _nl;
+int _fd;
+SSL *_ssl;
+char _state;
+std::string _user;
+int _address;
+int _virtualAddress;
+networkT _nl;
 
 public:
-  Peer (int fd, SSL * ssl, std::string user, int address, networkT nl);
-  ~Peer ();
-  bool operator>> (Network::Packet * packet);
-  bool operator<< (Network::Packet * packet);
+Peer (int fd, SSL * ssl, std::string user, int address, networkT nl);
+~Peer ();
+bool operator>> (Network::Packet * packet);
+bool operator<< (Network::Packet * packet);
 
-  bool isRoutableAddress(int address);
-  bool isActive();
-  bool isReadyToRead(fd_set *rdSel);
-  void setClosing();
-  void Disassociate();
+bool isRoutableAddress(int address);
+bool isActive();
+bool isReadyToRead(fd_set *rdSel);
+void setClosing();
+void Disassociate();
 
 public:
-  int fd();
-  std::string user();
-  int address();
-  networkT nl();
+int fd();
+std::string user();
+int address();
+networkT nl();
 };
 
 extern std::vector<Peer *> db;
