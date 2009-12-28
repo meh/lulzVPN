@@ -30,12 +30,13 @@
 
 Config Options;
 
-int main (int argc, char *argv[])
+int
+main (int argc, char *argv[])
 {
 
   int address;
   uInt i;
-  pthread_t serverT;		/* Listening thread */
+  pthread_t serverT;            /* Listening thread */
 
   /* Welcome!1!1ONE */
   std::cout << "Welcome to lulzNet ¯\\_(O_o)_/¯" << std::endl;
@@ -43,78 +44,78 @@ int main (int argc, char *argv[])
   std::cout << "Version: " << VERSION << std::endl;
 
   /* Config Parsing */
-  Options.ParseConfigFile ((char *) CONFIG_FILE);
-  Options.ParseArgs (argc, argv);
-  Options.ChecEmptyConfigEntry ();
+  Options.ParseConfigFile((char *) CONFIG_FILE);
+  Options.ParseArgs(argc, argv);
+  Options.ChecEmptyConfigEntry();
 
   /* Check faggot user */
-  if (getuid ())
-    Log::Fatal ("You must be super user");
+  if (getuid())
+    Log::Fatal("You must be super user");
 
   /* initialize db and other stuff */
-  LulznetInit ();
+  LulznetInit();
 
-  for (i = 0; i < Options.TapDevicesCount (); i++)
+  for (i = 0; i < Options.TapDevicesCount(); i++)
     /* ??? black magic (don't know) */
-    new Taps::Tap (Options.TapDevice (i));
+    new Taps::Tap(Options.TapDevice(i));
 
   /* Prompt for password if no ones is specified in config file */
-  if (Options.Password ().empty ())
-    Auth::PasswordPrompt ();
+  if (Options.Password().empty())
+    Auth::PasswordPrompt();
 
   /* Start (or not) the listening service */
-  if (Options.Flags () & LISTENING_MODE)
-    pthread_create (&serverT, NULL, Network::Server::ServerLoop, NULL);
+  if (Options.Flags() & LISTENING_MODE)
+    pthread_create(&serverT, NULL, Network::Server::ServerLoop, NULL);
 
   else
-    Log::Debug1 ("Not listening");
+    Log::Debug1("Not listening");
 
   /* Autoconnection */
-  if (!Options.ConnectingAddress ().empty ())
-    {
-      address = Network::LookupAddress (Options.ConnectingAddress ());
-      if (address != 0)
-        Network::Client::PeerConnect (address, Options.ConnectingPort ());
-    }
+  if (!Options.ConnectingAddress().empty()) {
+    address = Network::LookupAddress(Options.ConnectingAddress());
+    if (address != 0)
+      Network::Client::PeerConnect(address, Options.ConnectingPort());
+  }
 
   /* ??? (another black magic) */
-  pthread_create (&Network::Server::select_t, NULL,
-                  Network::Server::SelectLoop, NULL);
+  pthread_create(&Network::Server::select_t, NULL, Network::Server::SelectLoop, NULL);
 
   /* A lovable shell */
-  if (Options.Flags () & INTERACTIVE_MODE)
-    Shell::Start ();
+  if (Options.Flags() & INTERACTIVE_MODE)
+    Shell::Start();
   else
-    Log::Debug1 ("Non interactive mode");
+    Log::Debug1("Non interactive mode");
 
   /* cause I don't enjoy when it exits as soon as it starts :| */
-  pthread_join (Network::Server::select_t, NULL);
-  pthread_join (serverT, NULL);
+  pthread_join(Network::Server::select_t, NULL);
+  pthread_join(serverT, NULL);
 
   return 0;
 }
 
-void LulznetInit ()
+void
+LulznetInit ()
 {
   Peers::maxFd = 0;
   Taps::maxFd = 0;
 
-  FD_ZERO (&Network::master);
+  FD_ZERO(&Network::master);
 
-  memset (&Network::Server::select_t, '\x00', sizeof (pthread_t));
-  pthread_mutex_init (&Peers::db_mutex, NULL);
+  memset(&Network::Server::select_t, '\x00', sizeof(pthread_t));
+  pthread_mutex_init(&Peers::db_mutex, NULL);
 
-  SSL_load_error_strings ();
-  SSLeay_add_ssl_algorithms ();
-  OpenSSL_add_all_digests ();
+  SSL_load_error_strings();
+  SSLeay_add_ssl_algorithms();
+  OpenSSL_add_all_digests();
 
-  Network::Server::sslInit ();
-  Network::Client::sslInit ();
+  Network::Server::sslInit();
+  Network::Client::sslInit();
 
-  signal (SIGINT, sigintHandler);
+  signal(SIGINT, sigintHandler);
 }
 
-void help ()
+void
+help ()
 {
   std::cout << "usage: lulznet [Options]" << std::endl;
   std::cout << "OPTIONS:" << std::endl;
@@ -129,25 +130,27 @@ void help ()
   std::cout << "-t\tSpecify tap address << std::endl" << std::endl;
   std::cout << "-v\tIncrease debug level << std::endl" << std::endl;
 
-  exit (0);
+  exit(0);
 }
 
-void LulznetExit ()
+void
+LulznetExit ()
 {
   uInt i;
 
-  pthread_mutex_lock (&Peers::db_mutex);
+  pthread_mutex_lock(&Peers::db_mutex);
   if (Network::Server::select_t != (pthread_t) NULL)
-    pthread_cancel (Network::Server::select_t);
+    pthread_cancel(Network::Server::select_t);
 
-  Log::Info ("Closing lulznet");
-  for (i = 0; i < Peers::db.size (); i++)
-    Peers::db[i]->Disassociate ();
+  Log::Info("Closing lulznet");
+  for (i = 0; i < Peers::db.size(); i++)
+    Peers::db[i]->Disassociate();
 
-  exit (0);
+  exit(0);
 }
 
-void sigintHandler (int signal __attribute__ ((unused)))
+void
+sigintHandler (int signal __attribute__ ((unused)))
 {
-  LulznetExit ();
+  LulznetExit();
 }

@@ -23,7 +23,8 @@
 #include <lulznet/config.h>
 #include <lulznet/log.h>
 
-int Auth::DoAuthentication (std::string Username, uChar * Hash)
+int
+Auth::DoAuthentication (std::string Username, uChar * Hash)
 {
   std::string StrHash;
   std::string LocalHash;
@@ -33,63 +34,64 @@ int Auth::DoAuthentication (std::string Username, uChar * Hash)
 
   Response = FALSE;
 
-  LocalHash = GetHash (Username);
-  if (!LocalHash.empty ())
-    {
-      for (i = 0; i < MD5_DIGEST_LENGTH; i++)
-        {
-          sprintf (tmp, "%02x", Hash[i]);
-          StrHash.append (tmp);
-        }
-      if (!StrHash.compare (LocalHash))
-        Response = TRUE;
-      else
-        Log::Error ("Wrong Password");
+  LocalHash = GetHash(Username);
+  if (!LocalHash.empty()) {
+    for (i = 0; i < MD5_DIGEST_LENGTH; i++) {
+      sprintf(tmp, "%02x", Hash[i]);
+      StrHash.append(tmp);
     }
+    if (!StrHash.compare(LocalHash))
+      Response = TRUE;
+    else
+      Log::Error("Wrong Password");
+  }
   else
-    Log::Error ("Cannot find user");
+    Log::Error("Cannot find user");
 
   return Response;
 }
 
-void Auth::PasswordPrompt ()
+void
+Auth::PasswordPrompt ()
 {
 
   std::string Password;
   struct termio tty, oldtty;
 
-  ioctl (0, TCGETA, &oldtty);
+  ioctl(0, TCGETA, &oldtty);
 
   tty = oldtty;
   tty.c_lflag &= ~(ICANON | ECHO | ECHOE | ECHOK | ECHONL);
   tty.c_cc[VMIN] = 1;
   tty.c_cc[VTIME] = 0;
 
-  ioctl (0, TCSETA, &tty);
+  ioctl(0, TCSETA, &tty);
 
   std::cout << "Password: ";
   std::cin >> Password;
   std::cout << std::endl;
 
-  ioctl (0, TCSETA, &oldtty);
+  ioctl(0, TCSETA, &oldtty);
 
-  Options.Password (Password);
+  Options.Password(Password);
 }
 
-std::string Auth::GetHash (std::string RequestedUser)
+std::string
+Auth::GetHash (std::string RequestedUser)
 {
   std::string Hash;
   uInt i;
 
-  for (i = 0; i < Options.UserCredentialsCount (); i++)
-    if (!Options.UserCredentials (i).Name.compare (RequestedUser))
-      return Options.UserCredentials (i).Hash;
+  for (i = 0; i < Options.UserCredentialsCount(); i++)
+    if (!Options.UserCredentials(i).Name.compare(RequestedUser))
+      return Options.UserCredentials(i).Hash;
 
-  Hash.clear ();
+  Hash.clear();
   return Hash;
 }
 
-uChar *Auth::Crypt::CalculateMd5 (std::string string)
+uChar *
+Auth::Crypt::CalculateMd5 (std::string string)
 {
   EVP_MD_CTX mdctx;
   const EVP_MD *md;
@@ -98,17 +100,18 @@ uChar *Auth::Crypt::CalculateMd5 (std::string string)
 
   HexHash = new uChar[MD5_DIGEST_LENGTH];
 
-  md = EVP_get_digestbyname ("MD5");
-  EVP_MD_CTX_init (&mdctx);
-  EVP_DigestInit_ex (&mdctx, md, NULL);
-  EVP_DigestUpdate (&mdctx, string.c_str (), string.length ());
-  EVP_DigestFinal_ex (&mdctx, HexHash, &md_len);
-  EVP_MD_CTX_cleanup (&mdctx);
+  md = EVP_get_digestbyname("MD5");
+  EVP_MD_CTX_init(&mdctx);
+  EVP_DigestInit_ex(&mdctx, md, NULL);
+  EVP_DigestUpdate(&mdctx, string.c_str(), string.length());
+  EVP_DigestFinal_ex(&mdctx, HexHash, &md_len);
+  EVP_MD_CTX_cleanup(&mdctx);
 
   return HexHash;
 }
 
-char *Auth::Crypt::GetFingerprintFromCtx (SSL * ssl)
+char *
+Auth::Crypt::GetFingerprintFromCtx (SSL * ssl)
 {
   uChar digest[SHA_DIGEST_LENGTH];
   char hex[] = "0123456789ABCDEF";
@@ -117,15 +120,14 @@ char *Auth::Crypt::GetFingerprintFromCtx (SSL * ssl)
   uInt i;
   X509 *cert;
 
-  cert = SSL_get_peer_certificate (ssl);
-  X509_digest (cert, EVP_md5 (), digest, &len);
+  cert = SSL_get_peer_certificate(ssl);
+  X509_digest(cert, EVP_md5(), digest, &len);
 
-  for (i = 0; i < len; i++)
-    {
-      fp[i * 3 + 0] = hex[(digest[i] >> 4) & 0xF];
-      fp[i * 3 + 1] = hex[(digest[i] >> 0) & 0xF];
-      fp[i * 3 + 2] = i == len - 1 ? '\0' : ':';
-    }
+  for (i = 0; i < len; i++) {
+    fp[i * 3 + 0] = hex[(digest[i] >> 4) & 0xF];
+    fp[i * 3 + 1] = hex[(digest[i] >> 0) & 0xF];
+    fp[i * 3 + 2] = i == len - 1 ? '\0' : ':';
+  }
 
   return fp;
 }

@@ -66,7 +66,7 @@ struct ip_header
 } __attribute__ ((packed));
 
 /* return int network ordered address of the packet dest */
-uInt get_destination_ip (Network::Packet *packet);
+uInt GetDestinationIp (Network::Packet *packet);
 
 }
 

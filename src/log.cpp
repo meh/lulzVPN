@@ -24,155 +24,157 @@
 
 pthread_mutex_t Log::mutex;
 
-void Log::Info (const char *msg, ...)
+void
+Log::Info (const char *msg, ...)
 {
   va_list args;
 
-  va_start (args, msg);
-  DoLog (msg, args, INFO);
-  va_end (args);
+  va_start(args, msg);
+  DoLog(msg, args, INFO);
+  va_end(args);
 }
 
 
-void Log::Debug1 (const char *msg __attribute__ ((unused)),...)
-{
-#ifdef DEBUG
-  va_list args;
-
-  if (Options.DebugLevel () < 1)
-    return;
-
-  va_start (args, msg);
-  DoLog (msg, args, DEBUG_1);
-  va_end (args);
-#endif
-}
-
-void Log::Debug2 (const char *msg __attribute__ ((unused)),...)
+void
+Log::Debug1 (const char *msg __attribute__ ((unused)),...)
 {
 #ifdef DEBUG
   va_list args;
 
-  if (Options.DebugLevel () < 2)
+  if (Options.DebugLevel() < 1)
     return;
 
-  va_start (args, msg);
-  DoLog (msg, args, DEBUG_2);
-  va_end (args);
+  va_start(args, msg);
+  DoLog(msg, args, DEBUG_1);
+  va_end(args);
 #endif
 }
 
-void Log::Debug3 (const char *msg __attribute__ ((unused)),...)
+void
+Log::Debug2 (const char *msg __attribute__ ((unused)),...)
 {
 #ifdef DEBUG
   va_list args;
 
-  if (Options.DebugLevel () < 3)
+  if (Options.DebugLevel() < 2)
     return;
 
-  va_start (args, msg);
-  DoLog (msg, args, DEBUG_3);
-  va_end (args);
+  va_start(args, msg);
+  DoLog(msg, args, DEBUG_2);
+  va_end(args);
 #endif
 }
 
-void Log::Error (const char *msg, ...)
+void
+Log::Debug3 (const char *msg __attribute__ ((unused)),...)
+{
+#ifdef DEBUG
+  va_list args;
+
+  if (Options.DebugLevel() < 3)
+    return;
+
+  va_start(args, msg);
+  DoLog(msg, args, DEBUG_3);
+  va_end(args);
+#endif
+}
+
+void
+Log::Error (const char *msg, ...)
 {
   va_list args;
 
-  va_start (args, msg);
-  DoLog (msg, args, ERROR);
-  va_end (args);
+  va_start(args, msg);
+  DoLog(msg, args, ERROR);
+  va_end(args);
 }
 
-void Log::Fatal (const char *msg, ...)
+void
+Log::Fatal (const char *msg, ...)
 {
   va_list args;
 
-  va_start (args, msg);
-  DoLog (msg, args, FATAL);
-  va_end (args);
+  va_start(args, msg);
+  DoLog(msg, args, FATAL);
+  va_end(args);
 
-  LulznetExit ();
+  LulznetExit();
 
-  exit (1);
+  exit(1);
 }
 
-void Log::DoLog (const char *fmt, va_list args, int level)
+void
+Log::DoLog (const char *fmt, va_list args, int level)
 {
   char msgbuf[MAXLOGSIZE];
   char fmtbuf[MAXLOGSIZE];
-  pthread_mutex_lock (&mutex);
+  pthread_mutex_lock(&mutex);
 
-  switch (level)
-    {
-    case INFO:
-      snprintf (fmtbuf, sizeof (fmtbuf), "[inf] %s\n", fmt);
-      break;
+  switch (level) {
+  case INFO:
+    snprintf(fmtbuf, sizeof(fmtbuf), "[inf] %s\n", fmt);
+    break;
 #ifdef DEBUG
-    case DEBUG_1:
-    case DEBUG_2:
-    case DEBUG_3:
-      snprintf (fmtbuf, sizeof (fmtbuf), "[dbg] %s\n", fmt);
-      break;
+  case DEBUG_1:
+  case DEBUG_2:
+  case DEBUG_3:
+    snprintf(fmtbuf, sizeof(fmtbuf), "[dbg] %s\n", fmt);
+    break;
 #endif
-    case ERROR:
-      snprintf (fmtbuf, sizeof (fmtbuf), "[err] %s\n", fmt);
-      break;
-    case FATAL:
-      snprintf (fmtbuf, sizeof (fmtbuf), "[ftl] %s\n", fmt);
-      break;
-    }
+  case ERROR:
+    snprintf(fmtbuf, sizeof(fmtbuf), "[err] %s\n", fmt);
+    break;
+  case FATAL:
+    snprintf(fmtbuf, sizeof(fmtbuf), "[ftl] %s\n", fmt);
+    break;
+  }
 
-  vsnprintf (msgbuf, sizeof (msgbuf), fmtbuf, args);
-  fprintf (stderr, "%s", msgbuf);
-  fflush (stderr);
+  vsnprintf(msgbuf, sizeof(msgbuf), fmtbuf, args);
+  fprintf(stderr, "%s", msgbuf);
+  fflush(stderr);
 
   /* if specified log file print to it
      if(opt.log_fp != NULL)
      fprintf(opt.log_fp,"%s",msgbuf");
    */
 
-  pthread_mutex_unlock (&mutex);
+  pthread_mutex_unlock(&mutex);
 
 }
 
 
 void
-Log::Dump (unsigned char *data_buffer __attribute__ ((unused)), int length
-           __attribute__ ((unused)))
+Log::Dump (unsigned char *data_buffer __attribute__ ((unused)), int length __attribute__ ((unused)))
 {
 #ifdef DEBUG
   char byte;
   int i;
   int j;
 
-  if (Options.DebugLevel () < 4)
+  if (Options.DebugLevel() < 4)
     return;
 
-  pthread_mutex_lock (&mutex);
+  pthread_mutex_lock(&mutex);
 
-  for (i = 0; i < length; i++)
-    {
-      byte = data_buffer[i];
-      fprintf (stderr, "%02x ", data_buffer[i]);
-      if (((i % 32) == 31) || (i == length - 1))
-        {
-          for (j = 0; j < 31 - (i % 32); j++)
-            fprintf (stderr, "   ");
-          fprintf (stderr, "| ");
-          for (j = (i - (i % 32)); j <= i; j++)
-            {
-              byte = data_buffer[j];
-              if ((byte > 31) && (byte < 127))
-                fprintf (stderr, "%c", byte);
-              else
-                fprintf (stderr, ".");
-            }
-          fprintf (stderr, "\n");
-        }
-
+  for (i = 0; i < length; i++) {
+    byte = data_buffer[i];
+    fprintf(stderr, "%02x ", data_buffer[i]);
+    if (((i % 32) == 31) || (i == length - 1)) {
+      for (j = 0; j < 31 - (i % 32); j++)
+        fprintf(stderr, "   ");
+      fprintf(stderr, "| ");
+      for (j = (i - (i % 32)); j <= i; j++) {
+        byte = data_buffer[j];
+        if ((byte > 31) && (byte < 127))
+          fprintf(stderr, "%c", byte);
+        else
+          fprintf(stderr, ".");
+      }
+      fprintf(stderr, "\n");
     }
+
+  }
 #endif
-  pthread_mutex_unlock (&mutex);
+  pthread_mutex_unlock(&mutex);
 }
