@@ -20,13 +20,13 @@
 #ifndef _LNET_AUTH_H
 #define _LNET_AUTH_H
 
-#define PW_HASH_STRING_LEN      32
+const uInt pwHashStringLenght = 32;
 
 namespace Auth
 {
 
 /* Check if hash match username */
-int DoAuthentication (std::string Username, uChar *Hash);
+bool DoAuthentication (std::string Username, uChar *Hash);
 
 /* Ask for password (disable echo) */
 void PasswordPrompt ();

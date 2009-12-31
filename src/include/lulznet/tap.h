@@ -20,15 +20,12 @@
 #ifndef _LNET_TAP_H
 #define _LNET_TAP_H
 
-#define TAP_ACTIVE      0x01
-#define TAP_CLOSING     0x02
+const char addRouting = 0x01;
+const char delRouting = 0x02;
 
-#define ADD_ROUTING     0x01
-#define DEL_ROUTING     0x02
-
-#define CLASS_A         1
-#define CLASS_B         2
-#define CLASS_C         3
+const int CLASS_A = 1;
+const int CLASS_B = 2;
+const int CLASS_C   = 3;
 
 namespace Taps
 {

@@ -23,7 +23,7 @@
 #include <lulznet/config.h>
 #include <lulznet/log.h>
 
-int
+bool
 Auth::DoAuthentication (std::string Username, uChar * Hash)
 {
   std::string StrHash;
@@ -32,7 +32,7 @@ Auth::DoAuthentication (std::string Username, uChar * Hash)
   int Response;
   int i;
 
-  Response = FALSE;
+  Response = false;
 
   LocalHash = GetHash(Username);
   if (!LocalHash.empty()) {
@@ -41,7 +41,7 @@ Auth::DoAuthentication (std::string Username, uChar * Hash)
       StrHash.append(tmp);
     }
     if (!StrHash.compare(LocalHash))
-      Response = TRUE;
+      Response = true;
     else
       Log::Error("Wrong Password");
   }

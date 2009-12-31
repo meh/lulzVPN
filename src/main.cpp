@@ -39,12 +39,11 @@ main (int argc, char *argv[])
   pthread_t serverT;            /* Listening thread */
 
   /* Welcome!1!1ONE */
-  std::cout << "Welcome to lulzNet ¯\\_(O_o)_/¯" << std::endl;
-  std::cout << "Lulz p2p Virtual Priv8 Net" << std::endl;
+  std::cout << "Welcome to lulzNet ¯\\_(0_o)_/¯ (lulz p2p virtual priv8 net)" << std::endl;
   std::cout << "Version: " << VERSION << std::endl;
 
   /* Config Parsing */
-  Options.ParseConfigFile((char *) CONFIG_FILE);
+  Options.ParseConfigFile(CONFIG_FILE);
   Options.ParseArgs(argc, argv);
   Options.ChecEmptyConfigEntry();
 
@@ -64,7 +63,7 @@ main (int argc, char *argv[])
     Auth::PasswordPrompt();
 
   /* Start (or not) the listening service */
-  if (Options.Flags() & LISTENING_MODE)
+  if (Options.Flags() & listeningMode)
     pthread_create(&serverT, NULL, Network::Server::ServerLoop, NULL);
 
   else
@@ -81,7 +80,7 @@ main (int argc, char *argv[])
   pthread_create(&Network::Server::select_t, NULL, Network::Server::SelectLoop, NULL);
 
   /* A lovable shell */
-  if (Options.Flags() & INTERACTIVE_MODE)
+  if (Options.Flags() & interactiveMode)
     Shell::Start();
   else
     Log::Debug1("Non interactive mode");

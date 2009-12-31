@@ -22,23 +22,21 @@
 #ifndef _LNET_PROTOCOL_H
 #define _LNET_PROTOCOL_H
 
-#define DATA_PACKET                     '\x00'
+const char dataPacket = '\x00';
+const char controlPacket = '\x01';
+const char closeConnection = '\x01';
+const char userNotConnected ='\x00';
+const char userConnected = '\x01';
+const char networkNotAllowed ='\x00';
+const char networkAllowed = '\x01';
+const char AUTHENTICATION_FAILED = '\x00';
+const char AUTHENTICATION_SUCCESSFULL = '\x01';
+const int MAX_NETWORKNAME_LEN = 16;
+const int MAX_USERNAME_LEN = 16;
+const int MAX_PASSWORD_LEN = 32;
 
-#define CONTROL_PACKET                  '\x01'
-#define CLOSE_CONNECTION                '\x01'
-
-#define USER_CONNECTED                  '\x00'
-#define USER_NOT_CONNECTED              '\x01'
-
-#define NETWORK_NOT_ALLOWED             '\x00'
-#define NETWORK_ALLOWED                 '\x01'
-
-#define AUTHENTICATION_FAILED           '\x00'
-#define AUTHENTICATION_SUCCESSFULL      '\x01'
-
-#define MAX_NETWORKNAME_LEN             16
-#define MAX_USERNAME_LEN                16
-#define MAX_PASSWORD_LEN                32
+const char active = 0;
+const char closing = 1;
 
 typedef struct
 {
@@ -76,26 +74,26 @@ void RecvBanner (int fd);
 
 namespace Server
 {
-int Handshake (SSL * ssl, HandshakeOptionT * hsOpt);
-int LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt);
-int LulzNetAuth (SSL * ssl, HandshakeOptionT * hsOpt);
+bool Handshake (SSL * ssl, HandshakeOptionT * hsOpt);
+bool LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt);
+bool LulzNetAuth (SSL * ssl, HandshakeOptionT * hsOpt);
 }
 
 namespace Client
 {
 /* peer and server handshake */
-int Handshake (SSL * ssl, HandshakeOptionT * hsOpt);
-int LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt);
-int LulzNetAuth (SSL * ssl);
+bool Handshake (SSL * ssl, HandshakeOptionT * hsOpt);
+bool LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt);
+bool LulzNetAuth (SSL * ssl);
 }
 
 /* Networks exchange */
-int LulzNetSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt);
-int LulzNetReciveNetworks (SSL * ssl, HandshakeOptionT * hsOpt);
+bool LulzNetSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt);
+bool LulzNetReciveNetworks (SSL * ssl, HandshakeOptionT * hsOpt);
 
 /* User exchange */
-int LulzNetSendUserlist (SSL * ssl);
-int LulzNetReciveUserlist (SSL * ssl, HandshakeOptionT * hsOpt);
+bool LulzNetSendUserlist (SSL * ssl);
+bool LulzNetReciveUserlist (SSL * ssl, HandshakeOptionT * hsOpt);
 
 /* Return a list with all the users connected */
 userT GetUserlist ();

@@ -30,7 +30,7 @@ Log::Info (const char *msg, ...)
   va_list args;
 
   va_start(args, msg);
-  DoLog(msg, args, INFO);
+  DoLog(msg, args, info);
   va_end(args);
 }
 
@@ -45,7 +45,7 @@ Log::Debug1 (const char *msg __attribute__ ((unused)),...)
     return;
 
   va_start(args, msg);
-  DoLog(msg, args, DEBUG_1);
+  DoLog(msg, args, debug1);
   va_end(args);
 #endif
 }
@@ -60,7 +60,7 @@ Log::Debug2 (const char *msg __attribute__ ((unused)),...)
     return;
 
   va_start(args, msg);
-  DoLog(msg, args, DEBUG_2);
+  DoLog(msg, args, debug2);
   va_end(args);
 #endif
 }
@@ -75,7 +75,7 @@ Log::Debug3 (const char *msg __attribute__ ((unused)),...)
     return;
 
   va_start(args, msg);
-  DoLog(msg, args, DEBUG_3);
+  DoLog(msg, args, debug3);
   va_end(args);
 #endif
 }
@@ -86,7 +86,7 @@ Log::Error (const char *msg, ...)
   va_list args;
 
   va_start(args, msg);
-  DoLog(msg, args, ERROR);
+  DoLog(msg, args, error);
   va_end(args);
 }
 
@@ -96,7 +96,7 @@ Log::Fatal (const char *msg, ...)
   va_list args;
 
   va_start(args, msg);
-  DoLog(msg, args, FATAL);
+  DoLog(msg, args, fatal);
   va_end(args);
 
   LulznetExit();
@@ -112,20 +112,20 @@ Log::DoLog (const char *fmt, va_list args, int level)
   pthread_mutex_lock(&mutex);
 
   switch (level) {
-  case INFO:
+  case info:
     snprintf(fmtbuf, sizeof(fmtbuf), "[inf] %s\n", fmt);
     break;
 #ifdef DEBUG
-  case DEBUG_1:
-  case DEBUG_2:
-  case DEBUG_3:
+  case debug1:
+  case debug2:
+  case debug3:
     snprintf(fmtbuf, sizeof(fmtbuf), "[dbg] %s\n", fmt);
     break;
 #endif
-  case ERROR:
+  case error:
     snprintf(fmtbuf, sizeof(fmtbuf), "[err] %s\n", fmt);
     break;
-  case FATAL:
+  case fatal:
     snprintf(fmtbuf, sizeof(fmtbuf), "[ftl] %s\n", fmt);
     break;
   }

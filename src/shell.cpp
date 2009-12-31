@@ -59,8 +59,8 @@ Shell::PeerList ()
   uInt j;
   int nAddr;
   int n_vAddress;
-  char pAddr[ADDRESS_LEN + 1];
-  char p_vAddress[ADDRESS_LEN + 1];
+  char pAddr[addressLenght + 1];
+  char p_vAddress[addressLenght + 1];
   int cidrNetmask;
   Peers::Peer * peer;
 
@@ -68,13 +68,13 @@ Shell::PeerList ()
     peer = Peers::db[i];
 
     nAddr = peer->address();
-    inet_ntop(AF_INET, &nAddr, pAddr, ADDRESS_LEN);
+    inet_ntop(AF_INET, &nAddr, pAddr, addressLenght);
 
     std::cout << peer->user() << "\taddr: " << pAddr << " networks: " << peer->nl().networkName.size() << std::endl;
 
     for (j = 0; j < peer->nl().networkName.size(); j++) {
       n_vAddress = peer->nl().address[j];
-      inet_ntop(AF_INET, &n_vAddress, p_vAddress, ADDRESS_LEN);
+      inet_ntop(AF_INET, &n_vAddress, p_vAddress, addressLenght);
 
       cidrNetmask = Taps::getCidrNotation(ntohl(peer->nl().netmask[i]));
 
@@ -119,14 +119,14 @@ Shell::TapList ()
   int nAddr;
   int nNetm;
   int cidr;
-  char pAddr[ADDRESS_LEN + 1];
+  char pAddr[addressLenght + 1];
   Taps::Tap * tap;
 
   for (i = 0; i < Taps::db.size(); i++) {
     tap = Taps::db[i];
 
     nAddr = tap->address();
-    inet_ntop(AF_INET, &nAddr, pAddr, ADDRESS_LEN);
+    inet_ntop(AF_INET, &nAddr, pAddr, addressLenght);
 
     nNetm = tap->netmask();
     cidr = Taps::getCidrNotation(ntohl(nNetm));
@@ -272,7 +272,7 @@ Shell::Start ()
   std::string line;
   char *rlStr;
   Cmd *cmd;
-  while (TRUE) {
+  while (true) {
 
     rlStr = readline("[lulznet] ");
     if (rlStr != NULL) {

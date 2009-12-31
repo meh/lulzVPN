@@ -23,7 +23,9 @@
 #define _LNET_NETWORKING_H
 
 /* Default listening port */
-#define PORT                    7890
+const short port = 7890;
+const int addressLenght= 16;
+const int maxAcceptedConnections = 128;
 
 #define CERT_FILE       "/etc/lulznet/cert.pem"
 #define KEY_FILE        "/etc/lulznet/key"
@@ -32,7 +34,6 @@ namespace Network
 {
 
 extern fd_set master;
-extern int freeFdFlag;
 
 namespace Client
 {

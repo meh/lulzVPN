@@ -20,6 +20,7 @@
 #include <lulznet/lulznet.h>
 #include <lulznet/log.h>
 #include <lulznet/packet.h>
+#include <lulznet/networking.h>
 
 uInt
 PacketInspection::GetDestinationIp (Network::Packet * packet)
@@ -31,7 +32,7 @@ PacketInspection::GetDestinationIp (Network::Packet * packet)
   u_short protocol;
 
 #ifdef DEBUG
-  char p_addr[ADDRESS_LEN];
+  char p_addr[addressLenght];
 #endif
 
   ethHdr = (eth_header *)(packet->buffer + 2);
@@ -45,7 +46,7 @@ PacketInspection::GetDestinationIp (Network::Packet * packet)
     address = arpHdr->dst_ip_adr;
 
 #ifdef DEBUG
-    inet_ntop(AF_INET, &address, p_addr, ADDRESS_LEN);
+    inet_ntop(AF_INET, &address, p_addr, addressLenght);
     Log::Debug3("\tarp packet, dst: %s", p_addr);
 #endif
 
@@ -57,7 +58,7 @@ PacketInspection::GetDestinationIp (Network::Packet * packet)
     address = ipHdr->dst_adr;
 
 #ifdef DEBUG
-    inet_ntop(AF_INET, &address, p_addr, ADDRESS_LEN);
+    inet_ntop(AF_INET, &address, p_addr, addressLenght);
     Log::Debug3("\tip packet, dst: %s", p_addr);
 #endif
   }

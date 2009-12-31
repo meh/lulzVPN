@@ -26,8 +26,8 @@
 Config::Config()
 {
   _Flags = 0;
-  _ConnectingPort = PORT;
-  _BindingPort = PORT;
+  _ConnectingPort = port;
+  _BindingPort = port;
 
 #ifdef DEBUG
   _DebugLevel = 0;
@@ -130,13 +130,13 @@ Config::ParseArgs (int argc, char **argv)
         _ConnectingAddress = optarg;
       break;
     case 'd':
-      _Flags ^= LISTENING_MODE;
+      _Flags ^= listeningMode;
       break;
     case 'h':
       help();
       break;
     case 'i':
-      _Flags |= INTERACTIVE_MODE;
+      _Flags |= interactiveMode;
       break;
     case 'l':
       _Username = optarg;
@@ -145,13 +145,13 @@ Config::ParseArgs (int argc, char **argv)
       if (!*optarg)
         Log::Fatal("You must specify a port");
       else
-        _ConnectingPort = (short) atoi(optarg);
+        _ConnectingPort = static_cast<short>(atoi(optarg));
       break;
     case 'P':
       if (!*optarg)
         Log::Fatal("You must specify a port");
       else
-        _BindingPort = (short) atoi(optarg);
+        _BindingPort = static_cast<short>(atoi(optarg));
       break;
 #ifdef DEBUG
     case 'v':
@@ -169,12 +169,12 @@ Config::ParseArgs (int argc, char **argv)
 }
 
 void
-Config::ParseConfigFile (char *filename)
+Config::ParseConfigFile (std::string filename)
 {
   xmlDocPtr doc;
   xmlNodePtr curNode;
 
-  doc = xmlParseFile(filename);
+  doc = xmlParseFile(filename.c_str());
 
   if (doc == NULL) {
     Log::Error("Document not parsed successfully.");
@@ -196,11 +196,11 @@ Config::ParseConfigFile (char *filename)
 
   curNode = curNode->xmlChildrenNode;
   while (curNode != NULL) {
-    if ((!xmlStrcmp(curNode->name, (const xmlChar *) "config")))
+    if ((!xmlStrcmp(curNode->name, reinterpret_cast<const xmlChar *>("config"))))
       ParseConfig(doc, curNode);
-    else if ((!xmlStrcmp(curNode->name, (const xmlChar *) "users")))
+    else if ((!xmlStrcmp(curNode->name, reinterpret_cast<const xmlChar *>("users"))))
       ParseUsers(doc, curNode);
-    else if ((!xmlStrcmp(curNode->name, (const xmlChar *) "taps")))
+    else if ((!xmlStrcmp(curNode->name, reinterpret_cast<const xmlChar *>("taps"))))
       ParseTaps(doc, curNode);
 
     curNode = curNode->next;
@@ -228,40 +228,40 @@ Config::ParseConfig (xmlDocPtr doc, xmlNodePtr curNode)
   curNode = xmlFirstElementChild(curNode);
 
   while (curNode != NULL) {
-    if ((!xmlStrcmp(curNode->name, (const xmlChar *) "username"))) {
+    if ((!xmlStrcmp(curNode->name, reinterpret_cast<const xmlChar *>("username")))) {
       key = xmlNodeListGetString(doc, curNode->xmlChildrenNode, 1);
-      _Username = (char *) key;
+      _Username = reinterpret_cast<char *>(key);
       xmlFree(key);
     }
-    else if ((!xmlStrcmp(curNode->name, (const xmlChar *) "password"))) {
+    else if ((!xmlStrcmp(curNode->name, reinterpret_cast<const xmlChar *>("password")))) {
       key = xmlNodeListGetString(doc, curNode->xmlChildrenNode, 1);
-      _Password = (char *) key;
+      _Password = reinterpret_cast<char *>(key);
       xmlFree(key);
     }
-    else if ((!xmlStrcmp(curNode->name, (const xmlChar *) "listening"))) {
+    else if ((!xmlStrcmp(curNode->name, reinterpret_cast<const xmlChar *>("listening")))) {
       key = xmlNodeListGetString(doc, curNode->xmlChildrenNode, 1);
-      if (!strcmp((char *) key, "yes"))
-        _Flags |= LISTENING_MODE;
-      else if (!strcmp((char *) key, "no")) {
-        if (_Flags & LISTENING_MODE)
-          _Flags ^= LISTENING_MODE;
+      if (!strcmp(reinterpret_cast<char *>(key), "yes"))
+        _Flags |= listeningMode;
+      else if (!strcmp(reinterpret_cast<char *>(key), "no")) {
+        if (_Flags & listeningMode)
+          _Flags ^= listeningMode;
       }
       xmlFree(key);
     }
-    else if ((!xmlStrcmp(curNode->name, (const xmlChar *) "interactive"))) {
+    else if ((!xmlStrcmp(curNode->name, reinterpret_cast<const xmlChar *>("interactive")))) {
       key = xmlNodeListGetString(doc, curNode->xmlChildrenNode, 1);
-      if (!strcmp((char *) key, "yes"))
-        _Flags |= INTERACTIVE_MODE;
-      else if (!strcmp((char *) key, "no")) {
-        if (_Flags & INTERACTIVE_MODE)
-          _Flags ^= INTERACTIVE_MODE;
+      if (!strcmp(reinterpret_cast<char *>(key), "yes"))
+        _Flags |= interactiveMode;
+      else if (!strcmp(reinterpret_cast<char *>(key), "no")) {
+        if (_Flags & interactiveMode)
+          _Flags ^= interactiveMode;
       }
       xmlFree(key);
     }
 #ifdef DEBUG
-    else if ((!xmlStrcmp(curNode->name, (const xmlChar *) "debug"))) {
+    else if ((!xmlStrcmp(curNode->name, reinterpret_cast<const xmlChar *>("debug")))) {
       key = xmlNodeListGetString(doc, curNode->xmlChildrenNode, 1);
-      _DebugLevel = atoi((char *) key);
+      _DebugLevel = atoi(reinterpret_cast<char *>(key));
       xmlFree(key);
     }
 #endif
@@ -281,9 +281,9 @@ Config::ParseUserNet (xmlDocPtr doc, xmlNodePtr curNode)
   curNode = xmlFirstElementChild(curNode);
 
   while (curNode != NULL) {
-    if ((!xmlStrcmp(curNode->name, (const xmlChar *) "name"))) {
+    if ((!xmlStrcmp(curNode->name, reinterpret_cast<const xmlChar *>("name")))) {
       key = xmlNodeListGetString(doc, curNode->xmlChildrenNode, 1);
-      AllowedNetworks.push_back((char *) key);
+      AllowedNetworks.push_back(reinterpret_cast<char *>(key));
       xmlFree(key);
     }
     else
@@ -303,17 +303,17 @@ Config::ParseUser (xmlDocPtr doc, xmlNodePtr curNode)
   curNode = xmlFirstElementChild(curNode);
 
   while (curNode != NULL) {
-    if ((!xmlStrcmp(curNode->name, (const xmlChar *) "name"))) {
+    if ((!xmlStrcmp(curNode->name, reinterpret_cast<const xmlChar *>("name")))) {
       key = xmlNodeListGetString(doc, curNode->xmlChildrenNode, 1);
-      UserCredTmp.Name = (char *) key;
+      UserCredTmp.Name = (reinterpret_cast<char *>(key));
       xmlFree(key);
     }
-    else if ((!xmlStrcmp(curNode->name, (const xmlChar *) "hash"))) {
+    else if ((!xmlStrcmp(curNode->name, reinterpret_cast<const xmlChar *>("hash")))) {
       key = xmlNodeListGetString(doc, curNode->xmlChildrenNode, 1);
-      UserCredTmp.Hash = (char *) key;
+      UserCredTmp.Hash = (reinterpret_cast<char *>(key));
       xmlFree(key);
     }
-    else if ((!xmlStrcmp(curNode->name, (const xmlChar *) "allowedTap")))
+    else if ((!xmlStrcmp(curNode->name, reinterpret_cast<const xmlChar *>("allowedTap"))))
       UserCredTmp.AllowedNetworks = ParseUserNet(doc, curNode);
     else
       Log::Error("Invalid option in user config");
@@ -333,7 +333,7 @@ Config::ParseUsers (xmlDocPtr doc, xmlNodePtr curNode)
   curNode = xmlFirstElementChild(curNode);
 
   while (curNode != NULL) {
-    if ((!xmlStrcmp(curNode->name, (const xmlChar *) "user")))
+    if ((!xmlStrcmp(curNode->name, reinterpret_cast<const xmlChar *>("user"))))
       ParseUser(doc, curNode);
     else
       Log::Error("Invalid option in users config");
@@ -353,19 +353,19 @@ Config::ParseTap (xmlDocPtr doc, xmlNodePtr curNode)
   TapDeviceT TapDeviceTmp;
 
   while (curNode != NULL) {
-    if ((!xmlStrcmp(curNode->name, (const xmlChar *) "name"))) {
+    if ((!xmlStrcmp(curNode->name, reinterpret_cast<const xmlChar *>("name")))) {
       key = xmlNodeListGetString(doc, curNode->xmlChildrenNode, 2);
-      TapDeviceTmp.networkName = (char *) key;
+      TapDeviceTmp.networkName = (reinterpret_cast<char *>(key));
       xmlFree(key);
     }
-    else if ((!xmlStrcmp(curNode->name, (const xmlChar *) "address"))) {
+    else if ((!xmlStrcmp(curNode->name, reinterpret_cast<const xmlChar *>("address")))) {
       key = xmlNodeListGetString(doc, curNode->xmlChildrenNode, 1);
-      TapDeviceTmp.Address = (char *) key;
+      TapDeviceTmp.Address = (reinterpret_cast<char *>(key));
       xmlFree(key);
     }
-    else if ((!xmlStrcmp(curNode->name, (const xmlChar *) "netmask"))) {
+    else if ((!xmlStrcmp(curNode->name, reinterpret_cast<const xmlChar *>("netmask")))) {
       key = xmlNodeListGetString(doc, curNode->xmlChildrenNode, 1);
-      TapDeviceTmp.Netmask = (char *) key;
+      TapDeviceTmp.Netmask = (reinterpret_cast<char *>(key));
       xmlFree(key);
     }
     else
@@ -388,7 +388,7 @@ Config::ParseTaps (xmlDocPtr doc, xmlNodePtr curNode)
   curNode = xmlFirstElementChild(curNode);
 
   while (curNode != NULL) {
-    if ((!xmlStrcmp(curNode->name, (const xmlChar *) "tap")))
+    if ((!xmlStrcmp(curNode->name, reinterpret_cast<const xmlChar *>("tap"))))
       ParseTap(doc, curNode);
     else
       Log::Error("Invalid option in taps config");

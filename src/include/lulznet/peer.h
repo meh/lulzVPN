@@ -23,12 +23,6 @@
 #ifndef _LNET_PEER_H
 #define _LNET_PEER_H
 
-#define PEER_ACTIVE     1
-#define PEER_CLOSING    2
-
-#define INCOMING_CONNECTION     1
-#define OUTGOING_CONNECTION     2
-
 namespace Peers
 {
 

@@ -82,13 +82,13 @@ Taps::Tap::Tap(TapDeviceT TapOpt)
 
   if (TapOpt.Netmask.empty()) {
     n_netmask = htonl(getDefaultNetmask(n_address));
-    inet_ntop(AF_INET, &n_netmask, (char *) TapOpt.Netmask.c_str(), ADDRESS_LEN);
+    inet_ntop(AF_INET, &n_netmask, (char *) TapOpt.Netmask.c_str(), addressLenght);
   }
   else
     n_netmask = xinet_pton((char *) TapOpt.Netmask.c_str());
 
   _fd = alloc(TapOpt.networkName, &device);
-  _state = TAP_ACTIVE;
+  _state = active;
   _device = device;
   _networkName = TapOpt.networkName;
   _address = n_address;
@@ -123,7 +123,7 @@ bool
 Taps::Tap::operator>> (Network::Packet * packet)
 {
   if (!(packet->length = read(_fd, packet->buffer + 2, 4094))) {
-    _state = TAP_CLOSING;
+    _state = closing;
     return FAIL;
   }
 
@@ -136,7 +136,7 @@ bool
 Taps::Tap::operator<< (Network::Packet * packet)
 {
   if (!write(_fd, packet->buffer + 2, packet->length - 2)) {
-    _state = TAP_CLOSING;
+    _state = closing;
     return FAIL;
   }
 
@@ -157,7 +157,7 @@ Taps::Tap::isRoutableAddress (int address)
 bool
 Taps::Tap::isActive ()
 {
-  if (_state == TAP_ACTIVE)
+  if (_state == active)
     return true;
 
   return false;
@@ -309,9 +309,9 @@ Taps::setSystemRouting (Peers::Peer * peer, networkT allowedNets, char op)
 {
   char route_command[256];
 
-  char gateway[ADDRESS_LEN + 1];
-  char network[ADDRESS_LEN + 1];
-  char netmask[ADDRESS_LEN + 1];
+  char gateway[addressLenght + 1];
+  char network[addressLenght + 1];
+  char netmask[addressLenght + 1];
 
   networkT remoteNets;
 
@@ -327,14 +327,14 @@ Taps::setSystemRouting (Peers::Peer * peer, networkT allowedNets, char op)
 
   for (i = 0; i < allowedNetsCount; i++) {
 
-    inet_ntop(AF_INET, &allowedNets.address[i], gateway, ADDRESS_LEN);
+    inet_ntop(AF_INET, &allowedNets.address[i], gateway, addressLenght);
 
     for (j = 0; j < remoteNetsCount; j++)
       if (!allowedNets.networkName[i].compare(remoteNets.networkName[j])) {
-        inet_ntop(AF_INET, &remoteNets.network[j], network, ADDRESS_LEN);
-        inet_ntop(AF_INET, &remoteNets.netmask[j], netmask, ADDRESS_LEN);
+        inet_ntop(AF_INET, &remoteNets.network[j], network, addressLenght);
+        inet_ntop(AF_INET, &remoteNets.netmask[j], netmask, addressLenght);
 
-        if (op == ADD_ROUTING)
+        if (op == addRouting)
           sprintf(route_command, "route add -net %s netmask %s gw %s", network, netmask, gateway);
         else
           sprintf(route_command, "route del -net %s netmask %s gw %s", network, netmask, gateway);

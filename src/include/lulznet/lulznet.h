@@ -64,24 +64,14 @@
 #ifndef _LNET_LULZNET_H
 #define _LNET_LULZNET_H
 
-#define FALSE   0
-#define TRUE    1
+const bool FAIL = false;
+const bool DONE = true;
 
-#define FAIL    0
-#define DONE    1
+typedef unsigned char uChar;
+typedef unsigned short uShort;
+typedef unsigned int uInt;
 
-#define uChar   unsigned char
-#define uShort  unsigned short
-#define uInt    unsigned int
-
-#define MAX_ACCEPTED_PEERS_CONNECTIONS  4
-#define MAX_CONNECTIONS_TO_PEER         4
-#define MAX_PEERS                       8
-
-#define MAX_TAPS        8
-#define ADDRESS_LEN     16
-
-#define VERSION "0.0.1 [+ssl]"
+#define VERSION "0.1 [+ssl]"
 #define MAX(A,B) ((A)>(B) ? (A) : (B))
 
 /* Show a little help */

@@ -51,7 +51,7 @@ Protocol::RecvBanner (int fd)
 
 }
 
-int
+bool
 Protocol::Server::Handshake (SSL * ssl, HandshakeOptionT * hsOpt)
 {
 
@@ -99,7 +99,7 @@ Protocol::Server::Handshake (SSL * ssl, HandshakeOptionT * hsOpt)
   return DONE;
 }
 
-int
+bool
 Protocol::Client::Handshake (SSL * ssl, HandshakeOptionT * hsOpt)
 {
   char listeningStatus;
@@ -126,7 +126,7 @@ Protocol::Client::Handshake (SSL * ssl, HandshakeOptionT * hsOpt)
   /* we need to know this for routing */
 
   Log::Debug2("Sending listening status");
-  if (Options.Flags() & LISTENING_MODE)
+  if (Options.Flags() & listeningMode)
     listeningStatus = 1;
   else
     listeningStatus = 0;
@@ -155,7 +155,7 @@ Protocol::Client::Handshake (SSL * ssl, HandshakeOptionT * hsOpt)
   return DONE;
 }
 
-int
+bool
 Protocol::Server::LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt)
 {
   int rdLen;
@@ -172,19 +172,19 @@ Protocol::Server::LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt)
   Log::Debug2("Sending user check");
   if (Peers::UserIsConnected((char *) hsOpt->peer_username.c_str())) {
     Log::Error("User is connected");
-    userCheck = USER_CONNECTED;
+    userCheck = userConnected;
     xSSL_write(ssl, &userCheck, 1, "user info");
     return FAIL;
   }
 
   if ((!hsOpt->peer_username.compare(Options.Username()))) {
     Log::Error("User is connected (same as local peer)");
-    userCheck = USER_CONNECTED;
+    userCheck = userConnected;
     xSSL_write(ssl, &userCheck, 1, "user info");
     return FAIL;
   }
 
-  userCheck = USER_NOT_CONNECTED;
+  userCheck = userNotConnected;
   if (!xSSL_write(ssl, &userCheck, 1, "user info"))
     return FAIL;
 
@@ -196,7 +196,7 @@ Protocol::Server::LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt)
   return DONE;
 }
 
-int
+bool
 Protocol::Client::LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt)
 {
   int rdLen;
@@ -210,7 +210,7 @@ Protocol::Client::LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt)
     return FAIL;
 
   xSSL_read(ssl, &userCheck, 1, "user info");
-  if (userCheck == USER_CONNECTED) {
+  if (userCheck == userConnected) {
     Log::Error("user is connected");
     return FAIL;
   }
@@ -226,7 +226,7 @@ Protocol::Client::LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt)
   return DONE;
 }
 
-int
+bool
 Protocol::Server::LulzNetAuth (SSL * ssl, HandshakeOptionT * hsOpt)
 {
 
@@ -258,7 +258,7 @@ Protocol::Server::LulzNetAuth (SSL * ssl, HandshakeOptionT * hsOpt)
   return DONE;
 }
 
-int
+bool
 Protocol::Client::LulzNetAuth (SSL * ssl)
 {
 
@@ -290,8 +290,7 @@ Protocol::Client::LulzNetAuth (SSL * ssl)
   return DONE;
 }
 
-/*TODO: add control to check if network exists on remote peer */
-int
+bool
 Protocol::LulzNetSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
 {
   int i;
@@ -311,9 +310,7 @@ Protocol::LulzNetSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
   if (!xSSL_write(ssl, &netCount, sizeof(int), "network count"))
     return FAIL;
 
-  /* TODO: add max remote peer capabilities */
   for (i = 0; i < netCount; i++) {
-
     Log::Debug2("Sending network name");
     if (!xSSL_write(ssl, (char *) hsOpt->allowedNets.networkName[i].c_str(), hsOpt->allowedNets.networkName[i].length(), "network name"))
       return FAIL;
@@ -334,7 +331,7 @@ Protocol::LulzNetSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
     if (!xSSL_read(ssl, &answer, sizeof(int), "net conflict check"))
       return FAIL;
 
-    if (answer == NETWORK_NOT_ALLOWED) {
+    if (answer == networkNotAllowed) {
       Log::Error("Network %s is not allowed on remote peer", hsOpt->allowedNets.networkName[i].c_str());
       return FAIL;
     }
@@ -344,7 +341,7 @@ Protocol::LulzNetSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
 
 }
 
-int
+bool
 Protocol::LulzNetReciveNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
 {
   int i;
@@ -366,7 +363,7 @@ Protocol::LulzNetReciveNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
     return FAIL;
   }
 
-  for (i = 0; i < netCount && i < MAX_TAPS; i++) {
+  for (i = 0; i < netCount; i++) {
     if (!(rdLen = xSSL_read(ssl, networkName, MAX_NETWORKNAME_LEN, "network name")))
       return FAIL;
 
@@ -390,18 +387,18 @@ Protocol::LulzNetReciveNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
 
     hsOpt->remoteNets.network.push_back(get_ip_address_network(address, netmask));
 
-    answer = NETWORK_NOT_ALLOWED;
+    answer = networkNotAllowed;
 
     for (j = 0; j < hsOpt->allowedNets.networkName.size(); j++)
       if (!hsOpt->allowedNets.networkName[j].compare(hsOpt->remoteNets.networkName.back())) {
-        answer = NETWORK_ALLOWED;
+        answer = networkAllowed;
         break;
       }
 
     if (!xSSL_write(ssl, &answer, sizeof(int), "net conflict check"))
       return FAIL;
 
-    if (answer == NETWORK_NOT_ALLOWED)
+    if (answer == networkNotAllowed)
       return FAIL;
 
     id = Taps::getNetworkId(networkName);
@@ -411,7 +408,7 @@ Protocol::LulzNetReciveNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
   return DONE;
 }
 
-int
+bool
 Protocol::LulzNetSendUserlist (SSL * ssl)
 {
   int i;
@@ -436,7 +433,7 @@ Protocol::LulzNetSendUserlist (SSL * ssl)
   return DONE;
 }
 
-int
+bool
 Protocol::LulzNetReciveUserlist (SSL * ssl, HandshakeOptionT * hsOpt)
 {
   int i;
@@ -449,7 +446,7 @@ Protocol::LulzNetReciveUserlist (SSL * ssl, HandshakeOptionT * hsOpt)
     return FAIL;
 
   /* And recv peers Log::Info */
-  for (i = 0; i < userCount && i < MAX_PEERS; i++) {
+  for (i = 0; i < userCount; i++) {
     if (!(rdLen = xSSL_read(ssl, username, MAX_USERNAME_LEN, "user")))
       return FAIL;
 

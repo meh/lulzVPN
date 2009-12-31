@@ -29,7 +29,6 @@
 
 std::vector < Peers::Peer * >Peers::db;
 pthread_mutex_t Peers::db_mutex;
-
 int Peers::maxFd;
 
 void
@@ -48,7 +47,7 @@ Peers::Peer::Peer(int fd, SSL * ssl, std::string user, int address, networkT nl)
   _fd = fd;
   _ssl = ssl;
 
-  _state = PEER_ACTIVE;
+  _state = active;
 
   _address = address;
   _user = user;
@@ -83,10 +82,9 @@ bool
 Peers::Peer::operator>> (Network::Packet * packet)
 {
   if (!(packet->length = xSSL_read(_ssl, packet->buffer, 4096, "forwarding data"))) {
-    _state = PEER_CLOSING;
+    _state = closing;
     return FAIL;
   }
-
 
   Log::Debug3("Read %d bytes packet from peer %s", packet->length, _user.c_str());
   return DONE;
@@ -96,10 +94,9 @@ bool
 Peers::Peer::operator<< (Network::Packet * packet)
 {
   if (!xSSL_write(_ssl, packet->buffer, packet->length + 2, "forwarding data")) {
-    _state = PEER_CLOSING;
+    _state = closing;
     return FAIL;
   }
-
 
   Log::Debug3("\tForwarded to peer %s", _user.c_str());
   return DONE;
@@ -119,7 +116,7 @@ Peers::Peer::isRoutableAddress (int address)
 bool
 Peers::Peer::isActive ()
 {
-  if (_state == PEER_ACTIVE)
+  if (_state == active)
     return true;
 
   return false;
@@ -137,8 +134,9 @@ Peers::Peer::isReadyToRead (fd_set * rdSel)
 void
 Peers::Peer::setClosing ()
 {
-  _state = PEER_CLOSING;
+     _state = closing;
 }
+
 
 int
 Peers::Peer::fd ()
@@ -170,19 +168,19 @@ void
 Peers::FreeNonActive ()
 {
   uInt i;
-  std::vector < Peers::Peer * >::iterator it;
+  std::vector<Peers::Peer*>::iterator it;
 
   Log::Debug2("freeing non active fd");
   for (i = 0; i < db.size(); i++)
     if (!db[i]->isActive()) {
-      Taps::setSystemRouting(db[i], Taps::getUserAllowedNetworks(db[i]->user()), DEL_ROUTING);
+      Taps::setSystemRouting(db[i], Taps::getUserAllowedNetworks(db[i]->user()), delRouting);
       delete db[i];
 
       it = db.begin();
       it += i;
       db.erase(it);
-      SetMaxFd();
     }
+  SetMaxFd();
 }
 
 void
@@ -190,11 +188,11 @@ Peers::Peer::Disassociate ()
 {
   char packet[3];
 
-  packet[0] = CONTROL_PACKET;
-  packet[1] = CLOSE_CONNECTION;
+  packet[0] = controlPacket;
+  packet[1] = closeConnection;
   xSSL_write(_ssl, packet, 2, "disconnection packet");
 
-  Taps::setSystemRouting(this, Taps::getUserAllowedNetworks(_user), DEL_ROUTING);
+  Taps::setSystemRouting(this, Taps::getUserAllowedNetworks(_user), delRouting);
   delete this;
 }
 
@@ -206,7 +204,7 @@ Peers::UserIsConnected (std::string user)
   for (i = 0; i < db.size(); i++)
     if (db[i]->isActive())
       if (!db[i]->user().compare(user))
-        return TRUE;
+        return true;
 
-  return FALSE;
+  return false;
 }

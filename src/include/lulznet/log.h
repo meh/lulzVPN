@@ -25,13 +25,13 @@
 namespace Log
 {
 
-#define INFO            1
-#define DEBUG_1         2
-#define DEBUG_2         3
-#define DEBUG_3         4
-#define ERROR           5
-#define FATAL           6
-#define MAXLOGSIZE      512
+const int info = 1;
+const int debug1 = 2;
+const int debug2 = 3;
+const int debug3 = 4;
+const int error = 5;
+const int fatal = 6;
+const int MAXLOGSIZE = 512;
 
 extern pthread_mutex_t mutex;
 

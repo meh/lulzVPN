@@ -1,4 +1,4 @@
-/*            *
+/*
  *"networking.c" (C) blawl ( j[dot] segf4ult[at] gmail[dot] com )
  *
  *lulzNet is free software; you can redistribute it and / or modify
@@ -33,7 +33,6 @@ SSL_CTX *Network::Server::sslCTX;
 
 fd_set Network::master;
 pthread_t Network::Server::select_t;
-int Network::freeFdFlag;
 
 void
 Network::Server::sslInit ()
@@ -65,7 +64,7 @@ Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
   int peerSock;
   int on = 1;
   SSL *peerSsl;
-  char peer_address[ADDRESS_LEN + 1];
+  char peer_address[addressLenght + 1];
   struct sockaddr_in server;
   struct sockaddr_in peer;
   socklen_t addrSize;
@@ -84,12 +83,12 @@ Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
   server.sin_addr.s_addr = INADDR_ANY;   /*(server_opt->binding_address); */
   memset(&(server.sin_zero), '\0', 8);
 
-  Log::Debug2("Binding port %d", PORT);
+  Log::Debug2("Binding port %d", port);
   if (bind(listenSock, (struct sockaddr *) &server, sizeof(struct sockaddr)) == -1)
     Log::Fatal("cannot binding to socket");
 
   Log::Debug1("Listening");
-  if (listen(listenSock, MAX_ACCEPTED_PEERS_CONNECTIONS) == -1)
+  if (listen(listenSock, maxAcceptedConnections) == -1)
     Log::Fatal("cannot listen");
 
   addrSize = sizeof(struct sockaddr_in);
@@ -109,12 +108,12 @@ Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
           pthread_mutex_lock(&Peers::db_mutex);
 
           newPeer = new Peers::Peer(peerSock, peerSsl, hsOpt->peer_username, peer.sin_addr.s_addr, hsOpt->remoteNets);
-          inet_ntop(AF_INET, &peer.sin_addr.s_addr, peer_address, ADDRESS_LEN);
+          inet_ntop(AF_INET, &peer.sin_addr.s_addr, peer_address, addressLenght);
           Log::Info("Connection accepted from %s (fd %d)", peer_address, peerSock);
 
           /* Set routing */
           Log::Debug2("Setting Routing");
-          Taps::setSystemRouting(newPeer, hsOpt->allowedNets, ADD_ROUTING);
+          Taps::setSystemRouting(newPeer, hsOpt->allowedNets, addRouting);
 
           pthread_mutex_unlock(&Peers::db_mutex);
 
@@ -179,7 +178,7 @@ Network::Client::PeerConnect (int address, short port)
   Log::Debug2("peer sock (fd %d) created", peerSock);
 
   peer.sin_family = AF_INET;
-  peer.sin_port = htons(port ? port : PORT);
+  peer.sin_port = htons(port ? port : port);
   peer.sin_addr.s_addr = address;
   memset(&(peer.sin_zero), '\0', 8);
 
@@ -201,7 +200,7 @@ Network::Client::PeerConnect (int address, short port)
           Log::Info("Connected");
 
           Log::Debug2("Setting Routing");
-          Taps::setSystemRouting(newPeer, hsOpt.allowedNets, ADD_ROUTING);
+          Taps::setSystemRouting(newPeer, hsOpt.allowedNets, addRouting);
 
           pthread_mutex_unlock(&Peers::db_mutex);
 
@@ -238,9 +237,13 @@ Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
 {
   Packet packet;
   int ret;
+  int freeFdFlag;
   fd_set readSelect;
   int maxFd;
   uInt i;
+
+  Peers::Peer *peer;
+  Taps::Tap *tap;
 
   int dont_close_flag = 1;
   while (dont_close_flag) {
@@ -253,41 +256,73 @@ Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
     ret = select(maxFd + 1, &readSelect, NULL, NULL, NULL);
 
     pthread_mutex_lock(&Peers::db_mutex);
-    if (ret == -1)
+    if (ret == -1) {
       Log::Fatal("Select Log::Error");
+    }
     else {
-      /* 0,1 and 2 are stdin-out-err and we don't care about them */
-      for (i = 0; i < Peers::db.size(); i++)
-        if (Peers::db[i]->isActive()
-            && Peers::db[i]->isReadyToRead(&readSelect)) {
-          /* Read from it */
-          if (*Peers::db[i] >> &packet) {
-            switch (packet.buffer[0]) {
-            case DATA_PACKET:
-              Network::Server::ForwardToTap(&packet, Peers::db[i]);
-              break;
+      /*
+       * Wat corner: how it works.
+       * - cycle all Peers,
+       * - check if a peer is ready to read according to select()
+       * - check if peer is active (active flag set)
+       * - read from peer data
+       * - analyze packet header (first byte)
+       * - if it's DATA PACKET forward to the tap device
+       * - else if it's CONTROL PACKET parse the message
+       */
+      for (i = 0; i < Peers::db.size(); i++) {
+        peer = Peers::db[i];
 
-            case CONTROL_PACKET:
-              if (packet.buffer[1] == CLOSE_CONNECTION) {
-                Log::Debug3("control_packet: closing connection");
-                freeFdFlag = 1;
-                Peers::db[i]->setClosing();
+        if(peer->isReadyToRead(&readSelect)) {
+          if (peer->isActive()) {
+            if (*peer >> &packet) {
+              switch (packet.buffer[0]) {
+              case dataPacket:
+                Network::Server::ForwardToTap(&packet, peer);
+                break;
+              case controlPacket:
+                if (packet.buffer[1] == closeConnection) {
+                  Log::Debug3("control_packet: closing connection");
+                  freeFdFlag = 1;
+                  peer->setClosing();
+                }
+                else {
+                  Log::Error("Unknow control flag");
+                }
+                break;
               }
-              else
-                Log::Error("Unknow control flag");
-              break;
+            }
+            else {
+              freeFdFlag = true;
             }
           }
-          else
-            freeFdFlag = TRUE;
         }
-      if (freeFdFlag)
+      }
+
+      /* Check if is present some non active peer */
+      if (freeFdFlag) {
         Peers::FreeNonActive();
-      for (i = 0; i < Taps::db.size(); i++)
-        if (Taps::db[i]->isActive()
-            && Taps::db[i]->isReadyToRead(&readSelect))
-          if (*Taps::db[i] >> &packet)
-            Network::Server::ForwardToPeer(&packet, (uChar) i);
+      }
+
+      /*
+       * Wat corner: how it works.
+       * - cycle all Taps,
+       * - check if a tap is ready to read according to select()
+       * - check if tap is active (active flag set)
+       * - read from tap data
+       * - forward to the peers
+       */
+      for (i = 0; i < Taps::db.size(); i++) {
+        tap = Taps::db[i];
+
+        if (tap->isReadyToRead(&readSelect)) {
+          if (tap->isActive()) {
+            if (*tap >> &packet) {
+              Network::Server::ForwardToPeer(&packet, (uChar) i);
+            }
+          }
+        }
+      }
     }
 
     /* When the cycle is end functions can modify the fd_db structure */
@@ -302,10 +337,12 @@ Network::Server::RestartSelectLoop ()
 
   Log::Debug2("Restarting select()");
   if (Network::Server::select_t != (pthread_t) NULL) {
-    if (pthread_cancel(Network::Server::select_t))
+    if (pthread_cancel(Network::Server::select_t)) {
       Log::Fatal("Cannot cancel select thread");
-    else
+    }
+    else {
       pthread_create(&Network::Server::select_t, NULL, Network::Server::SelectLoop, NULL);
+    }
   }
 }
 
@@ -316,16 +353,33 @@ Network::Server::ForwardToTap (Network::Packet * packet, Peers::Peer * src)
   uChar i;
   uInt j;
   int nAddr;
+  Taps::Tap *tap;
+
+  /*
+   * Wat corner: how it works.
+   * - parse packet and get destination ip
+   * - parse packet header and get local tap id (second byte)
+   * - check if tap is active
+   * - check if destination address is routable to tap
+   * - check if remote peer is allowed to send packet to tap device
+   *   (compare local id of remote peer with local id in the peer allowed networks)
+   * - write packet
+   */
 
   nAddr = PacketInspection::GetDestinationIp(packet);
   i = packet->buffer[1];
-  if (Taps::db[i]->isActive())
-    if (Taps::db[i]->isRoutableAddress(nAddr))
-      for (j = 0; j < src->nl().localId.size(); j++)
+  tap = Taps::db[i];
+
+  if (tap->isActive()) {
+    if (tap->isRoutableAddress(nAddr)) {
+      for (j = 0; j < src->nl().localId.size(); j++) {
         if (src->nl().localId[j] == i) {
-          *Taps::db[i] << packet;
+          *tap << packet;
           break;
         }
+      }
+    }
+  }
   Log::Dump(packet->buffer, packet->length);
 }
 
@@ -336,17 +390,35 @@ Network::Server::ForwardToPeer (Network::Packet * packet, uChar localId)
   uInt i;
   uInt j;
   int nAddr;
+  Peers::Peer *peer;
+
+  /*
+   * Wat corner: how it works.
+   * - parse packet and get destination ip
+   * - set first byte to DATA PACKET
+   * - cycle all peers
+   * - check if peer is active
+   * - check if destination ip is routable to peer
+   * - check if remote peer is allowed to recv packet from local tap device
+   * - write packet
+   */
 
   nAddr = PacketInspection::GetDestinationIp(packet);
-  packet->buffer[0] = DATA_PACKET;
-  for (i = 0; i < Peers::db.size(); i++)
-    if (Peers::db[i]->isActive())
-      if (Peers::db[i]->isRoutableAddress(nAddr))
-        for (j = 0; j < Peers::db[i]->nl().localId.size(); i++)
-          if (Peers::db[i]->nl().localId[j] == localId) {
-            *Peers::db[i] << packet;
+  packet->buffer[0] = dataPacket;
+  packet->buffer[1] = localId;
+  for (i = 0; i < Peers::db.size(); i++) {
+    peer = Peers::db[i];
+    if (peer->isActive()) {
+      if (peer->isRoutableAddress(nAddr)) {
+        for (j = 0; j < peer->nl().localId.size(); j++) {
+          if (peer->nl().localId[j] == localId) {
+            *peer << packet;
             break;
           }
+        }
+      }
+    }
+  }
   Log::Dump(packet->buffer, packet->length);
 }
 
@@ -354,23 +426,20 @@ int
 Network::VerifySslCert (SSL * ssl)
 {
   char *fingerprint;
-  //char answer;
+  char answer = 'y';
   if (SSL_get_verify_result(ssl) != X509_V_OK) {
     fingerprint = Auth::Crypt::GetFingerprintFromCtx(ssl);
     std::cout << "Could not verify SSL servers certificate (self signed)." << std::endl;
     std::cout << "Fingerprint is: " << fingerprint << std::endl;
     std::cout << "Do you want to continue? [y|n]: y\n";
-    //    std::cin >> answer;
+//    std::cin >> answer;
 
     delete[] fingerprint;
 
-    //      if (answer == 'y' || answer == 'Y')
-    return TRUE;
-    //      else
-    //      return FALSE;
+    return ((answer == 'y') ? true : false);
   }
 
-  return TRUE;
+  return true;
 }
 
 void *
@@ -386,6 +455,6 @@ Network::CheckConnectionsQueue (void *arg)
   for (i = 0; i < userLs->user.size(); i++)
     /* check if we're connected to peer */
     if (!Peers::UserIsConnected(userLs->user[i]))
-      Network::Client::PeerConnect(userLs->address[i], PORT);
+      Network::Client::PeerConnect(userLs->address[i], port);
   return NULL;
 }

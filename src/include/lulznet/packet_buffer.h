@@ -23,9 +23,9 @@
 #define LNET_PACKET_BUFFER
 
 /* Header length */
-#define PCKT_HDR_LEN 1
+const unsigned int PCKT_HDR_LEN = 1;
 /* Payload length */
-#define PCKT_PLD_LEN 4096
+const unsigned int PCKT_PLD_LEN = 4096;
 
 /* Total packet length */
 #define PCKT_TOT_LEN PCKT_HDR_LEN + PCKT_PLD_LEN

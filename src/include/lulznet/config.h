@@ -16,18 +16,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-#include <iostream>
-#include <string>
-#include <vector>
 
 #ifndef _LNET_CONFIG_H
 #define _LNET_CONFIG_H
 
 #define CONFIG_FILE "/etc/lulznet/config.xml"
 
-#define LISTENING_MODE 0x01
-#define AUTH_SERVICE 0x02
-#define INTERACTIVE_MODE 0x04
+const char listeningMode = 0x01;
+const char interactiveMode = 0x02;
 
 struct TapDeviceT
 {
@@ -88,7 +84,7 @@ public:
 /* parse console args */
 void ParseArgs (int argc, char **argv);
 /* parse config file */
-void ParseConfigFile (char *filename);
+void ParseConfigFile (std::string filename);
 
 /* Xml Parser */
 void ParseConfig (xmlDocPtr doc, xmlNodePtr curNode);
