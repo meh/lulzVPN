@@ -88,10 +88,16 @@ bool LulzNetAuth (SSL * ssl);
 }
 
 /* Networks exchange */
+bool LulzNetSendNetwork (SSL * ssl, networkT net);
+bool LulzNetRecvNetwork (SSL *ssl, networkT *net, std::vector<networkT> allowedNets);
+
 bool LulzNetSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt);
 bool LulzNetReciveNetworks (SSL * ssl, HandshakeOptionT * hsOpt);
 
 /* User exchange */
+bool LulzNetSendUser (SSL *ssl, userT user);
+bool LulzNetRecvUser (SSL *ssl, userT *user);
+
 bool LulzNetSendUserlist (SSL * ssl);
 bool LulzNetReciveUserlist (SSL * ssl, HandshakeOptionT * hsOpt);
 
