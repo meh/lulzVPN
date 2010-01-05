@@ -3,7 +3,7 @@ have_readline=no
 have_ssl=no
 
 AC_PREREQ([2.63])
-AC_INIT([lulznet], [0.0.1])
+AC_INIT([lulznet], [0.1.1])
 AC_CONFIG_SRCDIR([src/main.cpp])
 AC_CONFIG_HEADERS([src/include/lulznet/_config.h])
 AC_PROG_CC
@@ -69,13 +69,7 @@ if test "x${have_ssl}" = xno; then
 	(exit 1); exit 1;
 fi
 
-if [[ ! -e /dev/net/tun ]]; then
-	echo "------------------------------------------"
-	echo "Cannot find TUN/TAP kernel support."
-	echo "Stopping...";
-	echo "------------------------------------------"
-	(exit 1); exit 1;
-fi
+#TODO: parse kernel config
 
 AC_C_INLINE
 AC_TYPE_SIZE_T
@@ -87,4 +81,4 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile])
 AC_OUTPUT
 
-echo "Cross fingers and type YES I WANT TO DO IT FOR TEH LULZ (or just make)"
+echo "Cross fingers and type make"

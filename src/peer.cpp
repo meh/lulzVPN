@@ -34,15 +34,15 @@ int Peers::maxFd;
 void
 Peers::SetMaxFd ()
 {
-  uInt i;
+  std::vector<Peer *>::iterator peerIt;
   maxFd = 0;
 
-  for (i = 0; i < db.size(); i++)
-    if (db[i]->fd() > maxFd)
-      maxFd = db[i]->fd();
+  for (peerIt = db.begin(); peerIt < db.end(); peerIt++)
+    if ((*peerIt)->fd() > maxFd)
+      maxFd = (*peerIt)->fd();
 }
 
-Peers::Peer::Peer(int fd, SSL * ssl, std::string user, int address, networkT nl)
+Peers::Peer::Peer(int fd, SSL * ssl, std::string user, int address, std::vector<networkT> nl)
 {
   _fd = fd;
   _ssl = ssl;
@@ -105,9 +105,10 @@ Peers::Peer::operator<< (Network::Packet * packet)
 bool
 Peers::Peer::isRoutableAddress (int address)
 {
-  uInt i;
-  for (i = 0; i < _nl.networkName.size(); i++)
-    if (_nl.network[i] == get_ip_address_network(address, _nl.netmask[i]))
+  std::vector<networkT>::iterator netIt;
+
+  for (netIt = _nl.begin(); netIt < _nl.end(); netIt++)
+    if ((*netIt).network == get_ip_address_network(address, (*netIt).netmask))
       return true;
 
   return false;
@@ -157,7 +158,7 @@ Peers::Peer::address ()
   return _address;
 }
 
-networkT
+std::vector<networkT>
 Peers::Peer::nl ()
 {
   return _nl;
@@ -167,17 +168,14 @@ Peers::Peer::nl ()
 void
 Peers::FreeNonActive ()
 {
-  uInt i;
-  std::vector<Peers::Peer*>::iterator it;
+  std::vector<Peer*>::iterator it;
 
   Log::Debug2("freeing non active fd");
-  for (i = 0; i < db.size(); i++)
-    if (!db[i]->isActive()) {
-      Taps::setSystemRouting(db[i], Taps::getUserAllowedNetworks(db[i]->user()), delRouting);
-      delete db[i];
+  for (it = db.begin(); it < db.end(); it++)
+    if (!(*it)->isActive()) {
+      Taps::setSystemRouting((*it), Taps::getUserAllowedNetworks((*it)->user()), delRouting);
 
-      it = db.begin();
-      it += i;
+      delete *it;
       db.erase(it);
     }
   SetMaxFd();
@@ -199,11 +197,11 @@ Peers::Peer::Disassociate ()
 int
 Peers::UserIsConnected (std::string user)
 {
-  unsigned int i;
+  std::vector<Peer *>::iterator peerIt;
 
-  for (i = 0; i < db.size(); i++)
-    if (db[i]->isActive())
-      if (!db[i]->user().compare(user))
+  for (peerIt = db.begin(); peerIt < db.end(); peerIt++)
+    if ((*peerIt)->isActive())
+      if (!(*peerIt)->user().compare(user))
         return true;
 
   return false;

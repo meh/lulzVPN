@@ -74,11 +74,8 @@ void Password (std::string password);
 int DebugLevel ();
 #endif
 
-uInt TapDevicesCount();
-TapDeviceT TapDevice(int i);
-
-uInt UserCredentialsCount();
-UserCredentialT UserCredentials(int i);
+std::vector<TapDeviceT> TapDevices();
+std::vector<UserCredentialT> UserCredentials();
 
 public:
 /* parse console args */

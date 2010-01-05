@@ -90,28 +90,16 @@ Config::DebugLevel ()
 }
 #endif
 
-uInt
-Config::TapDevicesCount ()
+std::vector<TapDeviceT>
+Config::TapDevices ()
 {
-  return _TapDevices.size();
+  return _TapDevices;
 }
 
-TapDeviceT
-Config::TapDevice (int i)
+std::vector<UserCredentialT>
+Config::UserCredentials ()
 {
-  return _TapDevices[i];
-}
-
-uInt
-Config::UserCredentialsCount ()
-{
-  return _UserCredentials.size();
-}
-
-UserCredentialT
-Config::UserCredentials (int i)
-{
-  return _UserCredentials[i];
+  return _UserCredentials;
 }
 
 void

@@ -55,31 +55,34 @@ Shell::PeerPreconnect (Cmd * cmd)
 void
 Shell::PeerList ()
 {
-  uInt i;
-  uInt j;
+  uInt netCount;
   int nAddr;
   int n_vAddress;
   char pAddr[addressLenght + 1];
   char p_vAddress[addressLenght + 1];
   int cidrNetmask;
-  Peers::Peer * peer;
 
-  for (i = 0; i < Peers::db.size(); i++) {
-    peer = Peers::db[i];
+  std::vector<Peers::Peer *>::iterator peerIt;
+  std::vector<networkT> nets;
+  std::vector<networkT>::iterator netIt;
 
-    nAddr = peer->address();
+  for (peerIt = Peers::db.begin(); peerIt < Peers::db.end(); peerIt++) {
+
+    nAddr = (*peerIt)->address();
     inet_ntop(AF_INET, &nAddr, pAddr, addressLenght);
 
-    std::cout << peer->user() << "\taddr: " << pAddr << " networks: " << peer->nl().networkName.size() << std::endl;
+    std::cout << (*peerIt)->user() << "\taddr: " << pAddr << " networks: " << (*peerIt)->nl().size() << std::endl;
 
-    for (j = 0; j < peer->nl().networkName.size(); j++) {
-      n_vAddress = peer->nl().address[j];
+    netCount = 1;
+    nets = (*peerIt)->nl();
+    for (netIt = nets.begin(); netIt < nets.end(); netIt++, netCount++) {
+      n_vAddress = (*netIt).address;
       inet_ntop(AF_INET, &n_vAddress, p_vAddress, addressLenght);
 
-      cidrNetmask = Taps::getCidrNotation(ntohl(peer->nl().netmask[i]));
+      cidrNetmask = Taps::getCidrNotation(ntohl((*netIt).netmask));
 
-      std::cout << "\t\t[" << j + 1 << "] addr: " << p_vAddress << "/" << cidrNetmask;
-      std::cout << " lid: " << (int) peer->nl().localId[j] << " rid: " << (int) peer->nl().remoteId[j] << std::endl;
+      std::cout << "\t\t[" << netCount << "] addr: " << p_vAddress << "/" << cidrNetmask;
+      std::cout << " lid: " << (int) (*netIt).localId << " rid: " << (int) (*netIt).remoteId << std::endl;
     }
   }
 }
@@ -87,20 +90,17 @@ Shell::PeerList ()
 void
 Shell::PeerKill (Cmd * cmd)
 {
-  uInt i;
-  std::vector < Peers::Peer * >::iterator it;
+  std::vector < Peers::Peer * >::iterator peerIt;
 
   if (cmd->argc != 2)
     std::cout << "Usage: peer kill peer_name" << std::endl;
   else {
-    for (i = 0; i < Peers::db.size(); i++)
-      if (!Peers::db[i]->user().compare(cmd->argv[1])) {
-        if (Peers::db[i]->isActive()) {
-          Peers::db[i]->Disassociate();
+    for (peerIt = Peers::db.begin(); peerIt < Peers::db.end(); peerIt++)
+      if (!(*peerIt)->user().compare(cmd->argv[1])) {
+        if ((*peerIt)->isActive()) {
+          (*peerIt)->Disassociate();
 
-          it = Peers::db.begin();
-          it += i;
-          Peers::db.erase(it);
+          Peers::db.erase(peerIt);
           Peers::SetMaxFd();
         }
         else
@@ -115,38 +115,38 @@ Shell::PeerKill (Cmd * cmd)
 void
 Shell::TapList ()
 {
-  uInt i;
   int nAddr;
   int nNetm;
   int cidr;
   char pAddr[addressLenght + 1];
-  Taps::Tap * tap;
+  std::vector<Taps::Tap *>::iterator tapIt;
 
-  for (i = 0; i < Taps::db.size(); i++) {
-    tap = Taps::db[i];
+  for (tapIt = Taps::db.begin(); tapIt < Taps::db.end(); tapIt++) {
 
-    nAddr = tap->address();
+    nAddr = (*tapIt)->address();
     inet_ntop(AF_INET, &nAddr, pAddr, addressLenght);
 
-    nNetm = tap->netmask();
+    nNetm = (*tapIt)->netmask();
     cidr = Taps::getCidrNotation(ntohl(nNetm));
 
-    std::cout << tap->device() << "\taddr: " << pAddr << "/" << cidr << std::endl;
+    std::cout << (*tapIt)->device() << "\taddr: " << pAddr << "/" << cidr << std::endl;
   }
 }
 
 void
 Shell::CredList ()
 {
-  uInt i;
-  unsigned int j;
+  std::vector<UserCredentialT> uc;
+  std::vector<UserCredentialT>::iterator ucIt;
+  std::vector<std::string>::iterator netIt;
 
-  for (i = 0; i < Options.UserCredentialsCount(); i++) {
-    std::cout << Options.UserCredentials(i).Name << std::endl;
-    std::cout << "\tHash: " << Options.UserCredentials(i).Hash << std::endl;
+  uc = Options.UserCredentials();
+  for (ucIt = uc.begin(); ucIt < uc.end(); ucIt++) {
+    std::cout << (*ucIt).Name << std::endl;
+    std::cout << "\tHash: " << (*ucIt).Hash << std::endl;
     std::cout << "\tAllowed Networks: ";
-    for (j = 0; j < Options.UserCredentials(i).AllowedNetworks.size(); j++)
-      std::cout << Options.UserCredentials(i).AllowedNetworks[j] << " ";
+    for (netIt =  (*ucIt).AllowedNetworks.begin(); netIt < (*ucIt).AllowedNetworks.end(); netIt++)
+      std::cout << (*netIt) << " ";
     std::cout << std::endl;
   }
 }

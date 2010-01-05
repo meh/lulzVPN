@@ -80,11 +80,13 @@ std::string
 Auth::GetHash (std::string RequestedUser)
 {
   std::string Hash;
-  uInt i;
+  std::vector<UserCredentialT> uc;
+  std::vector<UserCredentialT>::iterator ucIt;
 
-  for (i = 0; i < Options.UserCredentialsCount(); i++)
-    if (!Options.UserCredentials(i).Name.compare(RequestedUser))
-      return Options.UserCredentials(i).Hash;
+  uc = Options.UserCredentials();
+  for (ucIt = uc.begin(); ucIt < uc.end(); ucIt++)
+    if (!(*ucIt).Name.compare(RequestedUser))
+      return (*ucIt).Hash;
 
   Hash.clear();
   return Hash;

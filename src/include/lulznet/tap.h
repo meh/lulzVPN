@@ -39,6 +39,7 @@ class Tap
 private:
 int _fd;
 char _state;
+char _id;
 std::string _device;
 std::string _networkName;
 
@@ -60,6 +61,7 @@ void showInfo();
 
 public:
 int fd ();
+uChar id ();
 std::string device ();
 std::string networkName ();
 int address ();
@@ -82,7 +84,7 @@ Tap *get_fd_related (int fd);
 /* Set address of tap device */
 int configureDevice (std::string device, std::string address, std::string netmask);
 
-void setSystemRouting (Peers::Peer * peer, networkT allowedNets, char op);
+void setSystemRouting (Peers::Peer * peer, std::vector<networkT> allowedNets, char op);
 
 int getDefaultNetmask (int address);
 
@@ -90,7 +92,7 @@ int getCidrNotation(int netmask);
 
 #define get_ip_address_network(address, netmask) ((address) & (netmask))
 
-networkT getUserAllowedNetworks (std::string user);
+std::vector<networkT> getUserAllowedNetworks (std::string user);
 
 uChar getNetworkId(std::string networkName);
 }

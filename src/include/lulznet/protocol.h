@@ -40,29 +40,29 @@ const char closing = 1;
 
 typedef struct
 {
-  std::vector<std::string> user;
-  std::vector<int> address;
+  std::string user;
+  int address;
 } userT;
 
 typedef struct
 {
-  std::vector<std::string> networkName;
-  std::vector<uChar> remoteId;
-  std::vector<uChar> localId;
+  std::string networkName;
+  uChar remoteId;
+  uChar localId;
 
-  std::vector<int> address;
-  std::vector<int> netmask;
-  std::vector<int> network;
+  int address;
+  int netmask;
+  int network;
 
 } networkT;
 
 typedef struct
 {
   std::string peer_username;
-  userT userLs;
+  std::vector<userT> userLs;
 
-  networkT remoteNets;
-  networkT allowedNets;
+  std::vector<networkT> remoteNets;
+  std::vector<networkT> allowedNets;
 } HandshakeOptionT;
 
 namespace Protocol
@@ -96,6 +96,6 @@ bool LulzNetSendUserlist (SSL * ssl);
 bool LulzNetReciveUserlist (SSL * ssl, HandshakeOptionT * hsOpt);
 
 /* Return a list with all the users connected */
-userT GetUserlist ();
+std::vector<userT> GetUserlist ();
 }
 #endif

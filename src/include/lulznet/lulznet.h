@@ -71,7 +71,6 @@ typedef unsigned char uChar;
 typedef unsigned short uShort;
 typedef unsigned int uInt;
 
-#define VERSION "0.1 [+ssl]"
 #define MAX(A,B) ((A)>(B) ? (A) : (B))
 
 /* Show a little help */

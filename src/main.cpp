@@ -35,12 +35,13 @@ main (int argc, char *argv[])
 {
 
   int address;
-  uInt i;
   pthread_t serverT;            /* Listening thread */
+  std::vector<TapDeviceT> tapDevs;
+  std::vector<TapDeviceT>::iterator tapIt;
 
   /* Welcome!1!1ONE */
   std::cout << "Welcome to lulzNet ¯\\_(0_o)_/¯ (lulz p2p virtual priv8 net)" << std::endl;
-  std::cout << "Version: " << VERSION << std::endl;
+  std::cout << "Version: " << PACKAGE_VERSION << std::endl;
 
   /* Config Parsing */
   Options.ParseConfigFile(CONFIG_FILE);
@@ -54,9 +55,10 @@ main (int argc, char *argv[])
   /* initialize db and other stuff */
   LulznetInit();
 
-  for (i = 0; i < Options.TapDevicesCount(); i++)
-    /* ??? black magic (don't know) */
-    new Taps::Tap(Options.TapDevice(i));
+  /* ??? black magic (don't know) */
+  tapDevs = Options.TapDevices();
+  for (tapIt = tapDevs.begin(); tapIt < tapDevs.end(); tapIt++)
+    new Taps::Tap(*tapIt);
 
   /* Prompt for password if no ones is specified in config file */
   if (Options.Password().empty())
@@ -135,15 +137,15 @@ help ()
 void
 LulznetExit ()
 {
-  uInt i;
+  std::vector<Peers::Peer *>::iterator peerIt;
 
   pthread_mutex_lock(&Peers::db_mutex);
   if (Network::Server::select_t != (pthread_t) NULL)
     pthread_cancel(Network::Server::select_t);
 
   Log::Info("Closing lulznet");
-  for (i = 0; i < Peers::db.size(); i++)
-    Peers::db[i]->Disassociate();
+  for (peerIt = Peers::db.begin(); peerIt < Peers::db.end(); peerIt++)
+    (*peerIt)->Disassociate();
 
   exit(0);
 }

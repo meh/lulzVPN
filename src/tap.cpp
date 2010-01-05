@@ -35,13 +35,12 @@ int Taps::maxFd;
 void
 Taps::SetMaxFd ()
 {
-
-  uInt i;
+  std::vector<Tap *>::iterator tapIt;
   maxFd = 0;
 
-  for (i = 0; i < db.size(); i++)
-    if (db[i]->fd() > maxFd)
-      maxFd = db[i]->fd();
+  for (tapIt = db.begin(); tapIt < db.end(); tapIt++)
+    if ((*tapIt)->fd() > maxFd)
+      maxFd = (*tapIt)->fd();
 }
 
 int
@@ -89,6 +88,7 @@ Taps::Tap::Tap(TapDeviceT TapOpt)
 
   _fd = alloc(TapOpt.networkName, &device);
   _state = active;
+  _id = db.size();
   _device = device;
   _networkName = TapOpt.networkName;
   _address = n_address;
@@ -184,6 +184,12 @@ Taps::Tap::fd ()
   return _fd;
 }
 
+uChar
+Taps::Tap::id () 
+{
+  return _id;
+}
+
 int
 Taps::Tap::address ()
 {
@@ -216,19 +222,18 @@ void
 Taps::FreeNonActive ()
 {
 
-  uInt i;
-  std::vector < Taps::Tap * >::iterator it;
+  std::vector < Taps::Tap * >::iterator tapIt;
 
-  for (i = 0; i < db.size(); i++)
-    if (!db[i]->isActive()) {
-      delete db[i];
-      db[i] = NULL;
+  Log::Debug2("freeing non active fd");
+  for (tapIt = db.begin(); tapIt < db.end(); tapIt++)
+    if (!(*tapIt)->isActive()) {
+      /* Remove network from peer */
+      /* Send network remove packet to other peer */
 
-      it = db.begin();
-      it += i;
-      db.erase(it);
-      SetMaxFd();
+      delete *tapIt;
+      db.erase(tapIt);
     }
+  SetMaxFd();
 }
 
 int
@@ -277,27 +282,32 @@ Taps::configureDevice (std::string device, std::string address, std::string netm
   return 1;
 }
 
-networkT
+std::vector<networkT>
 Taps::getUserAllowedNetworks (std::string user)
 {
-  uInt i;
-  uInt j;
-  uInt k;
-  networkT nl;
+  std::vector<networkT> nl;
+  std::vector<Tap *>::iterator tapIt1;
+  std::vector<std::string>::iterator netIt;
+  std::vector<UserCredentialT> uc;
+  std::vector<UserCredentialT>::iterator ucIt;
+  networkT net;
 
   /* Get current user config */
-  for (i = 0; i < Options.UserCredentialsCount(); i++)
-    if (!Options.UserCredentials(i).Name.compare(user))
+  uc = Options.UserCredentials();
+  for (ucIt = uc.begin(); ucIt < uc.end(); ucIt++)
+    if (!(*ucIt).Name.compare(user))
       break;
 
   /* For each network check if it is allowed in the AllowedNetworks list */
-  for (j = 0; j < db.size(); j++)
-    for (k = 0; k < Options.UserCredentials(i).AllowedNetworks.size(); k++)
-      if (!Options.UserCredentials(i).AllowedNetworks[k].compare(db[j]->networkName())) {
-        nl.networkName.push_back(db[j]->networkName());
-        nl.remoteId.push_back((uChar) j);
-        nl.address.push_back(db[j]->address());
-        nl.netmask.push_back(db[j]->netmask());
+  for (tapIt1 = db.begin(); tapIt1 < db.end(); tapIt1++)
+    for (netIt = (*ucIt).AllowedNetworks.begin(); netIt < (*ucIt).AllowedNetworks.end(); netIt++)
+      if (!(*netIt).compare((*tapIt1)->networkName())) {
+        net.networkName = (*tapIt1)->networkName();
+        net.remoteId = (*tapIt1)->id();
+        net.address = (*tapIt1)->address();
+        net.netmask = (*tapIt1)->netmask();
+
+	nl.push_back(net);
         break;
       }
 
@@ -305,7 +315,7 @@ Taps::getUserAllowedNetworks (std::string user)
 }
 
 void
-Taps::setSystemRouting (Peers::Peer * peer, networkT allowedNets, char op)
+Taps::setSystemRouting (Peers::Peer * peer, std::vector<networkT> allowedNets, char op)
 {
   char route_command[256];
 
@@ -313,26 +323,20 @@ Taps::setSystemRouting (Peers::Peer * peer, networkT allowedNets, char op)
   char network[addressLenght + 1];
   char netmask[addressLenght + 1];
 
-  networkT remoteNets;
-
-  int i;
-  int j;
-  int allowedNetsCount;
-  int remoteNetsCount;
+  std::vector<networkT> remoteNets;
+  std::vector<networkT>::iterator allowedNetIt;
+  std::vector<networkT>::iterator remoteNetIt;
 
   remoteNets = peer->nl();
 
-  allowedNetsCount = allowedNets.networkName.size();
-  remoteNetsCount = remoteNets.networkName.size();
+  for (allowedNetIt = allowedNets.begin(); allowedNetIt < allowedNets.end(); allowedNetIt++) {
 
-  for (i = 0; i < allowedNetsCount; i++) {
+    inet_ntop(AF_INET, &(*allowedNetIt).address, gateway, addressLenght);
 
-    inet_ntop(AF_INET, &allowedNets.address[i], gateway, addressLenght);
-
-    for (j = 0; j < remoteNetsCount; j++)
-      if (!allowedNets.networkName[i].compare(remoteNets.networkName[j])) {
-        inet_ntop(AF_INET, &remoteNets.network[j], network, addressLenght);
-        inet_ntop(AF_INET, &remoteNets.netmask[j], netmask, addressLenght);
+    for (remoteNetIt = remoteNets.begin(); remoteNetIt < remoteNets.end(); remoteNetIt++)
+      if (!(*allowedNetIt).networkName.compare((*remoteNetIt).networkName)) {
+        inet_ntop(AF_INET, &(*remoteNetIt).network, network, addressLenght);
+        inet_ntop(AF_INET, &(*remoteNetIt).netmask, netmask, addressLenght);
 
         if (op == addRouting)
           sprintf(route_command, "route add -net %s netmask %s gw %s", network, netmask, gateway);
@@ -349,10 +353,11 @@ Taps::setSystemRouting (Peers::Peer * peer, networkT allowedNets, char op)
 uChar
 Taps::getNetworkId (std::string networkName)
 {
-  char i;
-  for (i = 0; i < (char) Taps::db.size(); i++)
-    if (!Taps::db[i]->networkName().compare(networkName))
+     std::vector<Tap *>::iterator tapIt;
+
+  for (tapIt = db.begin(); tapIt < db.end(); tapIt++)
+    if (!(*tapIt)->networkName().compare(networkName))
       break;
 
-  return i;
+  return (*tapIt)->id();
 }

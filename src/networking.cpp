@@ -240,10 +240,8 @@ Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
   int freeFdFlag;
   fd_set readSelect;
   int maxFd;
-  uInt i;
-
-  Peers::Peer *peer;
-  Taps::Tap *tap;
+  std::vector<Peers::Peer*>::iterator peerIt;
+  std::vector<Taps::Tap*>::iterator tapIt;
 
   int dont_close_flag = 1;
   while (dont_close_flag) {
@@ -256,47 +254,32 @@ Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
     ret = select(maxFd + 1, &readSelect, NULL, NULL, NULL);
 
     pthread_mutex_lock(&Peers::db_mutex);
-    if (ret == -1) {
+    if (ret == -1) 
       Log::Fatal("Select Log::Error");
-    }
-    else {
-      /*
-       * Wat corner: how it works.
-       * - cycle all Peers,
-       * - check if a peer is ready to read according to select()
-       * - check if peer is active (active flag set)
-       * - read from peer data
-       * - analyze packet header (first byte)
-       * - if it's DATA PACKET forward to the tap device
-       * - else if it's CONTROL PACKET parse the message
-       */
-      for (i = 0; i < Peers::db.size(); i++) {
-        peer = Peers::db[i];
 
-        if(peer->isReadyToRead(&readSelect)) {
-          if (peer->isActive()) {
-            if (*peer >> &packet) {
+    else {
+      for (peerIt = Peers::db.begin(); peerIt < Peers::db.end(); peerIt++) { 
+        if((*peerIt)->isReadyToRead(&readSelect)) {
+          if ((*peerIt)->isActive()) {
+            if (**peerIt >> &packet) {
               switch (packet.buffer[0]) {
               case dataPacket:
-                Network::Server::ForwardToTap(&packet, peer);
+                Network::Server::ForwardToTap(&packet, *peerIt);
                 break;
               case controlPacket:
                 if (packet.buffer[1] == closeConnection) {
                   Log::Debug3("control_packet: closing connection");
                   freeFdFlag = 1;
-                  peer->setClosing();
+                  (*peerIt)->setClosing();
+                  freeFdFlag = true;
                 }
                 else {
                   Log::Error("Unknow control flag");
-                }
-                break;
-              }
-            }
-            else {
-              freeFdFlag = true;
-            }
-          }
-        }
+		}
+	      }
+	    }
+	  }
+	}
       }
 
       /* Check if is present some non active peer */
@@ -304,29 +287,19 @@ Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
         Peers::FreeNonActive();
       }
 
-      /*
-       * Wat corner: how it works.
-       * - cycle all Taps,
-       * - check if a tap is ready to read according to select()
-       * - check if tap is active (active flag set)
-       * - read from tap data
-       * - forward to the peers
-       */
-      for (i = 0; i < Taps::db.size(); i++) {
-        tap = Taps::db[i];
-
-        if (tap->isReadyToRead(&readSelect)) {
-          if (tap->isActive()) {
-            if (*tap >> &packet) {
-              Network::Server::ForwardToPeer(&packet, (uChar) i);
-            }
-          }
-        }
+      for (tapIt = Taps::db.begin(); tapIt < Taps::db.end(); tapIt++) {
+        if ((*tapIt)->isReadyToRead(&readSelect)) {
+          if ((*tapIt)->isActive()) {
+            if (**tapIt >> &packet) {
+              Network::Server::ForwardToPeer(&packet, (uChar) (*tapIt)->id());
+	    }
+	  }
+	}
       }
-    }
 
     /* When the cycle is end functions can modify the fd_db structure */
     pthread_mutex_unlock(&Peers::db_mutex);
+    }
   }
   return NULL;
 }
@@ -337,12 +310,10 @@ Network::Server::RestartSelectLoop ()
 
   Log::Debug2("Restarting select()");
   if (Network::Server::select_t != (pthread_t) NULL) {
-    if (pthread_cancel(Network::Server::select_t)) {
+    if (pthread_cancel(Network::Server::select_t)) 
       Log::Fatal("Cannot cancel select thread");
-    }
-    else {
+    else 
       pthread_create(&Network::Server::select_t, NULL, Network::Server::SelectLoop, NULL);
-    }
   }
 }
 
@@ -351,20 +322,10 @@ Network::Server::ForwardToTap (Network::Packet * packet, Peers::Peer * src)
 {
 
   uChar i;
-  uInt j;
+  std::vector<networkT> nets;
+  std::vector<networkT>::iterator netIt;
   int nAddr;
   Taps::Tap *tap;
-
-  /*
-   * Wat corner: how it works.
-   * - parse packet and get destination ip
-   * - parse packet header and get local tap id (second byte)
-   * - check if tap is active
-   * - check if destination address is routable to tap
-   * - check if remote peer is allowed to send packet to tap device
-   *   (compare local id of remote peer with local id in the peer allowed networks)
-   * - write packet
-   */
 
   nAddr = PacketInspection::GetDestinationIp(packet);
   i = packet->buffer[1];
@@ -372,14 +333,16 @@ Network::Server::ForwardToTap (Network::Packet * packet, Peers::Peer * src)
 
   if (tap->isActive()) {
     if (tap->isRoutableAddress(nAddr)) {
-      for (j = 0; j < src->nl().localId.size(); j++) {
-        if (src->nl().localId[j] == i) {
+      nets = src->nl();
+      for (netIt = nets.begin(); netIt < nets.end(); netIt++) {
+        if ((*netIt).localId == i) {
           *tap << packet;
           break;
         }
       }
     }
   }
+
   Log::Dump(packet->buffer, packet->length);
 }
 
@@ -387,38 +350,29 @@ inline void
 Network::Server::ForwardToPeer (Network::Packet * packet, uChar localId)
 {
 
-  uInt i;
-  uInt j;
+  std::vector<Peers::Peer *>::iterator peerIt;
+  std::vector<networkT> nets;
+  std::vector<networkT>::iterator netIt;
   int nAddr;
-  Peers::Peer *peer;
-
-  /*
-   * Wat corner: how it works.
-   * - parse packet and get destination ip
-   * - set first byte to DATA PACKET
-   * - cycle all peers
-   * - check if peer is active
-   * - check if destination ip is routable to peer
-   * - check if remote peer is allowed to recv packet from local tap device
-   * - write packet
-   */
 
   nAddr = PacketInspection::GetDestinationIp(packet);
   packet->buffer[0] = dataPacket;
   packet->buffer[1] = localId;
-  for (i = 0; i < Peers::db.size(); i++) {
-    peer = Peers::db[i];
-    if (peer->isActive()) {
-      if (peer->isRoutableAddress(nAddr)) {
-        for (j = 0; j < peer->nl().localId.size(); j++) {
-          if (peer->nl().localId[j] == localId) {
-            *peer << packet;
+
+  for (peerIt = Peers::db.begin(); peerIt < Peers::db.end(); peerIt++) {
+    if ((*peerIt)->isActive()) {
+      if ((*peerIt)->isRoutableAddress(nAddr)) {
+	nets = (*peerIt)->nl();
+        for (netIt = nets.begin(); netIt < nets.end(); netIt++) {
+          if ((*netIt).localId == localId) {
+            **peerIt << packet;
             break;
           }
-        }
+	}
       }
     }
   }
+
   Log::Dump(packet->buffer, packet->length);
 }
 
@@ -446,15 +400,14 @@ void *
 Network::CheckConnectionsQueue (void *arg)
 {
 
-  uInt i;
-  userT *userLs;
+  std::vector<userT> *userLs;
+  std::vector<userT>::iterator userIt;
 
-  userLs = (userT *) arg;
-  if (userLs->user.size() == 0)
-    return NULL;
-  for (i = 0; i < userLs->user.size(); i++)
-    /* check if we're connected to peer */
-    if (!Peers::UserIsConnected(userLs->user[i]))
-      Network::Client::PeerConnect(userLs->address[i], port);
+  userLs = (std::vector<userT> *) arg;
+
+  for (userIt = userLs->begin(); userIt < userLs->end(); userIt++)
+    if (!Peers::UserIsConnected((*userIt).user))
+      Network::Client::PeerConnect((*userIt).address, port);
+
   return NULL;
 }
