@@ -164,20 +164,22 @@ Peers::Peer::nl ()
   return _nl;
 }
 
-
 void
 Peers::FreeNonActive ()
 {
   std::vector<Peer*>::iterator it;
-
+ 
   Log::Debug2("freeing non active fd");
-  for (it = db.begin(); it < db.end(); it++)
+  for (it = db.begin(); it < db.end();)
     if (!(*it)->isActive()) {
       Taps::setSystemRouting((*it), Taps::getUserAllowedNetworks((*it)->user()), delRouting);
-
+ 
       delete *it;
-      db.erase(it);
+      it = db.erase(it);
     }
+    else
+      it++;
+
   SetMaxFd();
 }
 
