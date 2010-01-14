@@ -98,7 +98,12 @@ Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
       Log::Fatal("cannot accept");
 
     Protocol::SendBanner(peerSock);
+    try {
     hsOpt = new HandshakeOptionT;
+    } catch(const std::bad_alloc& x) {
+      Log::Fatal("Out of memory");
+    }
+
     if ((peerSsl = SSL_new(Network::Server::sslCTX)) != NULL) {
       SSL_set_fd(peerSsl, peerSock);
 
@@ -107,7 +112,12 @@ Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
         if (Protocol::Server::Handshake(peerSsl, hsOpt)) {
           pthread_mutex_lock(&Peers::db_mutex);
 
+	  try {
           newPeer = new Peers::Peer(peerSock, peerSsl, hsOpt->peer_username, peer.sin_addr.s_addr, hsOpt->remoteNets);
+	  } catch(const std::bad_alloc& x) {
+	    Log::Fatal("Out of memory");
+	  }
+
           inet_ntop(AF_INET, &peer.sin_addr.s_addr, peer_address, addressLenght);
           Log::Info("Connection accepted from %s (fd %d)", peer_address, peerSock);
 
@@ -195,8 +205,13 @@ Network::Client::PeerConnect (int address, short port)
       if (Network::VerifySslCert(peerSsl)) {
         if (Protocol::Client::Handshake(peerSsl, &hsOpt)) {
           pthread_mutex_lock(&Peers::db_mutex);
-
+          
+	  try{
           newPeer = new Peers::Peer(peerSock, peerSsl, hsOpt.peer_username, address, hsOpt.remoteNets);
+	  } catch(const std::bad_alloc& x){
+	    Log::Fatal("Out of memory");
+	  }
+
           Log::Info("Connected");
 
           Log::Debug2("Setting Routing");

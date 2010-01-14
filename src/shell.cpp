@@ -169,7 +169,11 @@ Shell::PreparseCommand (std::string line)
   uInt tmpLen;
   uInt parsedBytes;
 
+  try {
   command = new Cmd;
+  } catch(const std::bad_alloc& x){
+    Log::Fatal("Out of memory");
+  }
   parsedBytes = 0;
 
   linePtr = (char *) line.c_str();

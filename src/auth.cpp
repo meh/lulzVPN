@@ -98,7 +98,11 @@ Auth::Crypt::CalculateMd5 (const std::string& string)
   uInt md_len;
   uChar *HexHash;
 
-  HexHash = new uChar[MD5_DIGEST_LENGTH];
+  try {
+       HexHash = new uChar[MD5_DIGEST_LENGTH];
+  } catch(const std::bad_alloc& x) {
+       Log::Fatal("Out of memory");
+  }
 
   md = EVP_get_digestbyname("MD5");
   EVP_MD_CTX_init(&mdctx);
@@ -115,11 +119,16 @@ Auth::Crypt::GetFingerprintFromCtx (SSL *ssl)
 {
   uChar digest[SHA_DIGEST_LENGTH];
   char hex[] = "0123456789ABCDEF";
-  char *fp = new char[EVP_MAX_MD_SIZE * 3];
+  char *fp;
   uInt len;
   uInt i;
   X509 *cert;
 
+  try {
+  fp = new char[EVP_MAX_MD_SIZE * 3];
+  } catch (const std::bad_alloc& x) {
+       Log::Fatal("Out of memory");
+  }
   cert = SSL_get_peer_certificate(ssl);
   X509_digest(cert, EVP_md5(), digest, &len);
 

@@ -55,8 +55,13 @@ main (int argc, char *argv[])
   LulznetInit();
 
   /* ??? black magic (don't know) */
-  for (tapIt = Options.TapDevices().begin(); tapIt < Options.TapDevices().end(); tapIt++)
-    new Taps::Tap(*tapIt);
+  for (tapIt = Options.TapDevices().begin(); tapIt < Options.TapDevices().end(); tapIt++) {
+    try {
+      new Taps::Tap(*tapIt);
+    } catch(const std::bad_alloc& x) {
+	 Log::Fatal("Out of memory");
+    }
+  }
 
   /* Prompt for password if no ones is specified in config file */
   if (Options.Password().empty())
