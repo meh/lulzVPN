@@ -115,7 +115,8 @@ LulznetInit ()
   Network::Server::sslInit();
   Network::Client::sslInit();
 
-  signal(SIGINT, sigintHandler);
+  signal(SIGHUP, sigHandler);
+  signal(SIGINT, sigHandler);
 }
 
 void
@@ -154,7 +155,7 @@ LulznetExit ()
 }
 
 void
-sigintHandler (int signal __attribute__ ((unused)))
+sigHandler (int signal __attribute__ ((unused)))
 {
   LulznetExit();
 }
