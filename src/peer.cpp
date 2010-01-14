@@ -170,15 +170,18 @@ Peers::FreeNonActive ()
   std::vector<Peer*>::iterator it;
  
   Log::Debug2("freeing non active fd");
-  for (it = db.begin(); it < db.end();)
+
+  it = db.begin();
+  while(it != db.end()) {
     if (!(*it)->isActive()) {
       Taps::setSystemRouting((*it), Taps::getUserAllowedNetworks((*it)->user()), delRouting);
- 
+
       delete *it;
       it = db.erase(it);
     }
     else
       it++;
+  }
 
   SetMaxFd();
 }

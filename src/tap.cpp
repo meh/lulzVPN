@@ -225,7 +225,9 @@ Taps::FreeNonActive ()
   std::vector < Taps::Tap * >::iterator it;
 
   Log::Debug2("freeing non active fd");
-  for (it = db.begin(); it < db.end();)
+
+  it = db.begin();
+  while (it != db.end()) {
     if (!(*it)->isActive()) {
       /* Remove network from peer */
       /* Send network remove packet to other peer */
@@ -235,6 +237,7 @@ Taps::FreeNonActive ()
     }
     else
       it++;
+  }
 
   SetMaxFd();
 }
