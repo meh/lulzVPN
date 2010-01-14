@@ -63,19 +63,19 @@ std::vector<UserCredentialT> _UserCredentials;
 public:
 Config ();
 int Flags ();
-std::string ConnectingAddress ();
-std::string BindingAddress ();
+const std::string& ConnectingAddress ();
+const std::string& BindingAddress ();
 short ConnectingPort ();
 short BindingPort ();
-std::string Username ();
-std::string Password ();
+const std::string& Username ();
+const std::string& Password ();
 void Password (std::string password);
 #ifdef DEBUG
 int DebugLevel ();
 #endif
 
-std::vector<TapDeviceT> TapDevices();
-std::vector<UserCredentialT> UserCredentials();
+const std::vector<TapDeviceT>& TapDevices();
+const std::vector<UserCredentialT>& UserCredentials();
 
 public:
 /* parse console args */
@@ -95,7 +95,6 @@ void ParseTaps (xmlDocPtr doc, xmlNodePtr curNode);
 void set_default_Options ();
 /* check if something configuration is missing */
 void ChecEmptyConfigEntry ();
-
 };
 
 extern Config Options;

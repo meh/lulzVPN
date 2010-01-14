@@ -26,21 +26,21 @@ namespace Auth
 {
 
 /* Check if hash match username */
-bool DoAuthentication (std::string Username, uChar *Hash);
+bool DoAuthentication (const std::string &Username, uChar *Hash);
 
 /* Ask for password (disable echo) */
 void PasswordPrompt ();
 
-std::string GetHash (std::string RequestedUser);
+std::string GetHash (const std::string& RequestedUser);
 
 namespace Crypt
 {
 
 /* return string's md5 */
-uChar *CalculateMd5 (std::string string);
+uChar *CalculateMd5 (const std::string& string);
 
 /* return a string with ssl'peer certificate fingerprint */
-char *GetFingerprintFromCtx (SSL * ssl);
+char *GetFingerprintFromCtx (SSL *ssl);
 }
 }
 

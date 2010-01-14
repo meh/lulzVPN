@@ -63,8 +63,7 @@ Shell::PeerList ()
   int cidrNetmask;
 
   std::vector<Peers::Peer *>::iterator peerIt;
-  std::vector<networkT> nets;
-  std::vector<networkT>::iterator netIt;
+  std::vector<networkT>::const_iterator netIt;
 
   for (peerIt = Peers::db.begin(); peerIt < Peers::db.end(); peerIt++) {
 
@@ -74,8 +73,7 @@ Shell::PeerList ()
     std::cout << (*peerIt)->user() << "\taddr: " << pAddr << " networks: " << (*peerIt)->nl().size() << std::endl;
 
     netCount = 1;
-    nets = (*peerIt)->nl();
-    for (netIt = nets.begin(); netIt < nets.end(); netIt++, netCount++) {
+    for (netIt = (*peerIt)->nl().begin(); netIt < (*peerIt)->nl().end(); netIt++, netCount++) {
       n_vAddress = (*netIt).address;
       inet_ntop(AF_INET, &n_vAddress, p_vAddress, addressLenght);
 
@@ -136,12 +134,10 @@ Shell::TapList ()
 void
 Shell::CredList ()
 {
-  std::vector<UserCredentialT> uc;
-  std::vector<UserCredentialT>::iterator ucIt;
-  std::vector<std::string>::iterator netIt;
+  std::vector<UserCredentialT>::const_iterator ucIt;
+  std::vector<std::string>::const_iterator netIt;
 
-  uc = Options.UserCredentials();
-  for (ucIt = uc.begin(); ucIt < uc.end(); ucIt++) {
+  for (ucIt = Options.UserCredentials().begin(); ucIt < Options.UserCredentials().end(); ucIt++) {
     std::cout << (*ucIt).Name << std::endl;
     std::cout << "\tHash: " << (*ucIt).Hash << std::endl;
     std::cout << "\tAllowed Networks: ";

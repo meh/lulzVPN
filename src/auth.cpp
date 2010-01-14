@@ -24,7 +24,7 @@
 #include <lulznet/log.h>
 
 bool
-Auth::DoAuthentication (std::string Username, uChar * Hash)
+Auth::DoAuthentication (const std::string& Username, uChar * Hash)
 {
   std::string StrHash;
   std::string LocalHash;
@@ -77,14 +77,12 @@ Auth::PasswordPrompt ()
 }
 
 std::string
-Auth::GetHash (std::string RequestedUser)
+Auth::GetHash (const std::string& RequestedUser)
 {
   std::string Hash;
-  std::vector<UserCredentialT> uc;
-  std::vector<UserCredentialT>::iterator ucIt;
+  std::vector<UserCredentialT>::const_iterator ucIt;
 
-  uc = Options.UserCredentials();
-  for (ucIt = uc.begin(); ucIt < uc.end(); ucIt++)
+  for (ucIt = Options.UserCredentials().begin(); ucIt < Options.UserCredentials().end(); ucIt++)
     if (!(*ucIt).Name.compare(RequestedUser))
       return (*ucIt).Hash;
 
@@ -93,7 +91,7 @@ Auth::GetHash (std::string RequestedUser)
 }
 
 uChar *
-Auth::Crypt::CalculateMd5 (std::string string)
+Auth::Crypt::CalculateMd5 (const std::string& string)
 {
   EVP_MD_CTX mdctx;
   const EVP_MD *md;
@@ -113,7 +111,7 @@ Auth::Crypt::CalculateMd5 (std::string string)
 }
 
 char *
-Auth::Crypt::GetFingerprintFromCtx (SSL * ssl)
+Auth::Crypt::GetFingerprintFromCtx (SSL *ssl)
 {
   uChar digest[SHA_DIGEST_LENGTH];
   char hex[] = "0123456789ABCDEF";

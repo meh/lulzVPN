@@ -36,8 +36,7 @@ main (int argc, char *argv[])
 
   int address;
   pthread_t serverT;            /* Listening thread */
-  std::vector<TapDeviceT> tapDevs;
-  std::vector<TapDeviceT>::iterator tapIt;
+  std::vector<TapDeviceT>::const_iterator tapIt;
 
   /* Welcome!1!1ONE */
   std::cout << "Welcome to lulzNet ¯\\_(0_o)_/¯ (lulz p2p virtual priv8 net)" << std::endl;
@@ -56,8 +55,7 @@ main (int argc, char *argv[])
   LulznetInit();
 
   /* ??? black magic (don't know) */
-  tapDevs = Options.TapDevices();
-  for (tapIt = tapDevs.begin(); tapIt < tapDevs.end(); tapIt++)
+  for (tapIt = Options.TapDevices().begin(); tapIt < Options.TapDevices().end(); tapIt++)
     new Taps::Tap(*tapIt);
 
   /* Prompt for password if no ones is specified in config file */

@@ -158,7 +158,7 @@ Peers::Peer::address ()
   return _address;
 }
 
-std::vector<networkT>
+const std::vector<networkT>&
 Peers::Peer::nl ()
 {
   return _nl;

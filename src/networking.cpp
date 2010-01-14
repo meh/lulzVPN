@@ -322,8 +322,7 @@ Network::Server::ForwardToTap (Network::Packet * packet, Peers::Peer * src)
 {
 
   uChar i;
-  std::vector<networkT> nets;
-  std::vector<networkT>::iterator netIt;
+  std::vector<networkT>::const_iterator netIt;
   int nAddr;
   Taps::Tap *tap;
 
@@ -333,8 +332,7 @@ Network::Server::ForwardToTap (Network::Packet * packet, Peers::Peer * src)
 
   if (tap->isActive()) {
     if (tap->isRoutableAddress(nAddr)) {
-      nets = src->nl();
-      for (netIt = nets.begin(); netIt < nets.end(); netIt++) {
+      for (netIt = src->nl().begin(); netIt < src->nl().end(); netIt++) {
         if ((*netIt).localId == i) {
           *tap << packet;
           break;
@@ -351,8 +349,7 @@ Network::Server::ForwardToPeer (Network::Packet * packet, uChar localId)
 {
 
   std::vector<Peers::Peer *>::iterator peerIt;
-  std::vector<networkT> nets;
-  std::vector<networkT>::iterator netIt;
+  std::vector<networkT>::const_iterator netIt;
   int nAddr;
 
   nAddr = PacketInspection::GetDestinationIp(packet);
@@ -362,8 +359,7 @@ Network::Server::ForwardToPeer (Network::Packet * packet, uChar localId)
   for (peerIt = Peers::db.begin(); peerIt < Peers::db.end(); peerIt++) {
     if ((*peerIt)->isActive()) {
       if ((*peerIt)->isRoutableAddress(nAddr)) {
-	nets = (*peerIt)->nl();
-        for (netIt = nets.begin(); netIt < nets.end(); netIt++) {
+        for (netIt = (*peerIt)->nl().begin(); netIt < (*peerIt)->nl().end(); netIt++) {
           if ((*netIt).localId == localId) {
             **peerIt << packet;
             break;

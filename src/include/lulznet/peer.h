@@ -62,7 +62,7 @@ public:
 int fd();
 std::string user();
 int address();
-std::vector<networkT> nl();
+const std::vector<networkT>& nl();
 };
 
 extern std::vector<Peer *> db;

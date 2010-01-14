@@ -285,16 +285,15 @@ Taps::configureDevice (std::string device, std::string address, std::string netm
 std::vector<networkT>
 Taps::getUserAllowedNetworks (std::string user)
 {
-  std::vector<networkT> nl;
   std::vector<Tap *>::iterator tapIt1;
-  std::vector<std::string>::iterator netIt;
-  std::vector<UserCredentialT> uc;
-  std::vector<UserCredentialT>::iterator ucIt;
+  std::vector<std::string>::const_iterator netIt;
+  std::vector<UserCredentialT>::const_iterator ucIt;
+
+  std::vector<networkT>nl;
   networkT net;
 
   /* Get current user config */
-  uc = Options.UserCredentials();
-  for (ucIt = uc.begin(); ucIt < uc.end(); ucIt++)
+  for (ucIt = Options.UserCredentials().begin(); ucIt < Options.UserCredentials().end(); ucIt++)
     if (!(*ucIt).Name.compare(user))
       break;
 

@@ -52,25 +52,25 @@ Config::BindingPort ()
   return _BindingPort;
 }
 
-std::string
+const std::string&
 Config::ConnectingAddress ()
 {
   return _ConnectingAddress;
 }
 
-std::string
+const std::string&
 Config::BindingAddress ()
 {
   return _BindingAddress;
 }
 
-std::string
+const std::string&
 Config::Username ()
 {
   return _Username;
 }
 
-std::string
+const std::string&
 Config::Password ()
 {
   return _Password;
@@ -90,13 +90,13 @@ Config::DebugLevel ()
 }
 #endif
 
-std::vector<TapDeviceT>
+const std::vector<TapDeviceT>&
 Config::TapDevices ()
 {
   return _TapDevices;
 }
 
-std::vector<UserCredentialT>
+const std::vector<UserCredentialT>&
 Config::UserCredentials ()
 {
   return _UserCredentials;
