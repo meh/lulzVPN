@@ -74,6 +74,8 @@ extern pthread_mutex_t db_mutex;
 
 extern int maxFd;
 
+void Register(Tap *t);
+
 /* set global var max_tap_fd to proper value */
 void SetMaxFd ();
 

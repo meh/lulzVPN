@@ -32,6 +32,20 @@ pthread_mutex_t Peers::db_mutex;
 int Peers::maxFd;
 
 void
+Peers::Register(Peer *p){
+
+  db.push_back(p);
+
+  Log::Debug2("Added fd %d to fd_set master", p->fd());
+  FD_SET(p->fd(), &Network::master);
+
+  SetMaxFd();
+
+  /* restart select thread so select() won't block world */
+  Network::Server::RestartSelectLoop();
+}
+
+void
 Peers::SetMaxFd ()
 {
   std::vector<Peer *>::iterator peerIt;
@@ -54,16 +68,6 @@ Peers::Peer::Peer(int fd, SSL * ssl, std::string user, int address, std::vector<
 
   _nl = nl;
 
-  db.push_back(this);
-
-  SetMaxFd();
-
-  FD_SET(_fd, &Network::master);
-
-  Log::Debug2("Added fd %d to fd_set master (1st free fd: %d)", fd, db.size());
-
-  /* restart select thread so select() won't block world */
-  Network::Server::RestartSelectLoop();
 }
 
 

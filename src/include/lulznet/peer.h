@@ -70,6 +70,8 @@ extern pthread_mutex_t db_mutex;
 
 extern int maxFd;
 
+void Register(Peer *p);
+
 /* set global var max_peer_fd to proper value (we use it with select() ) */
 void SetMaxFd ();
 

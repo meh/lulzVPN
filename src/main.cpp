@@ -36,7 +36,6 @@ main (int argc, char *argv[])
 
   int address;
   pthread_t serverT;            /* Listening thread */
-  std::vector<TapDeviceT>::const_iterator tapIt;
 
   /* Welcome!1!1ONE */
   std::cout << "Welcome to lulzNet ¯\\_(0_o)_/¯ (lulz p2p virtual priv8 net)" << std::endl;
@@ -51,17 +50,8 @@ main (int argc, char *argv[])
   if (getuid())
     Log::Fatal("You must be super user");
 
-  /* initialize db and other stuff */
+  /* initialize db, taps and other stuff */
   LulznetInit();
-
-  /* ??? black magic (don't know) */
-  for (tapIt = Options.TapDevices().begin(); tapIt < Options.TapDevices().end(); tapIt++) {
-    try {
-      new Taps::Tap(*tapIt);
-    } catch(const std::bad_alloc& x) {
-	 Log::Fatal("Out of memory");
-    }
-  }
 
   /* Prompt for password if no ones is specified in config file */
   if (Options.Password().empty())
@@ -100,6 +90,9 @@ main (int argc, char *argv[])
 void
 LulznetInit ()
 {
+  std::vector<TapDeviceT>::const_iterator tapIt;
+  Taps::Tap *newTap;
+
   Peers::maxFd = 0;
   Taps::maxFd = 0;
 
@@ -114,6 +107,16 @@ LulznetInit ()
 
   Network::Server::sslInit();
   Network::Client::sslInit();
+
+  /* ??? black magic (don't know) */
+  for (tapIt = Options.TapDevices().begin(); tapIt < Options.TapDevices().end(); tapIt++) {
+    try {
+      newTap = new Taps::Tap(*tapIt);
+      Taps::Register(newTap);
+    } catch(const std::bad_alloc& x) {
+	 Log::Fatal("Out of memory");
+    }
+  }
 
   signal(SIGHUP, sigHandler);
   signal(SIGINT, sigHandler);

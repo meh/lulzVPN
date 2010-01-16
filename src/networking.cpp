@@ -114,6 +114,7 @@ Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
 
 	  try {
           newPeer = new Peers::Peer(peerSock, peerSsl, hsOpt->peer_username, peer.sin_addr.s_addr, hsOpt->remoteNets);
+	  Peers::Register(newPeer);
 	  } catch(const std::bad_alloc& x) {
 	    Log::Fatal("Out of memory");
 	  }
@@ -208,6 +209,7 @@ Network::Client::PeerConnect (int address, short port)
           
 	  try{
           newPeer = new Peers::Peer(peerSock, peerSsl, hsOpt.peer_username, address, hsOpt.remoteNets);
+	  Peers::Register(newPeer);
 	  } catch(const std::bad_alloc& x){
 	    Log::Fatal("Out of memory");
 	  }

@@ -33,6 +33,20 @@ pthread_mutex_t Taps::db_mutex;
 int Taps::maxFd;
 
 void
+Taps::Register(Tap *t){
+
+  db.push_back(t);
+
+  Log::Debug2("Added fd %d to fd_set master", t->fd());
+  FD_SET(t->fd(), &Network::master);
+
+  SetMaxFd();
+
+  /* restart select thread so select() won't block world */
+  Network::Server::RestartSelectLoop();
+}
+
+void
 Taps::SetMaxFd ()
 {
   std::vector<Tap *>::iterator tapIt;
@@ -96,18 +110,7 @@ Taps::Tap::Tap(TapDeviceT TapOpt)
   _network = get_ip_address_network(n_address, n_netmask);
 
   configureDevice(device, TapOpt.Address, TapOpt.Netmask);
-
-  db.push_back(this);
-
-  SetMaxFd();
-
-  FD_SET(_fd, &Network::master);
-
-  Log::Debug2("Added fd %d to fd_set master (1st free fd: %d)", _fd, db.size());
-
-  Network::Server::RestartSelectLoop();
 }
-
 
 Taps::Tap::~Tap()
 {
