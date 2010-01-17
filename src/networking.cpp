@@ -257,8 +257,8 @@ Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
   int freeFdFlag;
   fd_set readSelect;
   int maxFd;
-  std::vector<Peers::Peer*>::iterator peerIt;
-  std::vector<Taps::Tap*>::iterator tapIt;
+  std::vector<Peers::Peer*>::iterator peerIt, peerEnd;
+  std::vector<Taps::Tap*>::iterator tapIt, tapEnd;
 
   int dont_close_flag = 1;
   while (dont_close_flag) {
@@ -275,7 +275,8 @@ Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
       Log::Fatal("Select Log::Error");
 
     else {
-      for (peerIt = Peers::db.begin(); peerIt < Peers::db.end(); peerIt++) { 
+      peerEnd = Peers::db.end();
+      for (peerIt = Peers::db.begin(); peerIt < peerEnd; ++peerIt) { 
         if((*peerIt)->isReadyToRead(&readSelect)) {
           if ((*peerIt)->isActive()) {
             if (**peerIt >> &packet) {
@@ -304,7 +305,8 @@ Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
         Peers::FreeNonActive();
       }
 
-      for (tapIt = Taps::db.begin(); tapIt < Taps::db.end(); tapIt++) {
+      tapEnd = Taps::db.end();
+      for (tapIt = Taps::db.begin(); tapIt < tapEnd; ++tapIt) {
         if ((*tapIt)->isReadyToRead(&readSelect)) {
           if ((*tapIt)->isActive()) {
             if (**tapIt >> &packet) {
@@ -339,7 +341,7 @@ Network::Server::ForwardToTap (Network::Packet * packet, Peers::Peer * src)
 {
 
   uChar i;
-  std::vector<networkT>::const_iterator netIt;
+  std::vector<networkT>::const_iterator netIt, netEnd;
   int nAddr;
   Taps::Tap *tap;
 
@@ -349,7 +351,8 @@ Network::Server::ForwardToTap (Network::Packet * packet, Peers::Peer * src)
 
   if (tap->isActive()) {
     if (tap->isRoutableAddress(nAddr)) {
-      for (netIt = src->nl().begin(); netIt < src->nl().end(); netIt++) {
+      netEnd = src->nl().end();
+      for (netIt = src->nl().begin(); netIt < netEnd; ++netIt) {
         if ((*netIt).localId == i) {
           *tap << packet;
           break;
@@ -365,18 +368,20 @@ inline void
 Network::Server::ForwardToPeer (Network::Packet * packet, uChar localId)
 {
 
-  std::vector<Peers::Peer *>::iterator peerIt;
-  std::vector<networkT>::const_iterator netIt;
+  std::vector<Peers::Peer *>::iterator peerIt, peerEnd;
+  std::vector<networkT>::const_iterator netIt, netEnd;
   int nAddr;
 
   nAddr = PacketInspection::GetDestinationIp(packet);
   packet->buffer[0] = dataPacket;
   packet->buffer[1] = localId;
 
-  for (peerIt = Peers::db.begin(); peerIt < Peers::db.end(); peerIt++) {
+  peerEnd = Peers::db.end();
+  for (peerIt = Peers::db.begin(); peerIt < peerEnd; ++peerIt) {
     if ((*peerIt)->isActive()) {
       if ((*peerIt)->isRoutableAddress(nAddr)) {
-        for (netIt = (*peerIt)->nl().begin(); netIt < (*peerIt)->nl().end(); netIt++) {
+        netEnd = (*peerIt)->nl().end();
+        for (netIt = (*peerIt)->nl().begin(); netIt < netEnd; ++netIt) {
           if ((*netIt).localId == localId) {
             **peerIt << packet;
             break;
@@ -414,11 +419,12 @@ Network::CheckConnectionsQueue (void *arg)
 {
 
   std::vector<userT> *userLs;
-  std::vector<userT>::iterator userIt;
+  std::vector<userT>::iterator userIt, userEnd;
 
   userLs = (std::vector<userT> *) arg;
 
-  for (userIt = userLs->begin(); userIt < userLs->end(); userIt++)
+  userEnd = userLs->end();
+  for (userIt = userLs->begin(); userIt < userEnd; ++userIt)
     if (!Peers::UserIsConnected((*userIt).user))
       Network::Client::PeerConnect((*userIt).address, port);
 

@@ -49,10 +49,11 @@ Taps::Register(Tap *t){
 void
 Taps::SetMaxFd ()
 {
-  std::vector<Tap *>::iterator tapIt;
+  std::vector<Tap *>::iterator tapIt, tapEnd;
   maxFd = 0;
 
-  for (tapIt = db.begin(); tapIt < db.end(); tapIt++)
+  tapEnd = db.end();
+  for (tapIt = db.begin(); tapIt < tapEnd; tapIt++)
     if ((*tapIt)->fd() > maxFd)
       maxFd = (*tapIt)->fd();
 }
@@ -294,30 +295,34 @@ Taps::configureDevice (std::string device, std::string address, std::string netm
 std::vector<networkT>
 Taps::getUserAllowedNetworks (std::string user)
 {
-  std::vector<Tap *>::iterator tapIt1;
-  std::vector<std::string>::const_iterator netIt;
-  std::vector<UserCredentialT>::const_iterator ucIt;
+  std::vector<Tap *>::iterator tapIt, tapEnd;
+  std::vector<UserCredentialT>::const_iterator ucIt, ucEnd;
+  std::vector<std::string>::const_iterator netIt, netEnd;
 
   std::vector<networkT>nl;
   networkT net;
 
   /* Get current user config */
-  for (ucIt = Options.UserCredentials().begin(); ucIt < Options.UserCredentials().end(); ucIt++)
+  ucEnd = Options.UserCredentials().end();
+  for (ucIt = Options.UserCredentials().begin(); ucIt < ucEnd; ++ucIt)
     if (!(*ucIt).Name.compare(user))
       break;
 
   /* For each network check if it is allowed in the AllowedNetworks list */
-  for (tapIt1 = db.begin(); tapIt1 < db.end(); tapIt1++)
-    for (netIt = (*ucIt).AllowedNetworks.begin(); netIt < (*ucIt).AllowedNetworks.end(); netIt++)
-      if (!(*netIt).compare((*tapIt1)->networkName())) {
-        net.networkName = (*tapIt1)->networkName();
-        net.remoteId = (*tapIt1)->id();
-        net.address = (*tapIt1)->address();
-        net.netmask = (*tapIt1)->netmask();
+  tapEnd = db.end();
+  for (tapIt = db.begin(); tapIt < tapEnd; ++tapIt) {
+    netEnd = (*ucIt).AllowedNetworks.end();
+    for (netIt = (*ucIt).AllowedNetworks.begin(); netIt < netEnd; ++netIt)
+      if (!(*netIt).compare((*tapIt)->networkName())) {
+        net.networkName = (*tapIt)->networkName();
+        net.remoteId = (*tapIt)->id();
+        net.address = (*tapIt)->address();
+        net.netmask = (*tapIt)->netmask();
 
 	nl.push_back(net);
         break;
       }
+  }
 
   return nl;
 }
@@ -332,16 +337,18 @@ Taps::setSystemRouting (Peers::Peer * peer, std::vector<networkT> allowedNets, c
   char netmask[addressLenght + 1];
 
   std::vector<networkT> remoteNets;
-  std::vector<networkT>::iterator allowedNetIt;
-  std::vector<networkT>::iterator remoteNetIt;
+  std::vector<networkT>::iterator allowedNetIt, allowedNetEnd;
+  std::vector<networkT>::iterator remoteNetIt, remoteNetEnd;
 
   remoteNets = peer->nl();
 
-  for (allowedNetIt = allowedNets.begin(); allowedNetIt < allowedNets.end(); allowedNetIt++) {
+  allowedNetEnd = allowedNets.end();
+  for (allowedNetIt = allowedNets.begin(); allowedNetIt < allowedNetEnd; ++allowedNetIt) {
 
     inet_ntop(AF_INET, &(*allowedNetIt).address, gateway, addressLenght);
 
-    for (remoteNetIt = remoteNets.begin(); remoteNetIt < remoteNets.end(); remoteNetIt++)
+    remoteNetEnd = remoteNets.end();
+    for (remoteNetIt = remoteNets.begin(); remoteNetIt < remoteNetEnd; ++remoteNetIt)
       if (!(*allowedNetIt).networkName.compare((*remoteNetIt).networkName)) {
         inet_ntop(AF_INET, &(*remoteNetIt).network, network, addressLenght);
         inet_ntop(AF_INET, &(*remoteNetIt).netmask, netmask, addressLenght);
@@ -361,9 +368,10 @@ Taps::setSystemRouting (Peers::Peer * peer, std::vector<networkT> allowedNets, c
 uChar
 Taps::getNetworkId (std::string networkName)
 {
-     std::vector<Tap *>::iterator tapIt;
+  std::vector<Tap *>::iterator tapIt, tapEnd;
 
-  for (tapIt = db.begin(); tapIt < db.end(); tapIt++)
+  tapEnd = db.end();
+  for (tapIt = db.begin(); tapIt < tapEnd; tapIt++)
     if (!(*tapIt)->networkName().compare(networkName))
       break;
 

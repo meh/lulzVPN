@@ -90,7 +90,7 @@ main (int argc, char *argv[])
 void
 LulznetInit ()
 {
-  std::vector<TapDeviceT>::const_iterator tapIt;
+  std::vector<TapDeviceT>::const_iterator tapIt, tapEnd;
   Taps::Tap *newTap;
 
   Peers::maxFd = 0;
@@ -109,7 +109,8 @@ LulznetInit ()
   Network::Client::sslInit();
 
   /* ??? black magic (don't know) */
-  for (tapIt = Options.TapDevices().begin(); tapIt < Options.TapDevices().end(); tapIt++) {
+  tapEnd = Options.TapDevices().end();
+  for (tapIt = Options.TapDevices().begin(); tapIt < tapEnd; ++tapIt) {
     try {
       newTap = new Taps::Tap(*tapIt);
       Taps::Register(newTap);
@@ -144,14 +145,14 @@ help ()
 void
 LulznetExit ()
 {
-  std::vector<Peers::Peer *>::iterator peerIt;
+  std::vector<Peers::Peer *>::iterator peerIt, peerEnd;
 
   pthread_mutex_lock(&Peers::db_mutex);
   if (Network::Server::select_t != (pthread_t) NULL)
     pthread_cancel(Network::Server::select_t);
 
   Log::Info("Closing lulznet");
-  for (peerIt = Peers::db.begin(); peerIt < Peers::db.end(); peerIt++)
+  for (peerIt = Peers::db.begin(); peerIt < peerEnd; ++peerIt)
     (*peerIt)->Disassociate();
 
   exit(0);

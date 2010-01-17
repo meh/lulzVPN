@@ -48,10 +48,11 @@ Peers::Register(Peer *p){
 void
 Peers::SetMaxFd ()
 {
-  std::vector<Peer *>::iterator peerIt;
+  std::vector<Peer *>::iterator peerIt, peerEnd;
   maxFd = 0;
 
-  for (peerIt = db.begin(); peerIt < db.end(); peerIt++)
+  peerEnd = db.end();
+  for (peerIt = db.begin(); peerIt < peerEnd; ++peerIt)
     if ((*peerIt)->fd() > maxFd)
       maxFd = (*peerIt)->fd();
 }
@@ -109,9 +110,10 @@ Peers::Peer::operator<< (Network::Packet * packet)
 bool
 Peers::Peer::isRoutableAddress (int address)
 {
-  std::vector<networkT>::iterator netIt;
+  std::vector<networkT>::iterator netIt, netEnd;
 
-  for (netIt = _nl.begin(); netIt < _nl.end(); netIt++)
+  netEnd = _nl.end();
+  for (netIt = _nl.begin(); netIt < netEnd; netIt++)
     if ((*netIt).network == get_ip_address_network(address, (*netIt).netmask))
       return true;
 
@@ -206,9 +208,10 @@ Peers::Peer::Disassociate ()
 int
 Peers::UserIsConnected (std::string user)
 {
-  std::vector<Peer *>::iterator peerIt;
+  std::vector<Peer *>::iterator peerIt, peerEnd;
 
-  for (peerIt = db.begin(); peerIt < db.end(); peerIt++)
+  peerEnd = db.end();
+  for (peerIt = db.begin(); peerIt < peerEnd; ++peerIt)
     if ((*peerIt)->isActive())
       if (!(*peerIt)->user().compare(user))
         return true;

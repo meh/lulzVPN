@@ -329,7 +329,7 @@ Protocol::LulzNetRecvNetwork (SSL *ssl, networkT *net, std::vector<networkT> all
   int answer;
   int rdLen;
   char netName[MAX_NETWORKNAME_LEN + 1];
-  std::vector<networkT>::iterator netIt;
+  std::vector<networkT>::iterator netIt, netEnd;
 
   if (!(rdLen = xSSL_read(ssl, netName, MAX_NETWORKNAME_LEN, "network name")))
     return FAIL;
@@ -350,7 +350,8 @@ Protocol::LulzNetRecvNetwork (SSL *ssl, networkT *net, std::vector<networkT> all
 
   answer = networkNotAllowed;
 
-  for (netIt = allowedNets.begin(); netIt < allowedNets.end(); netIt++)
+  netEnd = allowedNets.end();
+  for (netIt = allowedNets.begin(); netIt < netEnd; ++netIt)
     if (!(*netIt).networkName.compare(net->networkName)) {
       answer = networkAllowed;
       break;
@@ -371,7 +372,7 @@ bool
 Protocol::LulzNetSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
 {
   int netCount;
-  std::vector<networkT>::iterator netIt;
+  std::vector<networkT>::iterator netIt, netEnd;
 
   netCount = hsOpt->allowedNets.size();
 
@@ -386,7 +387,8 @@ Protocol::LulzNetSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
   if (!xSSL_write(ssl, &netCount, sizeof(int), "network count"))
     return FAIL;
 
-  for (netIt = hsOpt->allowedNets.begin(); netIt < hsOpt->allowedNets.end(); netIt++)
+  netEnd = hsOpt->allowedNets.end();
+  for (netIt = hsOpt->allowedNets.begin(); netIt < netEnd; ++netIt)
        if(!LulzNetSendNetwork(ssl, *netIt))
 	    return FAIL;
 
@@ -454,7 +456,7 @@ Protocol::LulzNetSendUserlist (SSL * ssl)
 {
   int userCount;
   std::vector<userT> userLs;
-  std::vector<userT>::iterator userIt;
+  std::vector<userT>::iterator userIt, userEnd;
 
   userLs = Protocol::GetUserlist();
   userCount = userLs.size();
@@ -464,7 +466,8 @@ Protocol::LulzNetSendUserlist (SSL * ssl)
     return FAIL;
 
   /* And send peers address */
-  for (userIt = userLs.begin(); userIt < userLs.end(); userIt++)
+  userEnd = userLs.end();
+  for (userIt = userLs.begin(); userIt < userEnd; ++userIt)
     if(!LulzNetSendUser(ssl, *userIt))
       return FAIL;
 
@@ -496,10 +499,11 @@ Protocol::GetUserlist ()
 {
 
   std::vector<userT> userLs;
-  std::vector<Peers::Peer *>::iterator peerIt;
+  std::vector<Peers::Peer *>::iterator peerIt, peerEnd;
   userT user;
 
-  for (peerIt = Peers::db.begin(); peerIt < Peers::db.end(); peerIt++) {
+  peerEnd = Peers::db.end();
+  for (peerIt = Peers::db.begin(); peerIt < peerEnd; ++peerIt) {
 
     user.user = (*peerIt)->user();
     user.address = (*peerIt)->address();

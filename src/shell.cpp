@@ -62,10 +62,11 @@ Shell::PeerList ()
   char p_vAddress[addressLenght + 1];
   int cidrNetmask;
 
-  std::vector<Peers::Peer *>::iterator peerIt;
-  std::vector<networkT>::const_iterator netIt;
+  std::vector<Peers::Peer *>::iterator peerIt, peerEnd;
+  std::vector<networkT>::const_iterator netIt, netEnd;
 
-  for (peerIt = Peers::db.begin(); peerIt < Peers::db.end(); peerIt++) {
+  peerEnd = Peers::db.end();
+  for (peerIt = Peers::db.begin(); peerIt < peerEnd; ++peerIt) {
 
     nAddr = (*peerIt)->address();
     inet_ntop(AF_INET, &nAddr, pAddr, addressLenght);
@@ -73,7 +74,8 @@ Shell::PeerList ()
     std::cout << (*peerIt)->user() << "\taddr: " << pAddr << " networks: " << (*peerIt)->nl().size() << std::endl;
 
     netCount = 1;
-    for (netIt = (*peerIt)->nl().begin(); netIt < (*peerIt)->nl().end(); netIt++, netCount++) {
+    netEnd = (*peerIt)->nl().end();
+    for (netIt = (*peerIt)->nl().begin(); netIt < netEnd; ++netIt, ++netCount) {
       n_vAddress = (*netIt).address;
       inet_ntop(AF_INET, &n_vAddress, p_vAddress, addressLenght);
 
@@ -88,12 +90,13 @@ Shell::PeerList ()
 void
 Shell::PeerKill (Cmd * cmd)
 {
-  std::vector < Peers::Peer * >::iterator peerIt;
+  std::vector < Peers::Peer * >::iterator peerIt, peerEnd;
 
   if (cmd->argc != 2)
     std::cout << "Usage: peer kill peer_name" << std::endl;
   else {
-    for (peerIt = Peers::db.begin(); peerIt < Peers::db.end(); peerIt++)
+    peerEnd = Peers::db.end();
+    for (peerIt = Peers::db.begin(); peerIt < peerEnd; ++peerIt)
       if (!(*peerIt)->user().compare(cmd->argv[1])) {
         if ((*peerIt)->isActive()) {
           (*peerIt)->Disassociate();
@@ -117,9 +120,10 @@ Shell::TapList ()
   int nNetm;
   int cidr;
   char pAddr[addressLenght + 1];
-  std::vector<Taps::Tap *>::iterator tapIt;
+  std::vector<Taps::Tap *>::iterator tapIt, tapEnd;
 
-  for (tapIt = Taps::db.begin(); tapIt < Taps::db.end(); tapIt++) {
+  tapEnd = Taps::db.end();
+  for (tapIt = Taps::db.begin(); tapIt < tapEnd; ++tapIt) {
 
     nAddr = (*tapIt)->address();
     inet_ntop(AF_INET, &nAddr, pAddr, addressLenght);
@@ -134,14 +138,17 @@ Shell::TapList ()
 void
 Shell::CredList ()
 {
-  std::vector<UserCredentialT>::const_iterator ucIt;
-  std::vector<std::string>::const_iterator netIt;
+  std::vector<UserCredentialT>::const_iterator ucIt, ucEnd;
+  std::vector<std::string>::const_iterator netIt, netEnd;
 
-  for (ucIt = Options.UserCredentials().begin(); ucIt < Options.UserCredentials().end(); ucIt++) {
+  ucEnd = Options.UserCredentials().end();
+  for (ucIt = Options.UserCredentials().begin(); ucIt < ucEnd; ++ucIt) {
     std::cout << (*ucIt).Name << std::endl;
     std::cout << "\tHash: " << (*ucIt).Hash << std::endl;
     std::cout << "\tAllowed Networks: ";
-    for (netIt =  (*ucIt).AllowedNetworks.begin(); netIt < (*ucIt).AllowedNetworks.end(); netIt++)
+
+    netEnd = (*ucIt).AllowedNetworks.end();
+    for (netIt =  (*ucIt).AllowedNetworks.begin(); netIt < netEnd; ++netIt)
       std::cout << (*netIt) << " ";
     std::cout << std::endl;
   }
