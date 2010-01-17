@@ -152,6 +152,7 @@ LulznetExit ()
     pthread_cancel(Network::Server::select_t);
 
   Log::Info("Closing lulznet");
+  peerEnd = Peers::db.end();
   for (peerIt = Peers::db.begin(); peerIt < peerEnd; ++peerIt)
     (*peerIt)->Disassociate();
 
