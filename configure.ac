@@ -3,7 +3,7 @@ have_readline=no
 have_ssl=no
 
 AC_PREREQ([2.63])
-AC_INIT([lulznet], [0.1.1])
+AC_INIT([lulznet], [0.1.2])
 AC_CONFIG_SRCDIR([src/main.cpp])
 AC_CONFIG_HEADERS([src/include/lulznet/_config.h])
 AC_PROG_CC
@@ -69,8 +69,6 @@ if test "x${have_ssl}" = xno; then
 	(exit 1); exit 1;
 fi
 
-#TODO: parse kernel config
-
 AC_C_INLINE
 AC_TYPE_SIZE_T
 AC_FUNC_ERROR_AT_LINE
@@ -81,4 +79,4 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile])
 AC_OUTPUT
 
-echo "Cross fingers and type make"
+echo "Cross fingers and type make. Then enjoy :)"

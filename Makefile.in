@@ -6,6 +6,12 @@ VPATH          = @srcdir@
 all lulznet:
 	$(MAKE) -C src $@
 
+install: all
+	cp lulznet /usr/bin/
+
+uninstall:
+	rm /usr/bin/lulznet
+
 clean:
 	$(MAKE) -C src $@
 
