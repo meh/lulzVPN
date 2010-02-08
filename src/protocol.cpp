@@ -1,5 +1,5 @@
 /*
- * "protocol.c" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
+ * "protocol.cpp" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
  * LulzNet is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,7 +55,6 @@ bool
 Protocol::Server::Handshake (SSL * ssl, HandshakeOptionT * hsOpt)
 {
 
-  char listeningStatus;
   /*
    * PROTOCOL!1!1ONE
    */
@@ -73,14 +72,13 @@ Protocol::Server::Handshake (SSL * ssl, HandshakeOptionT * hsOpt)
   hsOpt->allowedNets = Taps::getUserAllowedNetworks(hsOpt->peer_username);
 
   Log::Debug2("Recving listening status");
-  if (!xSSL_read(ssl, &listeningStatus, sizeof(char), "listening status"))
+  if (!xSSL_read(ssl, &hsOpt->listeningStatus, sizeof(char), "listening status"))
     return FAIL;
 
   /* Networks exchange */
   Log::Debug2("Recving Networks");
   if (!LulzNetReciveNetworks(ssl, hsOpt))
     return FAIL;
-
 
   Log::Debug2("Sending Networks");
   if (!LulzNetSendNetworks(ssl, hsOpt))
@@ -119,12 +117,10 @@ Protocol::Client::Handshake (SSL * ssl, HandshakeOptionT * hsOpt)
   hsOpt->allowedNets = Taps::getUserAllowedNetworks(hsOpt->peer_username);
 
   /*
-   * Hanshake
+   * Handshake
    */
 
   /* Peer tells remote peer if it's listening or not */
-  /* we need to know this for routing */
-
   Log::Debug2("Sending listening status");
   if (Options.Flags() & listeningMode)
     listeningStatus = 1;
@@ -504,11 +500,12 @@ Protocol::GetUserlist ()
 
   peerEnd = Peers::db.end();
   for (peerIt = Peers::db.begin(); peerIt < peerEnd; ++peerIt) {
+    if((*peerIt)->isListening()){
+      user.user = (*peerIt)->user();
+      user.address = (*peerIt)->address();
 
-    user.user = (*peerIt)->user();
-    user.address = (*peerIt)->address();
-
-    userLs.push_back(user);
+      userLs.push_back(user);
+    }
   }
 
   return userLs;

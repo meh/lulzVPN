@@ -24,13 +24,17 @@
 
 const char dataPacket = '\x00';
 const char controlPacket = '\x01';
+const char newPeerNotify = '\x02';
+
 const char closeConnection = '\x01';
 const char userNotConnected ='\x00';
 const char userConnected = '\x01';
 const char networkNotAllowed ='\x00';
 const char networkAllowed = '\x01';
+
 const char AUTHENTICATION_FAILED = '\x00';
 const char AUTHENTICATION_SUCCESSFULL = '\x01';
+
 const int MAX_NETWORKNAME_LEN = 16;
 const int MAX_USERNAME_LEN = 16;
 const int MAX_PASSWORD_LEN = 32;
@@ -63,6 +67,9 @@ typedef struct
 
   std::vector<networkT> remoteNets;
   std::vector<networkT> allowedNets;
+
+  char listeningStatus;
+
 } HandshakeOptionT;
 
 namespace Protocol

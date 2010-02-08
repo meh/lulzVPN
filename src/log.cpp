@@ -1,5 +1,5 @@
 /*
- * "log.c" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
+ * "log.cpp" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
  * lulzNet is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

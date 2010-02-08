@@ -52,8 +52,8 @@ int alloc (std::string NetName, std::string *dev);
 public:
 Tap (TapDeviceT TapOpt);
 ~Tap ();
-bool operator>> (Network::Packet * packet);
-bool operator<< (Network::Packet * packet);
+bool operator>> (Packet::Packet * packet);
+bool operator<< (Packet::Packet * packet);
 bool isActive ();
 bool isRoutableAddress(int address);
 bool isReadyToRead(fd_set *rdSel);

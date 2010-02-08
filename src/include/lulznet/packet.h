@@ -17,16 +17,28 @@
  * MA 02110-1301, USA.
  */
 
-#include "packet_buffer.h"
+#include "lulznet.h"
+#include "protocol.h"
 
 #ifndef _LNET_PACKET_H
 #define _LNET_PACKET_H
 
-#define ETH_ADDR_LEN 6
-#define ETH_HDR_LEN  14
+const int ETH_ADDR_LEN = 6;
+const int ETH_HDR_LEN = 14;
 
-namespace PacketInspection
+const unsigned int PCKT_HDR_LEN = 1;
+const unsigned int PCKT_PLD_LEN = 4096;
+
+/* Total packet length */
+const int PCKT_TOT_LEN = PCKT_HDR_LEN + PCKT_PLD_LEN;
+
+namespace Packet
 {
+struct Packet
+{
+  unsigned char buffer[PCKT_TOT_LEN];
+  int length;
+} __attribute__ ((packed));
 
 /* MAC header */
 struct eth_header
@@ -65,9 +77,11 @@ struct ip_header
   uInt dst_adr;
 } __attribute__ ((packed));
 
-/* return int network ordered address of the packet dest */
-uInt GetDestinationIp (Network::Packet *packet);
+Packet *BuildDisassociationPacket(); 
+Packet *BuildNewPeerNotifyPacket (std::string user, int address);
 
+/* return int network ordered address of the packet dest */
+uInt GetDestinationIp (Packet *packet);
 }
 
 #endif

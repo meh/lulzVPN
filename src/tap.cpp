@@ -1,5 +1,5 @@
 /*
- * "tap.c" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
+ * "tap.cpp" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
  * lulzNet is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -124,7 +124,7 @@ Taps::Tap::~Tap()
 }
 
 bool
-Taps::Tap::operator>> (Network::Packet * packet)
+Taps::Tap::operator>> (Packet::Packet * packet)
 {
   if (!(packet->length = read(_fd, packet->buffer + 2, 4094))) {
     _state = closing;
@@ -137,7 +137,7 @@ Taps::Tap::operator>> (Network::Packet * packet)
 }
 
 bool
-Taps::Tap::operator<< (Network::Packet * packet)
+Taps::Tap::operator<< (Packet::Packet * packet)
 {
   if (!write(_fd, packet->buffer + 2, packet->length - 2)) {
     _state = closing;

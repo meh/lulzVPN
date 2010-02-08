@@ -18,7 +18,7 @@
  */
 
 #include "protocol.h"
-#include "packet_buffer.h"
+#include "packet.h"
 
 #ifndef _LNET_PEER_H
 #define _LNET_PEER_H
@@ -37,22 +37,23 @@ namespace Peers
 
 class Peer
 {
-private:
 int _fd;
 SSL *_ssl;
 char _state;
+char _listeningStatus;
 std::string _user;
 int _address;
 int _virtualAddress;
 std::vector<networkT> _nl;
 
 public:
-Peer (int fd, SSL * ssl, std::string user, int address, std::vector<networkT> nl);
+Peer (int fd, SSL * ssl, std::string user, int address, std::vector<networkT> nl, char listenStat);
 ~Peer ();
-bool operator>> (Network::Packet * packet);
-bool operator<< (Network::Packet * packet);
+bool operator>> (Packet::Packet *packet);
+bool operator<< (Packet::Packet *packet);
 
 bool isRoutableAddress(int address);
+bool isListening();
 bool isActive();
 bool isReadyToRead(fd_set *rdSel);
 void setClosing();

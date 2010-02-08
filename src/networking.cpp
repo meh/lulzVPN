@@ -1,5 +1,5 @@
 /*
- *"networking.c" (C) blawl ( j[dot] segf4ult[at] gmail[dot] com )
+ *"networking.cpp" (C) blawl ( j[dot] segf4ult[at] gmail[dot] com )
  *
  *lulzNet is free software; you can redistribute it and / or modify
  * it under the terms of the GNU General Public License as published by
@@ -113,7 +113,7 @@ Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
           pthread_mutex_lock(&Peers::db_mutex);
 
 	  try {
-          newPeer = new Peers::Peer(peerSock, peerSsl, hsOpt->peer_username, peer.sin_addr.s_addr, hsOpt->remoteNets);
+          newPeer = new Peers::Peer(peerSock, peerSsl, hsOpt->peer_username, peer.sin_addr.s_addr, hsOpt->remoteNets, hsOpt->listeningStatus);
 	  Peers::Register(newPeer);
 	  } catch(const std::bad_alloc& x) {
 	    Log::Fatal("Out of memory");
@@ -130,6 +130,8 @@ Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
 
           pthread_create(&connectQueueT, NULL, CheckConnectionsQueue, &hsOpt->userLs);
           pthread_join(connectQueueT, NULL);
+	  UpdateNonListeningPeer(newPeer->user(), newPeer->address());
+
           delete hsOpt;
         }
         else {
@@ -170,6 +172,14 @@ Network::LookupAddress (std::string address)
   return *((int *) host_info->h_addr);
 }
 
+void *
+Network::Client::PeerConnectThreadWrapper (void *stuff) {
+
+     PeerAddrPort *host = (PeerAddrPort *) stuff;
+     PeerConnect(host->address, host->port);
+     return NULL;
+}
+
 void
 Network::Client::PeerConnect (int address, short port)
 {
@@ -208,7 +218,7 @@ Network::Client::PeerConnect (int address, short port)
           pthread_mutex_lock(&Peers::db_mutex);
           
 	  try{
-          newPeer = new Peers::Peer(peerSock, peerSsl, hsOpt.peer_username, address, hsOpt.remoteNets);
+          newPeer = new Peers::Peer(peerSock, peerSsl, hsOpt.peer_username, address, hsOpt.remoteNets, true);
 	  Peers::Register(newPeer);
 	  } catch(const std::bad_alloc& x){
 	    Log::Fatal("Out of memory");
@@ -249,12 +259,39 @@ Network::Client::PeerConnect (int address, short port)
   }
 }
 
+void
+Network::HandleClosingConnection(Peers::Peer *peer, int *flag)
+{
+  Log::Debug3("control_packet: closing connection");
+  peer->setClosing();
+  *flag = true;
+}
+
+void
+Network::HandleNewPeerNotify(Packet::Packet *packet)
+{
+  char user[MAX_USERNAME_LEN + 1];
+  uInt address;
+  pthread_t connectT;
+  PeerAddrPort *host;
+
+  sscanf((char *) packet->buffer + 1, "%s ", user);
+  memcpy((char *) &address, (char *) packet->buffer + 1 + strlen(user) + 1, 4);
+  //check user
+
+  host = new PeerAddrPort;
+  host->address = address;
+  host->port = port;
+  pthread_create(&connectT,NULL,Network::Client::PeerConnectThreadWrapper,host);
+  
+}
+
 void *
 Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
 {
-  Packet packet;
+  Packet::Packet packet;
   int ret;
-  int freeFdFlag;
+  int peerClosingFlag;
   fd_set readSelect;
   int maxFd;
   std::vector<Peers::Peer*>::iterator peerIt, peerEnd;
@@ -264,7 +301,7 @@ Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
   while (dont_close_flag) {
     pthread_mutex_lock(&Peers::db_mutex);
     readSelect = Network::master;
-    freeFdFlag = 0;
+    peerClosingFlag = 0;
     maxFd = (Peers::maxFd > Taps::maxFd ? Peers::maxFd : Taps::maxFd);
     pthread_mutex_unlock(&Peers::db_mutex);
 
@@ -285,14 +322,15 @@ Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
                 Network::Server::ForwardToTap(&packet, *peerIt);
                 break;
               case controlPacket:
-                if (packet.buffer[1] == closeConnection) {
-                  Log::Debug3("control_packet: closing connection");
-                  freeFdFlag = 1;
-                  (*peerIt)->setClosing();
-                  freeFdFlag = true;
-                }
-                else {
-                  Log::Error("Unknow control flag");
+		switch(packet.buffer[1]) {
+                  case closeConnection:
+                    HandleClosingConnection(*peerIt,&peerClosingFlag);
+		    break;
+		  case newPeerNotify:
+		    HandleNewPeerNotify(&packet);
+		    break;
+		  default:
+                    Log::Error("Unknow control flag");
 		}
 	      }
 	    }
@@ -301,7 +339,7 @@ Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
       }
 
       /* Check if is present some non active peer */
-      if (freeFdFlag) {
+      if (peerClosingFlag) {
         Peers::FreeNonActive();
       }
 
@@ -337,7 +375,7 @@ Network::Server::RestartSelectLoop ()
 }
 
 inline void
-Network::Server::ForwardToTap (Network::Packet * packet, Peers::Peer * src)
+Network::Server::ForwardToTap (Packet::Packet * packet, Peers::Peer * src)
 {
 
   uChar i;
@@ -345,7 +383,7 @@ Network::Server::ForwardToTap (Network::Packet * packet, Peers::Peer * src)
   int nAddr;
   Taps::Tap *tap;
 
-  nAddr = PacketInspection::GetDestinationIp(packet);
+  nAddr = Packet::GetDestinationIp(packet);
   i = packet->buffer[1];
   tap = Taps::db[i];
 
@@ -365,14 +403,14 @@ Network::Server::ForwardToTap (Network::Packet * packet, Peers::Peer * src)
 }
 
 inline void
-Network::Server::ForwardToPeer (Network::Packet * packet, uChar localId)
+Network::Server::ForwardToPeer (Packet::Packet * packet, uChar localId)
 {
 
   std::vector<Peers::Peer *>::iterator peerIt, peerEnd;
   std::vector<networkT>::const_iterator netIt, netEnd;
   int nAddr;
 
-  nAddr = PacketInspection::GetDestinationIp(packet);
+  nAddr = Packet::GetDestinationIp(packet);
   packet->buffer[0] = dataPacket;
   packet->buffer[1] = localId;
 
@@ -430,3 +468,24 @@ Network::CheckConnectionsQueue (void *arg)
 
   return NULL;
 }
+
+
+
+void
+Network::UpdateNonListeningPeer(std::string user, int address)
+{
+
+  std::vector<Peers::Peer *>::iterator peerIt, peerEnd;
+  Packet::Packet *packet;
+
+  peerEnd = Peers::db.end();
+  for (peerIt = Peers::db.begin(); peerIt < peerEnd; ++peerIt) {
+    if(!(*peerIt)->isListening()){
+      if((*peerIt)->user().compare(user)) {
+        packet = Packet::BuildNewPeerNotifyPacket(user, address);
+	(**peerIt) << packet;
+	delete packet;
+      }
+    }
+  }
+} 

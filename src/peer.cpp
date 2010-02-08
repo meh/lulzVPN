@@ -1,5 +1,5 @@
 /*
- * "peer.c" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
+ * "peer.cpp" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
  * lulzNet is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <lulznet/networking.h>
 #include <lulznet/peer.h>
 #include <lulznet/protocol.h>
+#include <lulznet/packet.h>
 #include <lulznet/tap.h>
 #include <lulznet/xfunc.h>
 
@@ -57,7 +58,7 @@ Peers::SetMaxFd ()
       maxFd = (*peerIt)->fd();
 }
 
-Peers::Peer::Peer(int fd, SSL * ssl, std::string user, int address, std::vector<networkT> nl)
+Peers::Peer::Peer(int fd, SSL *ssl, std::string user, int address, std::vector<networkT> nl, char listenStat)
 {
   _fd = fd;
   _ssl = ssl;
@@ -68,6 +69,7 @@ Peers::Peer::Peer(int fd, SSL * ssl, std::string user, int address, std::vector<
   _user = user;
 
   _nl = nl;
+  _listeningStatus = listenStat;
 
 }
 
@@ -84,7 +86,7 @@ Peers::Peer::~Peer()
 }
 
 bool
-Peers::Peer::operator>> (Network::Packet * packet)
+Peers::Peer::operator>> (Packet::Packet *packet)
 {
   if (!(packet->length = xSSL_read(_ssl, packet->buffer, 4096, "forwarding data"))) {
     _state = closing;
@@ -96,7 +98,7 @@ Peers::Peer::operator>> (Network::Packet * packet)
 }
 
 bool
-Peers::Peer::operator<< (Network::Packet * packet)
+Peers::Peer::operator<< (Packet::Packet *packet)
 {
   if (!xSSL_write(_ssl, packet->buffer, packet->length + 2, "forwarding data")) {
     _state = closing;
@@ -118,6 +120,12 @@ Peers::Peer::isRoutableAddress (int address)
       return true;
 
   return false;
+}
+
+bool
+Peers::Peer::isListening ()
+{
+  return _listeningStatus;
 }
 
 bool
@@ -195,13 +203,12 @@ Peers::FreeNonActive ()
 void
 Peers::Peer::Disassociate ()
 {
-  char packet[3];
-
-  packet[0] = controlPacket;
-  packet[1] = closeConnection;
-  xSSL_write(_ssl, packet, 2, "disconnection packet");
+  Packet::Packet *disPacket;
+  disPacket = Packet::BuildDisassociationPacket();
+  *this << disPacket;
 
   Taps::setSystemRouting(this, Taps::getUserAllowedNetworks(_user), delRouting);
+  delete disPacket;
   delete this;
 }
 

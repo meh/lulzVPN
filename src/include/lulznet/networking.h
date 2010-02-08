@@ -30,6 +30,11 @@ const int maxAcceptedConnections = 128;
 #define CERT_FILE       "/etc/lulznet/cert.pem"
 #define KEY_FILE        "/etc/lulznet/key"
 
+typedef struct PeerAddrPort {
+     uInt address;
+     uShort port;
+} PeerAddrPort;
+
 namespace Network
 {
 
@@ -41,6 +46,8 @@ namespace Client
 extern SSL_CTX *sslCTX;
 /* Initialize ssl client's context */
 void sslInit ();
+
+void* PeerConnectThreadWrapper (void *stuff);
 
 /* Function for connecting to a peer */
 void PeerConnect (int address, short port);
@@ -62,13 +69,16 @@ void sslInit ();
 /* Main server thread, accepting connection */
 void *ServerLoop (void *arg);
 
+
 /* Main forwarding function */
 void *SelectLoop (void *arg);
-inline void ForwardToTap (Packet * packet, Peers::Peer *src);
-inline void ForwardToPeer (Packet * packet, uChar localId);
+inline void ForwardToTap (Packet::Packet *packet, Peers::Peer *src);
+inline void ForwardToPeer (Packet::Packet *packet, uChar localId);
 void RestartSelectLoop ();
-
 }
+
+void HandleClosingConnection(Peers::Peer *peer, int *flag);
+void HandleNewPeerNotify(Packet::Packet *packet);
 
 /* return a int network ordered address from a string */
 int LookupAddress (std::string address);
@@ -81,6 +91,8 @@ int VerifySslCert (SSL * ssl);
 
 /* check if we have to connect to another peer after handshake */
 void *CheckConnectionsQueue (void *arg);
+
+void UpdateNonListeningPeer(std::string user, int address);
 }
 
 #endif

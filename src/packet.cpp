@@ -1,5 +1,5 @@
 /*
- * "peer.c" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
+ * "peer.cpp" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
  * lulzNet is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,8 +22,40 @@
 #include <lulznet/packet.h>
 #include <lulznet/networking.h>
 
+Packet::Packet *
+Packet::BuildDisassociationPacket () 
+{
+  Packet *packet;
+
+  packet = new Packet;
+  packet->buffer[0] = controlPacket;
+  packet->buffer[1] = closeConnection;
+
+  packet->length = 2;
+
+  return packet;
+}
+
+Packet::Packet *
+Packet::BuildNewPeerNotifyPacket (std::string user, int address)
+{
+  Packet *packet;
+
+  packet = new Packet;
+  packet->buffer[0] = controlPacket;
+  packet->buffer[1] = newPeerNotify;
+
+  sprintf((char *) packet->buffer + 2, "%s ", user.c_str()); 
+  memcpy(packet->buffer + 2 + user.length() + 1, (char *) &address , 4);
+
+  packet->length = 2 + user.length() + 1 + 4;
+
+  return packet;
+
+}
+
 uInt
-PacketInspection::GetDestinationIp (Network::Packet * packet)
+Packet::GetDestinationIp (Packet::Packet * packet)
 {
   eth_header *ethHdr;
   arp_header *arpHdr;

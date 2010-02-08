@@ -3,7 +3,7 @@ have_readline=no
 have_ssl=no
 
 AC_PREREQ([2.63])
-AC_INIT([lulznet], [0.1.2])
+AC_INIT([lulznet], [0.1.3])
 AC_CONFIG_SRCDIR([src/main.cpp])
 AC_CONFIG_HEADERS([src/include/lulznet/_config.h])
 AC_PROG_CC
