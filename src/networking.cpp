@@ -530,7 +530,7 @@ Network::VerifySslCert (SSL * ssl)
     fingerprint = Auth::Crypt::GetFingerprintFromCtx(ssl);
     std::cout << "Could not verify SSL servers certificate (self signed)." << std::endl;
     std::cout << "Fingerprint is: " << fingerprint << std::endl;
-    std::cout << "Do you want to continue? [y|n]:\n";
+    std::cout << "Do you want to continue? [y|n]:";
     std::cin >> answer;
 
     delete[] fingerprint;
