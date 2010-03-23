@@ -1,12 +1,12 @@
 /*
  * "log.cpp" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
- * lulzNet is free software; you can redistribute it and/or modify
+ * lulzVPN is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- * lulzNet is distributed in the hope that it will be useful,
+ * lulzVPN is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -17,10 +17,10 @@
  * MA 02110-1301, USA.
  */
 
-#include <lulznet/lulznet.h>
+#include <lulzvpn/lulzvpn.h>
 
-#include <lulznet/config.h>
-#include <lulznet/log.h>
+#include <lulzvpn/config.h>
+#include <lulzvpn/log.h>
 
 pthread_mutex_t Log::mutex;
 
@@ -33,7 +33,6 @@ Log::Info (const char *msg, ...)
   DoLog(msg, args, info);
   va_end(args);
 }
-
 
 void
 Log::Debug1 (const char *msg __attribute__ ((unused)),...)
@@ -99,7 +98,7 @@ Log::Fatal (const char *msg, ...)
   DoLog(msg, args, fatal);
   va_end(args);
 
-  LulznetExit();
+  LulzVPNExit();
 
   exit(1);
 }
@@ -134,7 +133,9 @@ Log::DoLog (const char *fmt, va_list args, int level)
   fprintf(stderr, "%s", msgbuf);
   fflush(stderr);
 
-  /* if specified log file print to it
+  
+  /* @TODO: add log file support: 
+   * if specified log file print to it
      if(opt.log_fp != NULL)
      fprintf(opt.log_fp,"%s",msgbuf");
    */
@@ -178,3 +179,4 @@ Log::Dump (unsigned char *data_buffer __attribute__ ((unused)), int length __att
 #endif
   pthread_mutex_unlock(&mutex);
 }
+

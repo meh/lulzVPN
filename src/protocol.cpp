@@ -1,12 +1,12 @@
 /*
  * "protocol.cpp" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
- * LulzNet is free software; you can redistribute it and/or modify
+ * LulzVPN is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- * LulzNet is distributed in the hope that it will be useful,
+ * LulzVPN is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -17,16 +17,16 @@
  * MA 02110-1301, USA.
  */
 
-#include <lulznet/lulznet.h>
+#include <lulzvpn/lulzvpn.h>
 
-#include <lulznet/auth.h>
-#include <lulznet/config.h>
-#include <lulznet/log.h>
-#include <lulznet/networking.h>
-#include <lulznet/peer.h>
-#include <lulznet/tap.h>
-#include <lulznet/protocol.h>
-#include <lulznet/xfunc.h>
+#include <lulzvpn/auth.h>
+#include <lulzvpn/config.h>
+#include <lulzvpn/log.h>
+#include <lulzvpn/networking.h>
+#include <lulzvpn/peer_api.h>
+#include <lulzvpn/tap_api.h>
+#include <lulzvpn/protocol.h>
+#include <lulzvpn/xfunc.h>
 
 void
 Protocol::SendBanner (int fd)
@@ -34,7 +34,7 @@ Protocol::SendBanner (int fd)
   char banner[512];
   int len;
 
-  sprintf(banner, "LulzNet. Version %s", PACKAGE_VERSION);
+  sprintf(banner, "LulzVPN. Version %s", PACKAGE_VERSION);
   len = strlen(banner);
   write(fd, banner, len);
 }
@@ -61,12 +61,12 @@ Protocol::Server::Handshake (SSL * ssl, HandshakeOptionT * hsOpt)
 
   /* Exchange peer username */
   Log::Debug2("User Exchange");
-  if (!LulzNetUserExchange(ssl, hsOpt))
+  if (!LulzVPNUserExchange(ssl, hsOpt))
     return FAIL;
 
   /* Recv hash and do authentication */
   Log::Debug2("Authentication");
-  if (!LulzNetAuth(ssl, hsOpt))
+  if (!LulzVPNAuth(ssl, hsOpt))
     return FAIL;
 
   hsOpt->allowedNets = Taps::getUserAllowedNetworks(hsOpt->peer_username);
@@ -77,21 +77,21 @@ Protocol::Server::Handshake (SSL * ssl, HandshakeOptionT * hsOpt)
 
   /* Networks exchange */
   Log::Debug2("Recving Networks");
-  if (!LulzNetReciveNetworks(ssl, hsOpt))
+  if (!LulzVPNReciveNetworks(ssl, hsOpt))
     return FAIL;
 
   Log::Debug2("Sending Networks");
-  if (!LulzNetSendNetworks(ssl, hsOpt))
+  if (!LulzVPNSendNetworks(ssl, hsOpt))
     return FAIL;
 
   /* User exchange */
   Log::Debug2("Recving User list");
-  if (!LulzNetReciveUserlist(ssl, hsOpt))
+  if (!LulzVPNReciveUserlist(ssl, hsOpt))
     return FAIL;
 
 
   Log::Debug2("Sending User list");
-  if (!LulzNetSendUserlist(ssl))
+  if (!LulzVPNSendUserlist(ssl))
     return FAIL;
 
   return DONE;
@@ -107,11 +107,11 @@ Protocol::Client::Handshake (SSL * ssl, HandshakeOptionT * hsOpt)
    */
 
   Log::Debug2("User Exchange");
-  if (!LulzNetUserExchange(ssl, hsOpt))
+  if (!LulzVPNUserExchange(ssl, hsOpt))
     return FAIL;
 
   Log::Debug2("Authentication");
-  if (!LulzNetAuth(ssl))
+  if (!LulzVPNAuth(ssl))
     return FAIL;
 
   hsOpt->allowedNets = Taps::getUserAllowedNetworks(hsOpt->peer_username);
@@ -132,27 +132,27 @@ Protocol::Client::Handshake (SSL * ssl, HandshakeOptionT * hsOpt)
 
   /* Networks exchange */
   Log::Debug2("Sending Networks");
-  if (!LulzNetSendNetworks(ssl, hsOpt))
+  if (!LulzVPNSendNetworks(ssl, hsOpt))
     return FAIL;
 
   Log::Debug2("Recving Networks");
-  if (!LulzNetReciveNetworks(ssl, hsOpt))
+  if (!LulzVPNReciveNetworks(ssl, hsOpt))
     return FAIL;
 
   /* User exchange */
   Log::Debug2("Recving User list");
-  if (!LulzNetSendUserlist(ssl))
+  if (!LulzVPNSendUserlist(ssl))
     return FAIL;
 
   Log::Debug2("Sending User list");
-  if (!LulzNetReciveUserlist(ssl, hsOpt))
+  if (!LulzVPNReciveUserlist(ssl, hsOpt))
     return FAIL;
 
   return DONE;
 }
 
 bool
-Protocol::Server::LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt)
+Protocol::Server::LulzVPNUserExchange (SSL * ssl, HandshakeOptionT * hsOpt)
 {
   int rdLen;
   char username[MAX_USERNAME_LEN + 1];
@@ -193,7 +193,7 @@ Protocol::Server::LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt)
 }
 
 bool
-Protocol::Client::LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt)
+Protocol::Client::LulzVPNUserExchange (SSL * ssl, HandshakeOptionT * hsOpt)
 {
   int rdLen;
   char username[MAX_USERNAME_LEN + 1];
@@ -223,7 +223,7 @@ Protocol::Client::LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt)
 }
 
 bool
-Protocol::Server::LulzNetAuth (SSL * ssl, HandshakeOptionT * hsOpt)
+Protocol::Server::LulzVPNAuth (SSL * ssl, HandshakeOptionT * hsOpt)
 {
 
   uChar hex_hash[16];
@@ -255,7 +255,7 @@ Protocol::Server::LulzNetAuth (SSL * ssl, HandshakeOptionT * hsOpt)
 }
 
 bool
-Protocol::Client::LulzNetAuth (SSL * ssl)
+Protocol::Client::LulzVPNAuth (SSL * ssl)
 {
 
   uChar *hex_hash;
@@ -287,7 +287,7 @@ Protocol::Client::LulzNetAuth (SSL * ssl)
 }
 
 bool
-Protocol::LulzNetSendNetwork (SSL *ssl, networkT net)
+Protocol::LulzVPNSendNetwork (SSL *ssl, networkT net)
 {
   int answer;
 
@@ -320,7 +320,7 @@ Protocol::LulzNetSendNetwork (SSL *ssl, networkT net)
 }
 
 bool
-Protocol::LulzNetRecvNetwork (SSL *ssl, networkT *net, std::vector<networkT> allowedNets)
+Protocol::LulzVPNRecvNetwork (SSL *ssl, networkT *net, std::vector<networkT> allowedNets)
 {
   int answer;
   int rdLen;
@@ -365,7 +365,7 @@ Protocol::LulzNetRecvNetwork (SSL *ssl, networkT *net, std::vector<networkT> all
 }
 
 bool
-Protocol::LulzNetSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
+Protocol::LulzVPNSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
 {
   int netCount;
   std::vector<networkT>::iterator netIt, netEnd;
@@ -385,7 +385,7 @@ Protocol::LulzNetSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
 
   netEnd = hsOpt->allowedNets.end();
   for (netIt = hsOpt->allowedNets.begin(); netIt < netEnd; ++netIt)
-       if(!LulzNetSendNetwork(ssl, *netIt))
+       if(!LulzVPNSendNetwork(ssl, *netIt))
 	    return FAIL;
 
   return DONE;
@@ -393,15 +393,14 @@ Protocol::LulzNetSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
 }
 
 bool
-Protocol::LulzNetReciveNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
+Protocol::LulzVPNReciveNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
 {
   int i;
-  int rdLen;
   int netCount;
   networkT net;
 
   Log::Debug2("Recving available network count");
-  if (!(rdLen = xSSL_read(ssl, &netCount, sizeof(int), "network count")))
+  if (!xSSL_read(ssl, &netCount, sizeof(int), "network count"))
     return FAIL;
 
   if (netCount == 0) {
@@ -410,7 +409,7 @@ Protocol::LulzNetReciveNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
   }
 
   for (i = 0; i < netCount; i++)
-    if(!LulzNetRecvNetwork(ssl, &net, hsOpt->allowedNets))
+    if(!LulzVPNRecvNetwork(ssl, &net, hsOpt->allowedNets))
       return FAIL;
     else
       hsOpt->remoteNets.push_back(net);
@@ -419,7 +418,7 @@ Protocol::LulzNetReciveNetworks (SSL * ssl, HandshakeOptionT * hsOpt)
 }
 
 bool
-Protocol::LulzNetSendUser (SSL *ssl, userT user)
+Protocol::LulzVPNSendUser (SSL *ssl, userT user)
 {
   if (!xSSL_write(ssl, (char *) user.user.c_str(), user.user.length(), "user"))
     return FAIL;
@@ -430,7 +429,7 @@ Protocol::LulzNetSendUser (SSL *ssl, userT user)
 }
 
 bool
-Protocol::LulzNetRecvUser (SSL *ssl, userT *user) {
+Protocol::LulzVPNRecvUser (SSL *ssl, userT *user) {
 
   int rdLen;
   char username[MAX_USERNAME_LEN + 1];
@@ -448,7 +447,7 @@ Protocol::LulzNetRecvUser (SSL *ssl, userT *user) {
 }
 
 bool
-Protocol::LulzNetSendUserlist (SSL * ssl)
+Protocol::LulzVPNSendUserlist (SSL * ssl)
 {
   int userCount;
   std::vector<userT> userLs;
@@ -464,14 +463,14 @@ Protocol::LulzNetSendUserlist (SSL * ssl)
   /* And send peers address */
   userEnd = userLs.end();
   for (userIt = userLs.begin(); userIt < userEnd; ++userIt)
-    if(!LulzNetSendUser(ssl, *userIt))
+    if(!LulzVPNSendUser(ssl, *userIt))
       return FAIL;
 
   return DONE;
 }
 
 bool
-Protocol::LulzNetReciveUserlist (SSL * ssl, HandshakeOptionT * hsOpt)
+Protocol::LulzVPNReciveUserlist (SSL * ssl, HandshakeOptionT * hsOpt)
 {
   int i;
   int userCount;
@@ -482,7 +481,7 @@ Protocol::LulzNetReciveUserlist (SSL * ssl, HandshakeOptionT * hsOpt)
 
   /* And recv peers Log::Info */
   for (i = 0; i < userCount; i++) 
-    if(!LulzNetRecvUser(ssl, &user))
+    if(!LulzVPNRecvUser(ssl, &user))
       return FAIL;
     else
       hsOpt->userLs.push_back(user);

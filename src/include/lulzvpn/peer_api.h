@@ -1,5 +1,5 @@
 /*
- * "xfunc.cpp" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
+ * "peer_api.h" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
  * lulzVPN is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,49 +17,34 @@
  * MA 02110-1301, USA.
  */
 
-#include <lulzvpn/lulzvpn.h>
-#include <lulzvpn/log.h>
-#include <lulzvpn/xfunc.h>
+#ifndef _LVPN_PEER_API_H
+#define _LVPN_PEER_API_H
 
-int
-xSSL_read (SSL * ssl, void *buf, int max_len, const char *item)
+#include "peer.h"
+
+const bool accepted = 0;
+const bool connected = 1;
+
+namespace Peers
 {
 
-  int rdLen;
+extern std::vector<Peer *> db;
+extern pthread_mutex_t db_mutex;
 
-  rdLen = SSL_read(ssl, buf, max_len);
+extern int maxTcpFd;
+extern int maxUdpFd;
 
-  if (!rdLen)
-    Log::Error("cannot recv %s", item);
+void Register(Peer *p);
 
-  return rdLen;
+/* set global var maxFd to proper value (we use it with select() ) */
+void SetMaxTcpFd ();
+void SetMaxUdpFd ();
+
+/* Check for non active peer and reomve them */
+void FreeNonActive ();
+
+/* Check if user is connected */
+int UserIsConnected (std::string user);
 }
 
-int
-xSSL_write (SSL * ssl, void *buf, int max_len, const char *item)
-{
-
-  int wr_len;
-
-  wr_len = SSL_write(ssl, buf, max_len);
-
-  if (!wr_len)
-    Log::Error("cannot send %s", item);
-
-  return wr_len;
-}
-
-int
-xinet_pton (char *address)
-{
-  int int_addr;
-
-  if (inet_pton(AF_INET, address, &int_addr) < 0) {
-    Log::Error("Invalid address format");
-    return 0;
-  }
-  else
-    return int_addr;
-
-}
-
+#endif

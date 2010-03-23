@@ -1,12 +1,12 @@
 /*
  * "peer.cpp" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
- * lulzNet is free software; you can redistribute it and/or modify
+ * lulzVPN is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- * lulzNet is distributed in the hope that it will be useful,
+ * lulzVPN is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -17,49 +17,46 @@
  * MA 02110-1301, USA.
  */
 
-#include <lulznet/lulznet.h>
-#include <lulznet/log.h>
-#include <lulznet/packet.h>
-#include <lulznet/networking.h>
+#include <lulzvpn/lulzvpn.h>
+#include <lulzvpn/log.h>
+#include <lulzvpn/packet.h>
+#include <lulzvpn/networking.h>
 
-Packet::Packet *
+Packet::CtrlPacket *
 Packet::BuildDisassociationPacket () 
 {
-  Packet *packet;
+  CtrlPacket *packet;
 
-  packet = new Packet;
-  packet->buffer[0] = controlPacket;
-  packet->buffer[1] = closeConnection;
+  packet = new CtrlPacket;
+  packet->buffer[0] = closeConnection;
 
-  packet->length = 2;
+  packet->length = 1;
 
   return packet;
 }
 
-Packet::Packet *
+Packet::CtrlPacket *
 Packet::BuildNewPeerNotifyPacket (std::string user, int address)
 {
-  Packet *packet;
+  CtrlPacket *packet;
 
-  packet = new Packet;
-  packet->buffer[0] = controlPacket;
-  packet->buffer[1] = newPeerNotify;
+  packet = new CtrlPacket;
+  packet->buffer[0] = newPeerNotify;
 
-  sprintf((char *) packet->buffer + 2, "%s ", user.c_str()); 
-  memcpy(packet->buffer + 2 + user.length() + 1, (char *) &address , 4);
+  sprintf((char *) packet->buffer + 1, "%s ", user.c_str()); 
+  memcpy(packet->buffer + 1 + user.length() + 1, (char *) &address , 4);
 
-  packet->length = 2 + user.length() + 1 + 4;
+  packet->length = 1 + user.length() + 1 + 4;
 
   return packet;
-
 }
 
 uInt
-Packet::GetDestinationIp (Packet::Packet * packet)
+Packet::GetDestinationIp (Packet::DataPacket *packet)
 {
-  eth_header *ethHdr;
-  arp_header *arpHdr;
-  ip_header *ipHdr;
+  macHeader *macHdr;
+  arpHeader *arpHdr;
+  ipHeader *ipHdr;
   uInt address;
   u_short protocol;
 
@@ -67,14 +64,14 @@ Packet::GetDestinationIp (Packet::Packet * packet)
   char p_addr[addressLenght];
 #endif
 
-  ethHdr = (eth_header *)(packet->buffer + 2);
-  protocol = ethHdr->eth_type;
+  macHdr = (macHeader *)(packet->buffer + 1);
+  protocol = macHdr->eth_type;
   protocol = ntohs(protocol);
 
   if (protocol == 0x0806) {
     /*arp packet */
 
-    arpHdr = (arp_header *)(packet->buffer + ETH_HDR_LEN + 2);
+    arpHdr = (arpHeader *)(packet->buffer + ETH_HDR_LEN + 1);
     address = arpHdr->dst_ip_adr;
 
 #ifdef DEBUG
@@ -86,7 +83,7 @@ Packet::GetDestinationIp (Packet::Packet * packet)
   else if (protocol == 0x0800) {
     /* ip packet */
 
-    ipHdr = (ip_header *)(packet->buffer + ETH_HDR_LEN + 2);
+    ipHdr = (ipHeader *)(packet->buffer + ETH_HDR_LEN + 1);
     address = ipHdr->dst_adr;
 
 #ifdef DEBUG
@@ -102,3 +99,4 @@ Packet::GetDestinationIp (Packet::Packet * packet)
 
   return address;
 }
+

@@ -1,12 +1,12 @@
 /*
  * "auth.h" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
- * lulzNet is free software; you can redistribute it and/or modify
+ * lulzVPN is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- * lulzNet is distributed in the hope that it will be useful,
+ * lulzVPN is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -17,8 +17,10 @@
  * MA 02110-1301, USA.
  */
 
-#ifndef _LNET_AUTH_H
-#define _LNET_AUTH_H
+#ifndef _LVPN_AUTH_H
+#define _LVPN_AUTH_H
+
+#include "lulzvpn.h"
 
 const uInt pwHashStringLenght = 32;
 
@@ -31,6 +33,7 @@ bool DoAuthentication (const std::string &Username, uChar *Hash);
 /* Ask for password (disable echo) */
 void PasswordPrompt ();
 
+/* Return user hash */
 std::string GetHash (const std::string& RequestedUser);
 
 namespace Crypt

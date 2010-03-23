@@ -1,12 +1,12 @@
 /*
  * "config.h" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
- * lulzNet is free software; you can redistribute it and/or modify
+ * lulzVPN is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- * lulzNet is distributed in the hope that it will be useful,
+ * lulzVPN is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
@@ -17,10 +17,11 @@
  * MA 02110-1301, USA.
  */
 
-#ifndef _LNET_CONFIG_H
-#define _LNET_CONFIG_H
+#ifndef _LVPN_CONFIG_H
+#define _LVPN_CONFIG_H
 
-#define CONFIG_FILE "/etc/lulznet/config.xml"
+#include "lulzvpn.h"
+#define CONFIG_FILE "/etc/lulzvpn/config.xml"
 
 const char listeningMode = 0x01;
 const char interactiveMode = 0x02;

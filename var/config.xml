@@ -1,4 +1,4 @@
-<lulzNetConfig>
+<lulzVPNConfig>
   <!-- global config -->
   <config>
     <!-- your username -->
@@ -10,7 +10,7 @@
     <!-- set listening thread or not (yes,no) -->
     <listening></listening>
 
-    <!--set if lulznet will be interactive with a shell or not (yes, no) -->
+    <!--set if lulzvpn will be interactive with a shell or not (yes, no) -->
     <interactive></interactive>
 
     <!-- debug level-->
@@ -72,5 +72,5 @@
       <netmask></netmask>
     </tap>
   </taps>
-  <!-- now you can enjoy the lulznet -->
-</lulzNetConfig>
+  <!-- now you can enjoy the lulzvpn -->
+</lulzVPNConfig>

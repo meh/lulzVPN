@@ -1,12 +1,12 @@
 /*
  * "shell.cpp" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
- * lulzNet is free software; you can redistribute it and/or modify
+ * lulzVPN is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- * lulzNet is distributed in the hope that it will be useful,
+ * lulzVPN is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -17,16 +17,16 @@
  * MA 02110-1301, USA.
  */
 
-#include <lulznet/lulznet.h>
+#include <lulzvpn/lulzvpn.h>
 
-#include <lulznet/auth.h>
-#include <lulznet/config.h>
-#include <lulznet/log.h>
-#include <lulznet/networking.h>
-#include <lulznet/peer.h>
-#include <lulznet/tap.h>
-#include <lulznet/shell.h>
-#include <lulznet/xfunc.h>
+#include <lulzvpn/auth.h>
+#include <lulzvpn/config.h>
+#include <lulzvpn/log.h>
+#include <lulzvpn/networking.h>
+#include <lulzvpn/peer_api.h>
+#include <lulzvpn/tap_api.h>
+#include <lulzvpn/shell.h>
+#include <lulzvpn/xfunc.h>
 
 void
 Shell::PeerPreconnect (Cmd * cmd)
@@ -45,7 +45,7 @@ Shell::PeerPreconnect (Cmd * cmd)
   }
   else {
     address = xinet_pton((char *) cmd->argv[0].c_str());
-    port = atoi((char *) cmd->argv[1].c_str());
+    port = (unsigned short) atoi((char *) cmd->argv[1].c_str());
 
     Network::Client::PeerConnect(address, port);
   }
@@ -102,7 +102,8 @@ Shell::PeerKill (Cmd * cmd)
           (*peerIt)->Disassociate();
 
           Peers::db.erase(peerIt);
-          Peers::SetMaxFd();
+          Peers::SetMaxTcpFd();
+          Peers::SetMaxUdpFd();
         }
         else
           std::cout << "Peer is not active" << std::endl;
@@ -178,7 +179,7 @@ Shell::PreparseCommand (std::string line)
 
   try {
   command = new Cmd;
-  } catch(const std::bad_alloc& x){
+  } catch(const std::bad_alloc){
     Log::Fatal("Out of memory");
   }
   parsedBytes = 0;
@@ -266,7 +267,7 @@ Shell::ParseCommand (Shell::Cmd * cmd)
 
   /* quit command */
   else if (!cmd->command.compare("quit"))
-    LulznetExit();
+    LulzVPNExit();
 
   /* invalid command */
   else
@@ -281,7 +282,7 @@ Shell::Start ()
   Cmd *cmd;
   while (true) {
 
-    rlStr = readline("[lulznet] ");
+    rlStr = readline("[lulzvpn] ");
     if (rlStr != NULL) {
       line = rlStr;
       if (!line.empty()) {

@@ -1,12 +1,12 @@
 /*
- * "tap.h" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
+ * "tap_api.h" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
- * lulzNet is free software; you can redistribute it and/or modify
+ * lulzVPN is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- * lulzNet is distributed in the hope that it will be useful,
+ * lulzVPN is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -17,8 +17,10 @@
  * MA 02110-1301, USA.
  */
 
-#ifndef _LNET_TAP_H
-#define _LNET_TAP_H
+#ifndef _LVPN_TAP_API_H
+#define _LVPN_TAP_API_H
+
+#include "tap.h"
 
 const char addRouting = 0x01;
 const char delRouting = 0x02;
@@ -29,44 +31,6 @@ const int CLASS_C   = 3;
 
 namespace Taps
 {
-
-/* Allocate a new tap device */
-/* Register a new fd in the tap_db structure */
-/* Remove tap device data from tap_db*/
-
-class Tap
-{
-private:
-int _fd;
-char _state;
-char _id;
-std::string _device;
-std::string _networkName;
-
-int _address;
-int _netmask;
-int _network;
-
-int alloc (std::string NetName, std::string *dev);
-
-public:
-Tap (TapDeviceT TapOpt);
-~Tap ();
-bool operator>> (Packet::Packet * packet);
-bool operator<< (Packet::Packet * packet);
-bool isActive ();
-bool isRoutableAddress(int address);
-bool isReadyToRead(fd_set *rdSel);
-void showInfo();
-
-public:
-int fd ();
-uChar id ();
-std::string device ();
-std::string networkName ();
-int address ();
-int netmask ();
-};
 
 /* A structure that keep file descriptors information */
 extern std::vector<Tap *>db;
@@ -99,3 +63,4 @@ std::vector<networkT> getUserAllowedNetworks (std::string user);
 uChar getNetworkId(std::string networkName);
 }
 #endif
+

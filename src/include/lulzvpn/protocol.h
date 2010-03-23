@@ -1,12 +1,12 @@
 /*
  * "protocol.h" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
- * LulzNet is free software; you can redistribute it and/or modify
+ * LulzVPN is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- * LulzNet is distributed in the hope that it will be useful,
+ * LulzVPN is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -17,10 +17,10 @@
  * MA 02110-1301, USA.
  */
 
-#include <vector>
+#ifndef _LVPN_PROTOCOL_H
+#define _LVPN_PROTOCOL_H
 
-#ifndef _LNET_PROTOCOL_H
-#define _LNET_PROTOCOL_H
+#include "lulzvpn.h"
 
 const char dataPacket = '\x00';
 const char controlPacket = '\x01';
@@ -82,31 +82,31 @@ void RecvBanner (int fd);
 namespace Server
 {
 bool Handshake (SSL * ssl, HandshakeOptionT * hsOpt);
-bool LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt);
-bool LulzNetAuth (SSL * ssl, HandshakeOptionT * hsOpt);
+bool LulzVPNUserExchange (SSL * ssl, HandshakeOptionT * hsOpt);
+bool LulzVPNAuth (SSL * ssl, HandshakeOptionT * hsOpt);
 }
 
 namespace Client
 {
 /* peer and server handshake */
 bool Handshake (SSL * ssl, HandshakeOptionT * hsOpt);
-bool LulzNetUserExchange (SSL * ssl, HandshakeOptionT * hsOpt);
-bool LulzNetAuth (SSL * ssl);
+bool LulzVPNUserExchange (SSL * ssl, HandshakeOptionT * hsOpt);
+bool LulzVPNAuth (SSL * ssl);
 }
 
 /* Networks exchange */
-bool LulzNetSendNetwork (SSL * ssl, networkT net);
-bool LulzNetRecvNetwork (SSL *ssl, networkT *net, std::vector<networkT> allowedNets);
+bool LulzVPNSendNetwork (SSL * ssl, networkT net);
+bool LulzVPNRecvNetwork (SSL *ssl, networkT *net, std::vector<networkT> allowedNets);
 
-bool LulzNetSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt);
-bool LulzNetReciveNetworks (SSL * ssl, HandshakeOptionT * hsOpt);
+bool LulzVPNSendNetworks (SSL * ssl, HandshakeOptionT * hsOpt);
+bool LulzVPNReciveNetworks (SSL * ssl, HandshakeOptionT * hsOpt);
 
 /* User exchange */
-bool LulzNetSendUser (SSL *ssl, userT user);
-bool LulzNetRecvUser (SSL *ssl, userT *user);
+bool LulzVPNSendUser (SSL *ssl, userT user);
+bool LulzVPNRecvUser (SSL *ssl, userT *user);
 
-bool LulzNetSendUserlist (SSL * ssl);
-bool LulzNetReciveUserlist (SSL * ssl, HandshakeOptionT * hsOpt);
+bool LulzVPNSendUserlist (SSL * ssl);
+bool LulzVPNReciveUserlist (SSL * ssl, HandshakeOptionT * hsOpt);
 
 /* Return a list with all the users connected */
 std::vector<userT> GetUserlist ();

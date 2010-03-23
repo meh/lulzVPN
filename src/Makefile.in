@@ -1,38 +1,37 @@
 # @configure_input@
-
+  
 # Package-related substitution variables
-package		= @PACKAGE_NAME@
-version		= @PACKAGE_VERSION@
-srcdir		= @srcdir@
-VPATH		= @srcdir@
-CXX		= g++
-CXXFLAGS	= -Wall -Wextra -pedantic -g -I $(srcdir)/include `xml2-config --cflags`
-LDFLAGS		= -lpthread -lssl -lreadline `xml2-config --libs`
-
-SOURCES	= $(srcdir)/auth.o\
-	  $(srcdir)/config.o\
-	  $(srcdir)/main.o\
-	  $(srcdir)/peer.o\
-	  $(srcdir)/shell.o\
-	  $(srcdir)/xfunc.o\
-	  $(srcdir)/log.o\
-	  $(srcdir)/networking.o\
-	  $(srcdir)/protocol.o\
-	  $(srcdir)/tap.o\
-	  $(srcdir)/packet.o
-
+package = @PACKAGE_NAME@
+version = @PACKAGE_VERSION@
+srcdir = @srcdir@
+VPATH = @srcdir@
+CXX = g++
+CXXFLAGS = -Wall -Wextra -pedantic -g -I $(srcdir)/include `xml2-config --cflags`
+LDFLAGS = -lpthread -lssl -lreadline `xml2-config --libs`
+ 
+SOURCES = $(srcdir)/auth.o\
+	$(srcdir)/config.o\
+	$(srcdir)/main.o\
+	$(srcdir)/peer.o\
+	$(srcdir)/shell.o\
+	$(srcdir)/xfunc.o\
+	$(srcdir)/log.o\
+	$(srcdir)/networking.o\
+	$(srcdir)/protocol.o\
+	$(srcdir)/select.o\
+	$(srcdir)/tap.o\
+	$(srcdir)/packet.o
+    
 all: link
-
+   
 link: $(SOURCES)
-	$(CXX) $(LDFLAGS) -o ../lulznet $(SOURCES)
-
+	$(CXX) $(LDFLAGS) -o ../$(package) $(SOURCES)
+     
 clean:
 	rm -f $(srcdir)/*.o
 	rm ../${package}
-
+	       
 Makefile: Makefile.in ../config.status
 	cd .. && ./config.status $@
-
 ../config.status: ../configure
 	cd .. && ./config.status --recheck
-

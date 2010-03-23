@@ -1,12 +1,12 @@
 /*
  * "tap.cpp" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
- * lulzNet is free software; you can redistribute it and/or modify
+ * lulzVPN is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- * lulzNet is distributed in the hope that it will be useful,
+ * lulzVPN is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -17,15 +17,16 @@
  * MA 02110-1301, USA.
  */
 
-#include <lulznet/lulznet.h>
+#include <lulzvpn/lulzvpn.h>
 
-#include <lulznet/config.h>
-#include <lulznet/log.h>
-#include <lulznet/networking.h>
-#include <lulznet/peer.h>
-#include <lulznet/protocol.h>
-#include <lulznet/tap.h>
-#include <lulznet/xfunc.h>
+#include <lulzvpn/config.h>
+#include <lulzvpn/log.h>
+#include <lulzvpn/networking.h>
+#include <lulzvpn/peer_api.h>
+#include <lulzvpn/protocol.h>
+#include <lulzvpn/select.h>
+#include <lulzvpn/tap_api.h>
+#include <lulzvpn/xfunc.h>
 
 std::vector < Taps::Tap * >Taps::db;
 pthread_mutex_t Taps::db_mutex;
@@ -38,12 +39,12 @@ Taps::Register(Tap *t){
   db.push_back(t);
 
   Log::Debug2("Added fd %d to fd_set master", t->fd());
-  FD_SET(t->fd(), &Network::master);
+  FD_SET(t->fd(), &Select::TapChannel::Set);
 
   SetMaxFd();
 
   /* restart select thread so select() won't block world */
-  Network::Server::RestartSelectLoop();
+  Select::TapChannel::Restart ();
 }
 
 void
@@ -58,13 +59,17 @@ Taps::SetMaxFd ()
       maxFd = (*tapIt)->fd();
 }
 
+
+#ifdef LINUX_TUN
+#include <linux/if.h>
+#include <linux/if_tun.h>
+
 int
 Taps::Tap::alloc (std::string NetName, std::string * dev)
 {
 
-  /* TODO: add *bsd support */
   struct ifreq ifr;
-  int fd, err;
+  int fd;
 
   if ((fd = open("/dev/net/tun", O_RDWR)) < 0)
     Log::Fatal("Could not open /dev/net/tun device");
@@ -74,7 +79,7 @@ Taps::Tap::alloc (std::string NetName, std::string * dev)
   ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
   snprintf(ifr.ifr_name, IFNAMSIZ, "%s%%d", (char *) NetName.c_str());
 
-  if ((err = ioctl(fd, TUNSETIFF, (void *) &ifr)) < 0) {
+  if (ioctl(fd, TUNSETIFF, (void *) &ifr) < 0) {
     close(fd);
     Log::Fatal("Could not allocate tap device");
   }
@@ -83,7 +88,23 @@ Taps::Tap::alloc (std::string NetName, std::string * dev)
 
   Log::Debug1("%s device create (fd %d).", dev->c_str(), fd);
   return fd;
+
 }
+
+#endif
+
+#ifdef BSD_TUN
+#include <sys/socket.h>
+#include <net/if.h>
+
+int
+Taps::Tap::alloc (std::string NetName, std::string * dev)
+{
+
+     /* @TODO: lol. */
+}
+
+#endif
 
 Taps::Tap::Tap(TapDeviceT TapOpt)
 {
@@ -103,7 +124,7 @@ Taps::Tap::Tap(TapDeviceT TapOpt)
 
   _fd = alloc(TapOpt.networkName, &device);
   _state = active;
-  _id = db.size();
+  _id = (char) db.size();
   _device = device;
   _networkName = TapOpt.networkName;
   _address = n_address;
@@ -116,7 +137,7 @@ Taps::Tap::Tap(TapDeviceT TapOpt)
 Taps::Tap::~Tap()
 {
 
-  FD_CLR(_fd, &Network::master);
+  FD_CLR(_fd, &Select::TapChannel::Set);
   close(_fd);
 
 
@@ -124,9 +145,9 @@ Taps::Tap::~Tap()
 }
 
 bool
-Taps::Tap::operator>> (Packet::Packet * packet)
+Taps::Tap::operator>> (Packet::DataPacket * packet)
 {
-  if (!(packet->length = read(_fd, packet->buffer + 2, 4094))) {
+  if (!(packet->length = (read(_fd, packet->buffer + Packet::PacketHdrLen, Packet::PacketPldLen) + Packet::PacketHdrLen))) {
     _state = closing;
     return FAIL;
   }
@@ -137,13 +158,12 @@ Taps::Tap::operator>> (Packet::Packet * packet)
 }
 
 bool
-Taps::Tap::operator<< (Packet::Packet * packet)
+Taps::Tap::operator<< (Packet::DataPacket * packet)
 {
-  if (!write(_fd, packet->buffer + 2, packet->length - 2)) {
+  if (!write(_fd, packet->buffer + Packet::PacketHdrLen, packet->length - Packet::PacketHdrLen)) {
     _state = closing;
     return FAIL;
   }
-
 
   Log::Debug3("\tForwarded to tap %s", _device.c_str());
   return DONE;
@@ -233,9 +253,6 @@ Taps::FreeNonActive ()
   it = db.begin();
   while (it != db.end()) {
     if (!(*it)->isActive()) {
-      /* Remove network from peer */
-      /* Send network remove packet to other peer */
-
       delete *it;
       it = db.erase(it);
     }
@@ -377,3 +394,4 @@ Taps::getNetworkId (std::string networkName)
 
   return (*tapIt)->id();
 }
+

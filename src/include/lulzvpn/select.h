@@ -1,5 +1,5 @@
 /*
- * "xfunc.cpp" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
+ * "select.h" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
  * lulzVPN is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,49 +17,46 @@
  * MA 02110-1301, USA.
  */
 
-#include <lulzvpn/lulzvpn.h>
-#include <lulzvpn/log.h>
-#include <lulzvpn/xfunc.h>
+#ifndef _LVPN_SELECT_H
+#define _LVPN_SELECT_H
 
-int
-xSSL_read (SSL * ssl, void *buf, int max_len, const char *item)
+extern int udpDataSock;
+
+namespace Select
 {
 
-  int rdLen;
+namespace TapChannel {
+extern fd_set Set;
+extern pthread_t ThreadId;
 
-  rdLen = SSL_read(ssl, buf, max_len);
-
-  if (!rdLen)
-    Log::Error("cannot recv %s", item);
-
-  return rdLen;
+void *Loop (void __attribute__ ((unused)) *arg);
+void Restart();
 }
 
-int
-xSSL_write (SSL * ssl, void *buf, int max_len, const char *item)
-{
+namespace DataChannel {
+namespace Server {
+extern pthread_t ThreadId;
 
-  int wr_len;
-
-  wr_len = SSL_write(ssl, buf, max_len);
-
-  if (!wr_len)
-    Log::Error("cannot send %s", item);
-
-  return wr_len;
+void *Loop (void __attribute__ ((unused)) *arg);
 }
 
-int
-xinet_pton (char *address)
-{
-  int int_addr;
+namespace Client {
+extern fd_set Set;
+extern pthread_t ThreadId;
 
-  if (inet_pton(AF_INET, address, &int_addr) < 0) {
-    Log::Error("Invalid address format");
-    return 0;
-  }
-  else
-    return int_addr;
-
+void *Loop (void __attribute__ ((unused)) *arg);
+void Restart();
 }
+}
+
+namespace CtrlChannel {
+extern fd_set Set;
+extern pthread_t ThreadId;
+
+void *Loop (void __attribute__ ((unused)) *arg);
+void Restart();
+}
+}
+
+#endif
 

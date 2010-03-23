@@ -1,12 +1,12 @@
 /*
- * "lulznet.h" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
+ * "lulzvpn.h" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
- * lulzNet is free software; you can redistribute it and/or modify
+ * lulzVPN is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- * lulzNet is distributed in the hope that it will be useful,
+ * lulzVPN is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -17,6 +17,12 @@
  * MA 02110-1301, USA.
  */
 
+//#pragma warning (disable:981)
+
+#include <iostream>
+#include <string>
+#include <vector>
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -26,10 +32,6 @@
 #include <signal.h>
 #include <pthread.h>
 #include <termio.h>
-
-#include <iostream>
-#include <string>
-#include <vector>
 
 #include <sys/socket.h>
 #include <sys/ioctl.h>
@@ -46,6 +48,7 @@
 #include <linux/sysctl.h>
 
 #include <openssl/ssl.h>
+#include <openssl/bio.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/sha.h>
@@ -61,8 +64,8 @@
 
 #define DEBUG
 
-#ifndef _LNET_LULZNET_H
-#define _LNET_LULZNET_H
+#ifndef _LVPN_LULZVPN_H
+#define _LVPN_LULZVPN_H
 
 const bool FAIL = false;
 const bool DONE = true;
@@ -76,13 +79,13 @@ typedef unsigned int uInt;
 /* Show a little help */
 void help ();
 
-/* lulznet initialization */
-void LulznetInit ();
+/* lulzvpn initialization */
+void LulzVPNInit ();
 
 /* Close fd, send disconnect packet to all peer and all that stuff */
-void LulznetExit ();
+void LulzVPNExit ();
 
-/* Don't close lulznet with signal */
+/* Don't close lulzvpn with signal */
 void sigHandler (int signal __attribute__ ((unused)));
 
 #endif

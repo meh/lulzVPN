@@ -3,14 +3,14 @@ version        = @PACKAGE_VERSION@
 srcdir         = @srcdir@
 VPATH          = @srcdir@
 
-all lulznet:
+all lulzVPN:
 	$(MAKE) -C src $@
 
 install: all
-	cp lulznet /usr/bin/
+	cp lulzVPN /usr/bin/
 
 uninstall:
-	rm /usr/bin/lulznet
+	rm /usr/bin/lulzVPN
 
 clean:
 	$(MAKE) -C src $@

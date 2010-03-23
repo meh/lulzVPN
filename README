@@ -1,8 +1,10 @@
-lulzNet :: lulz p2p VPN
+lulzVPN
 Just a cool p2p vpn wrote for teh lulz.
 At the moment it's just an experiment.
 
 All you need is
-- libssl-dev
-- libreadline-dev
+- libssl
+- libreadline
+- libxml2
 - tap kernel support
+

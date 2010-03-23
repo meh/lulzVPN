@@ -1,12 +1,12 @@
 /*
  * "packet.h" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
- * lulzNet is free software; you can redistribute it and/or modify
+ * lulzVPN is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- * lulzNet is distributed in the hope that it will be useful,
+ * lulzVPN is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -17,31 +17,39 @@
  * MA 02110-1301, USA.
  */
 
-#include "lulznet.h"
+#ifndef _LVPN_PACKET_H
+#define _LVPN_PACKET_H
+
+#include "lulzvpn.h"
 #include "protocol.h"
 
-#ifndef _LNET_PACKET_H
-#define _LNET_PACKET_H
+/* Total packet length */
 
 const int ETH_ADDR_LEN = 6;
 const int ETH_HDR_LEN = 14;
 
-const unsigned int PCKT_HDR_LEN = 1;
-const unsigned int PCKT_PLD_LEN = 4096;
-
-/* Total packet length */
-const int PCKT_TOT_LEN = PCKT_HDR_LEN + PCKT_PLD_LEN;
 
 namespace Packet
 {
-struct Packet
+
+const unsigned int PacketHdrLen = 1;
+const unsigned int PacketPldLen = 4096;
+const unsigned int PacketTotLen = PacketHdrLen + PacketPldLen;
+
+struct CtrlPacket
 {
-  unsigned char buffer[PCKT_TOT_LEN];
+  unsigned char buffer[PacketTotLen];
+  int length;
+} __attribute__ ((packed));
+
+struct DataPacket
+{
+  unsigned char buffer[PacketTotLen];
   int length;
 } __attribute__ ((packed));
 
 /* MAC header */
-struct eth_header
+struct macHeader
 {
   uChar dst_adr[ETH_ADDR_LEN];
   uChar src_adr[ETH_ADDR_LEN];
@@ -49,7 +57,7 @@ struct eth_header
 } __attribute__ ((packed));
 
 /* arp header */
-struct arp_header
+struct arpHeader
 {
   u_short hw_type;
   u_short proto_type;
@@ -63,7 +71,7 @@ struct arp_header
 } __attribute__ ((packed));
 
 /* ip header */
-struct ip_header
+struct ipHeader
 {
   uChar ver_and_hdr_len;
   uChar tos;
@@ -77,11 +85,12 @@ struct ip_header
   uInt dst_adr;
 } __attribute__ ((packed));
 
-Packet *BuildDisassociationPacket(); 
-Packet *BuildNewPeerNotifyPacket (std::string user, int address);
+CtrlPacket *BuildDisassociationPacket(); 
+CtrlPacket *BuildNewPeerNotifyPacket (std::string user, int address);
 
 /* return int network ordered address of the packet dest */
-uInt GetDestinationIp (Packet *packet);
+uInt GetDestinationIp (DataPacket *packet);
 }
 
 #endif
+

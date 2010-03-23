@@ -1,12 +1,12 @@
 /*
  * "auth.cpp" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
- * lulzNet is free software; you can redistribute it and/or modify
+ * lulzVPN is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- * lulzNet is distributed in the hope that it will be useful,
+ * lulzVPN is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -17,11 +17,11 @@
  * MA 02110-1301, USA.
  */
 
-#include <lulznet/lulznet.h>
+#include <lulzvpn/lulzvpn.h>
 
-#include <lulznet/auth.h>
-#include <lulznet/config.h>
-#include <lulznet/log.h>
+#include <lulzvpn/auth.h>
+#include <lulzvpn/config.h>
+#include <lulzvpn/log.h>
 
 bool
 Auth::DoAuthentication (const std::string& Username, uChar * Hash)
@@ -101,7 +101,7 @@ Auth::Crypt::CalculateMd5 (const std::string& string)
 
   try {
        HexHash = new uChar[MD5_DIGEST_LENGTH];
-  } catch(const std::bad_alloc& x) {
+  } catch(const std::bad_alloc) {
        Log::Fatal("Out of memory");
   }
 
@@ -127,7 +127,7 @@ Auth::Crypt::GetFingerprintFromCtx (SSL *ssl)
 
   try {
   fp = new char[EVP_MAX_MD_SIZE * 3];
-  } catch (const std::bad_alloc& x) {
+  } catch (const std::bad_alloc) {
        Log::Fatal("Out of memory");
   }
   cert = SSL_get_peer_certificate(ssl);
@@ -141,3 +141,4 @@ Auth::Crypt::GetFingerprintFromCtx (SSL *ssl)
 
   return fp;
 }
+

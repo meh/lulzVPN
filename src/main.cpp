@@ -1,12 +1,12 @@
 /*
  * "main.cpp" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
- * lulzNet is free software; you can redistribute it and/or modify
+ * lulzVPN is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- * lulzNet is distributed in the hope that it will be useful,
+ * lulzVPN is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -17,16 +17,17 @@
  * MA 02110-1301, USA.
  */
 
-#include <lulznet/lulznet.h>
+#include <lulzvpn/lulzvpn.h>
 
-#include <lulznet/auth.h>
-#include <lulznet/config.h>
-#include <lulznet/log.h>
-#include <lulznet/networking.h>
-#include <lulznet/peer.h>
-#include <lulznet/shell.h>
-#include <lulznet/tap.h>
-#include <lulznet/xfunc.h>
+#include <lulzvpn/auth.h>
+#include <lulzvpn/config.h>
+#include <lulzvpn/log.h>
+#include <lulzvpn/networking.h>
+#include <lulzvpn/peer_api.h>
+#include <lulzvpn/select.h>
+#include <lulzvpn/shell.h>
+#include <lulzvpn/tap_api.h>
+#include <lulzvpn/xfunc.h>
 
 Config Options;
 
@@ -35,78 +36,99 @@ main (int argc, char *argv[])
 {
 
   int address;
-  pthread_t serverT;            /* Listening thread */
 
   /* Welcome!1!1ONE */
-  std::cout << "Welcome to lulzNet ¯\\_(0_o)_/¯ (lulz p2p virtual priv8 net)" << std::endl;
-  std::cout << "Version: " << PACKAGE_VERSION << std::endl;
+  std::cout << " _       _    __     ______  _   _" << std::endl;
+  std::cout << "| |_   _| |____ \\   / /  _ \\| \\ | |" << std::endl;
+  std::cout << "| | | | | |_  /\\ \\ / /| |_) |  \\| |" << std::endl;
+  std::cout << "| | |_| | |/ /  \\ V / |  __/| |\\  |" << std::endl;
+  std::cout << "|_|\\__,_|_/___|  \\_/  |_|   |_| \\_| " << std::endl;
+  std::cout << "\t\tVersion: " << PACKAGE_VERSION << std::endl;
+  std::cout << std::endl;
+
+  /* Check faggot user */
+  if (getuid())
+    Log::Fatal("You must be super user");
 
   /* Config Parsing */
   Options.ParseConfigFile(CONFIG_FILE);
   Options.ParseArgs(argc, argv);
   Options.ChecEmptyConfigEntry();
 
-  /* Check faggot user */
-  if (getuid())
-    Log::Fatal("You must be super user");
-
   /* initialize db, taps and other stuff */
-  LulznetInit();
+  LulzVPNInit();
 
   /* Prompt for password if no ones is specified in config file */
   if (Options.Password().empty())
     Auth::PasswordPrompt();
 
-  /* Start (or not) the listening service */
-  if (Options.Flags() & listeningMode)
-    pthread_create(&serverT, NULL, Network::Server::ServerLoop, NULL);
+  /* Start client data channel, ctrl channel and tap channel */
+  pthread_create(&Select::DataChannel::Client::ThreadId, NULL, Select::DataChannel::Client::Loop, NULL);
+  pthread_create(&Select::CtrlChannel::ThreadId, NULL, Select::CtrlChannel::Loop, NULL);
+  pthread_create(&Select::TapChannel::ThreadId, NULL, Select::TapChannel::Loop, NULL);
 
-  else
-    Log::Debug1("Not listening");
+  /* Start the listening service */
+  if (Options.Flags() & listeningMode) {
+    pthread_create(&Select::DataChannel::Server::ThreadId, NULL, Select::DataChannel::Server::Loop, NULL);
+    pthread_create(&Network::Server::ServerLoopT, NULL, Network::Server::ServerLoop, NULL);
+  }
 
-  /* Autoconnection */
+  /* Handle autoconnection */
   if (!Options.ConnectingAddress().empty()) {
     address = Network::LookupAddress(Options.ConnectingAddress());
     if (address != 0)
       Network::Client::PeerConnect(address, Options.ConnectingPort());
+    else
+      Log::Error("Cannot resolve address %s",Options.ConnectingAddress().c_str());
   }
 
-  /* ??? (another black magic) */
-  pthread_create(&Network::Server::select_t, NULL, Network::Server::SelectLoop, NULL);
-
-  /* A lovable shell */
+  /* Start a lovable shell */
   if (Options.Flags() & interactiveMode)
     Shell::Start();
-  else
-    Log::Debug1("Non interactive mode");
 
-  /* cause I don't enjoy when it exits as soon as it starts :| */
-  pthread_join(Network::Server::select_t, NULL);
-  pthread_join(serverT, NULL);
+  pthread_join(Network::Server::ServerLoopT, NULL);
 
   return 0;
 }
 
 void
-LulznetInit ()
+LulzVPNInit ()
 {
   std::vector<TapDeviceT>::const_iterator tapIt, tapEnd;
   Taps::Tap *newTap;
 
-  Peers::maxFd = 0;
+  /* Initialize maxFd vars*/
+  Peers::maxTcpFd = 0;
+  Peers::maxUdpFd = 0;
   Taps::maxFd = 0;
 
-  FD_ZERO(&Network::master);
+//#pragma warning (disable:593)
+  FD_ZERO(&Select::DataChannel::Client::Set);
+  FD_ZERO(&Select::CtrlChannel::Set);
+  FD_ZERO(&Select::TapChannel::Set);
+//#pragma warning (default:593)
 
-  memset(&Network::Server::select_t, '\x00', sizeof(pthread_t));
+  /* Clear pthread_t */
+  memset(&Select::DataChannel::Client::ThreadId, '\x00', sizeof(pthread_t));
+  memset(&Select::DataChannel::Server::ThreadId, '\x00', sizeof(pthread_t));
+  memset(&Select::CtrlChannel::ThreadId, '\x00', sizeof(pthread_t));
+  memset(&Select::TapChannel::ThreadId, '\x00', sizeof(pthread_t));
+
   pthread_mutex_init(&Peers::db_mutex, NULL);
 
   SSL_load_error_strings();
   SSLeay_add_ssl_algorithms();
   OpenSSL_add_all_digests();
 
-  Network::Server::sslInit();
+  signal(SIGHUP, sigHandler);
+  signal(SIGINT, sigHandler);
+
   Network::Client::sslInit();
+
+  if (Options.Flags() & listeningMode) {
+    Network::Server::sslInit();
+    Network::Server::UdpRecverInit();
+  }
 
   /* ??? black magic (don't know) */
   tapEnd = Options.TapDevices().end();
@@ -114,19 +136,16 @@ LulznetInit ()
     try {
       newTap = new Taps::Tap(*tapIt);
       Taps::Register(newTap);
-    } catch(const std::bad_alloc& x) {
+    } catch(const std::bad_alloc) {
 	 Log::Fatal("Out of memory");
     }
   }
-
-  signal(SIGHUP, sigHandler);
-  signal(SIGINT, sigHandler);
 }
 
 void
 help ()
 {
-  std::cout << "usage: lulznet [Options]" << std::endl;
+  std::cout << "usage: lulzvpn [Options]" << std::endl;
   std::cout << "OPTIONS:" << std::endl;
   std::cout << "-b\tspecify server binding address" << std::endl;
   std::cout << "-c\tspecify a server to connect" << std::endl;
@@ -143,15 +162,15 @@ help ()
 }
 
 void
-LulznetExit ()
+LulzVPNExit ()
 {
   std::vector<Peers::Peer *>::iterator peerIt, peerEnd;
 
   pthread_mutex_lock(&Peers::db_mutex);
-  if (Network::Server::select_t != (pthread_t) NULL)
-    pthread_cancel(Network::Server::select_t);
+  if (Network::Server::ServerLoopT != (pthread_t) NULL)
+    pthread_cancel(Network::Server::ServerLoopT);
 
-  Log::Info("Closing lulznet");
+  Log::Info("Closing lulzvpn");
   peerEnd = Peers::db.end();
   for (peerIt = Peers::db.begin(); peerIt < peerEnd; ++peerIt)
     (*peerIt)->Disassociate();
@@ -162,5 +181,6 @@ LulznetExit ()
 void
 sigHandler (int signal __attribute__ ((unused)))
 {
-  LulznetExit();
+  LulzVPNExit();
 }
+

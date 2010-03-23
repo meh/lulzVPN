@@ -1,12 +1,12 @@
 /*
  * "config.cpp" (C) blawl ( j[dot]segf4ult[at]gmail[dot]com )
  *
- * lulzNet is free software; you can redistribute it and/or modify
+ * lulzVPN is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- * lulzNet is distributed in the hope that it will be useful,
+ * lulzVPN is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -17,11 +17,11 @@
  * MA 02110-1301, USA.
  */
 
-#include <lulznet/lulznet.h>
+#include <lulzvpn/lulzvpn.h>
 
-#include <lulznet/config.h>
-#include <lulznet/log.h>
-#include <lulznet/networking.h>
+#include <lulzvpn/config.h>
+#include <lulzvpn/log.h>
+#include <lulzvpn/networking.h>
 
 Config::Config()
 {
@@ -133,13 +133,13 @@ Config::ParseArgs (int argc, char **argv)
       if (!*optarg)
         Log::Fatal("You must specify a port");
       else
-        _ConnectingPort = static_cast<short>(atoi(optarg));
+        _ConnectingPort = (short) atoi(optarg);
       break;
     case 'P':
       if (!*optarg)
         Log::Fatal("You must specify a port");
       else
-        _BindingPort = static_cast<short>(atoi(optarg));
+        _BindingPort = (short) atoi(optarg);
       break;
 #ifdef DEBUG
     case 'v':
@@ -165,19 +165,19 @@ Config::ParseConfigFile (std::string filename)
   doc = xmlParseFile(filename.c_str());
 
   if (doc == NULL) {
-    Log::Error("Document not parsed successfully.");
+    Log::Error("Cannot parse config file");
     return;
   }
 
   curNode = xmlDocGetRootElement(doc);
   if (curNode == NULL) {
-    Log::Fatal("Empty config file");
+    Log::Error("Empty config file");
     xmlFreeDoc(doc);
     return;
   }
 
-  if (xmlStrcmp(curNode->name, (const xmlChar *) "lulzNetConfig")) {
-    Log::Fatal("This is not a valid lulznet config file.\nRoot node != lulzNetConfig");
+  if (xmlStrcmp(curNode->name, (const xmlChar *) "lulzVPNConfig")) {
+    Log::Error("This is not a valid lulzvpn config file");
     xmlFreeDoc(doc);
     return;
   }
@@ -254,7 +254,7 @@ Config::ParseConfig (xmlDocPtr doc, xmlNodePtr curNode)
     }
 #endif
     else
-      Log::Error("Invalid option in lulznet config (%s)", curNode->name);
+      Log::Error("Invalid option in lulzvpn config (%s)", curNode->name);
 
     curNode = xmlNextElementSibling(curNode);
   }
@@ -265,13 +265,15 @@ std::vector < std::string >
 Config::ParseUserNet (xmlDocPtr doc, xmlNodePtr curNode)
 {
   xmlChar *key;
-  std::vector < std::string > AllowedNetworks;
+  std::string ifName;
+  std::vector<std::string> AllowedNetworks;
   curNode = xmlFirstElementChild(curNode);
 
   while (curNode != NULL) {
     if ((!xmlStrcmp(curNode->name, reinterpret_cast<const xmlChar *>("name")))) {
       key = xmlNodeListGetString(doc, curNode->xmlChildrenNode, 1);
-      AllowedNetworks.push_back(reinterpret_cast<char *>(key));
+      ifName = reinterpret_cast<char *>(key);
+      AllowedNetworks.push_back(ifName);
       xmlFree(key);
     }
     else

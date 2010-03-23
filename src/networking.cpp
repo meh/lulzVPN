@@ -1,12 +1,12 @@
 /*
  *"networking.cpp" (C) blawl ( j[dot] segf4ult[at] gmail[dot] com )
  *
- *lulzNet is free software; you can redistribute it and / or modify
+ *lulzVPN is free software; you can redistribute it and / or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 3 of the License, or
  * (at your option) any later version.
  *
- *lulzNet is distributed in the hope that it will be useful,
+ *lulzVPN is distributed in the hope that it will be useful,
  *but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
  * GNU General Public License for more details.
@@ -17,143 +17,259 @@
  *MA 02110 - 1301, USA.
  */
 
-#include <lulznet/lulznet.h>
+#include <lulzvpn/lulzvpn.h>
 
-#include <lulznet/auth.h>
-#include <lulznet/config.h>
-#include <lulznet/log.h>
-#include <lulznet/networking.h>
-#include <lulznet/peer.h>
-#include <lulznet/protocol.h>
-#include <lulznet/packet.h>
-#include <lulznet/tap.h>
+#include <lulzvpn/auth.h>
+#include <lulzvpn/config.h>
+#include <lulzvpn/log.h>
+#include <lulzvpn/networking.h>
+#include <lulzvpn/peer_api.h>
+#include <lulzvpn/protocol.h>
+#include <lulzvpn/packet.h>
+#include <lulzvpn/select.h>
+#include <lulzvpn/tap_api.h>
 
-SSL_CTX * Network::Client::sslCTX;
-SSL_CTX *Network::Server::sslCTX;
+SSL_CTX *Network::Client::TcpSSLCtx;
+SSL_CTX *Network::Server::TcpSSLCtx;
 
-fd_set Network::master;
-pthread_t Network::Server::select_t;
+SSL_CTX *Network::Client::UdpSSLCtx;
+SSL_CTX *Network::Server::UdpSSLCtx;
+
+pthread_t Network::Server::ServerLoopT;
 
 void
 Network::Server::sslInit ()
 {
-  Network::Server::sslCTX = SSL_CTX_new(SSLv23_server_method());
-  if (!Network::Server::sslCTX)
+  /* tcp SSL ctx */
+  Network::Server::TcpSSLCtx = SSL_CTX_new(SSLv23_server_method());
+  if (!TcpSSLCtx)
     Log::Fatal("Failed to do SSL CTX new");
 
   Log::Debug2("Loading SSL certificate");
-  if (SSL_CTX_use_certificate_file(Network::Server::sslCTX, CERT_FILE, SSL_FILETYPE_PEM) <= 0)
+  if (SSL_CTX_use_certificate_file(TcpSSLCtx, CERT_FILE, SSL_FILETYPE_PEM) <= 0)
     Log::Fatal("Failed to load SSL certificate %s", CERT_FILE);
 
   Log::Debug2("Loading SSL private key");
-  if (SSL_CTX_use_PrivateKey_file(Network::Server::sslCTX, KEY_FILE, SSL_FILETYPE_PEM) <= 0)
+  if (SSL_CTX_use_PrivateKey_file(TcpSSLCtx, KEY_FILE, SSL_FILETYPE_PEM) <= 0)
     Log::Fatal("Failed to load SSL private key %s", KEY_FILE);
+
+  /* udp SSL ctx */
+  UdpSSLCtx = SSL_CTX_new(DTLSv1_server_method());
+  if (!UdpSSLCtx)
+    Log::Fatal("Failed to do SSL CTX new");
+
+  Log::Debug2("Loading SSL certificate");
+  if (SSL_CTX_use_certificate_file(UdpSSLCtx, CERT_FILE, SSL_FILETYPE_PEM) <= 0)
+    Log::Fatal("Failed to load SSL certificate %s", CERT_FILE);
+
+  Log::Debug2("Loading SSL private key");
+  if (SSL_CTX_use_PrivateKey_file(UdpSSLCtx, KEY_FILE, SSL_FILETYPE_PEM) <= 0)
+    Log::Fatal("Failed to load SSL private key %s", KEY_FILE);
+
+  SSL_CTX_set_read_ahead(UdpSSLCtx, 1);
 }
 
 void
 Network::Client::sslInit ()
 {
-  Network::Client::sslCTX = SSL_CTX_new(SSLv23_client_method());
+  TcpSSLCtx = SSL_CTX_new(SSLv23_client_method());
+  UdpSSLCtx = SSL_CTX_new(DTLSv1_client_method());
+
+  SSL_CTX_set_read_ahead(UdpSSLCtx, 1);
 }
 
-void *
+void * 
 Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
 {
 
-  int listenSock;
-  int peerSock;
-  int on = 1;
-  SSL *peerSsl;
-  char peer_address[addressLenght + 1];
-  struct sockaddr_in server;
+  Peers::Connection con;
+  char peerAddress[addressLenght + 1];
+  int listenTcpSock;
+  int listenUdpHandshakeSock;
+  struct sockaddr_in tcpServer;
+  struct sockaddr_in udpServer;
   struct sockaddr_in peer;
+  int on = 1;
+  short remotePort;
+  BIO *udpBio;
+  BIO *memBio;
+
   socklen_t addrSize;
   pthread_t connectQueueT;
   HandshakeOptionT *hsOpt;
   Peers::Peer * newPeer;
-  if ((listenSock = socket(PF_INET, SOCK_STREAM, 0)) == -1)
-    Log::Fatal("cannot create socket");
 
-  Log::Debug2("listenSock (fd %d) created", listenSock);
-  if (setsockopt(listenSock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1)
+  addrSize = sizeof(udpServer);
+
+  /* 
+   * We have two listening socket:
+   * - listenTcpSock, which is the listener for the reilable/control channel
+   * - listenUdpHandshakeSock, which is the listener for the udp ssl handshake
+   */
+
+  tcpServer.sin_family = AF_INET;
+  tcpServer.sin_port = htons(Options.BindingPort());
+  tcpServer.sin_addr.s_addr = INADDR_ANY;   /*(tcpServer.opt->binding_address); */
+  memset(&(tcpServer.sin_zero), '\0', 8);
+
+  udpServer.sin_family = AF_INET;
+  udpServer.sin_port = htons(Options.BindingPort());
+  udpServer.sin_addr.s_addr = INADDR_ANY;   //(udpServer.opt->binding_address); 
+  memset(&(udpServer.sin_zero), '\0', 8);
+
+  /* Tcp stuff initialization */
+
+  if ((listenTcpSock = socket(PF_INET, SOCK_STREAM, 0)) == -1)
+    Log::Fatal("cannot create socket");
+  Log::Debug2("listenTcpSock (sd %d) created", listenTcpSock);
+
+  if (setsockopt(listenTcpSock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) == -1)
     Log::Error("setsockopt SO_REUSEADDR: %s", strerror(errno));
 
-  server.sin_family = AF_INET;
-  server.sin_port = htons(Options.BindingPort());
-  server.sin_addr.s_addr = INADDR_ANY;   /*(server_opt->binding_address); */
-  memset(&(server.sin_zero), '\0', 8);
+  Log::Debug2("Binding tcp port %d", Options.BindingPort());
+  if (bind(listenTcpSock, (struct sockaddr *) &tcpServer, addrSize) == -1)
+    Log::Fatal("cannot binding to tcp socket");
 
-  Log::Debug2("Binding port %d", port);
-  if (bind(listenSock, (struct sockaddr *) &server, sizeof(struct sockaddr)) == -1)
+  if(listen(listenTcpSock,16) == -1)
+    Log::Fatal("Cannot listen");
+
+  /* Udp stuff initialization */
+
+  if((listenUdpHandshakeSock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+     Log::Fatal("cannot create udp socket");
+  Log::Debug2("listenUdpHandshakeSock (sd %d) created", listenUdpHandshakeSock);
+
+  Log::Debug2("Binding udp port %d", Options.BindingPort());
+  if (bind(listenUdpHandshakeSock,(struct sockaddr *) &udpServer, addrSize)==-1)
     Log::Fatal("cannot binding to socket");
 
-  Log::Debug1("Listening");
-  if (listen(listenSock, maxAcceptedConnections) == -1)
-    Log::Fatal("cannot listen");
-
-  addrSize = sizeof(struct sockaddr_in);
-  /* @TODO while(available_connection()) else sleep && goto! */
+  Log::Info("Listening for connections");
   while (1) {
-    if ((peerSock = accept(listenSock, (struct sockaddr *) &peer, &addrSize)) == -1)
+    if ((con.tcpSd = accept(listenTcpSock, (struct sockaddr *) &peer, &addrSize)) == -1)
       Log::Fatal("cannot accept");
 
-    Protocol::SendBanner(peerSock);
+    Protocol::SendBanner(con.tcpSd);
+
     try {
     hsOpt = new HandshakeOptionT;
-    } catch(const std::bad_alloc& x) {
+    } 
+    catch(const std::bad_alloc) {
       Log::Fatal("Out of memory");
     }
 
-    if ((peerSsl = SSL_new(Network::Server::sslCTX)) != NULL) {
-      SSL_set_fd(peerSsl, peerSock);
+    /* Tcp SSL stuff */
 
-      Log::Debug2("SSL Handshake");
-      if (SSL_accept(peerSsl) > 0) {
-        if (Protocol::Server::Handshake(peerSsl, hsOpt)) {
-          pthread_mutex_lock(&Peers::db_mutex);
-
-	  try {
-          newPeer = new Peers::Peer(peerSock, peerSsl, hsOpt->peer_username, peer.sin_addr.s_addr, hsOpt->remoteNets, hsOpt->listeningStatus);
-	  Peers::Register(newPeer);
-	  } catch(const std::bad_alloc& x) {
-	    Log::Fatal("Out of memory");
-	  }
-
-          inet_ntop(AF_INET, &peer.sin_addr.s_addr, peer_address, addressLenght);
-          Log::Info("Connection accepted from %s (fd %d)", peer_address, peerSock);
-
-          /* Set routing */
-          Log::Debug2("Setting Routing");
-          Taps::setSystemRouting(newPeer, hsOpt->allowedNets, addRouting);
-
-          pthread_mutex_unlock(&Peers::db_mutex);
-
-          pthread_create(&connectQueueT, NULL, CheckConnectionsQueue, &hsOpt->userLs);
-          pthread_join(connectQueueT, NULL);
-	  UpdateNonListeningPeer(newPeer->user(), newPeer->address());
-
-          delete hsOpt;
-        }
-        else {
-          Log::Error("Cannot complete handshake");
-          SSL_free(peerSsl);
-          close(peerSock);
-          delete hsOpt;
-        }
-      }
-      else {
-        Log::Error("Cannot complete SSL handshake");
-        close(peerSock);
-        delete hsOpt;
-      }
+    if ((con.tcpSSL = SSL_new(Network::Server::TcpSSLCtx)) == NULL) {
+      Log::Fatal("Cannot create new Tcp SSL");
+      goto deleteTcpSd;
     }
-    else {
-      Log::Error("Cannot create new SSL");
-      close(peerSock);
-      delete hsOpt;
+
+    SSL_set_fd(con.tcpSSL, con.tcpSd);
+
+    Log::Debug2("Tcp SSL Handshake");
+    if (SSL_accept(con.tcpSSL) <= 0) {
+      Log::Error("Cannot complete Tcp SSL handshake");
+      goto deleteTcpSSL;
     }
+
+    /* Udp SSL stuff */
+
+    if((con.udpSSL = SSL_new(Network::Server::UdpSSLCtx)) == NULL) {
+      Log::Fatal("Cannot create new Udp SSL");
+    }
+
+    /* We use the listenUdpHandshakeSock only for the ssl handshake */
+    udpBio = BIO_new_dgram(listenUdpHandshakeSock, BIO_NOCLOSE);
+    SSL_set_bio(con.udpSSL,udpBio,udpBio);
+    SSL_set_accept_state(con.udpSSL);
+
+    Log::Debug2("Udp SSL Handshake");
+    if(SSL_do_handshake(con.udpSSL) <= 0) {
+      Log::Error("Cannot complete Udp SSL handshake");
+      goto deleteTcpSd;
+    }
+
+    /* Then we switch to the udpDataSock, which is listening on a different port */
+    /* First read remote peer udp port */
+    SSL_read(con.tcpSSL,(void *) &remotePort,2);
+
+    /* Then clone the peer struct sockaddr */
+    BIO_dgram_get_peer(udpBio,&peer);
+
+    /* Change the port to the current remote peer udp port */ 
+    peer.sin_port = remotePort;
+
+    /* Create a new BIO dgram */
+    udpBio = BIO_new_dgram(udpDataSock, BIO_NOCLOSE);
+
+    /* And set remote peer */
+    BIO_dgram_set_peer(udpBio,&peer);
+    memBio = BIO_new(BIO_s_mem());
+    
+    /* Finish with the exchange */
+    SSL_set_bio(con.udpSSL,memBio,udpBio);
+
+    if (!Protocol::Server::Handshake(con.tcpSSL, hsOpt)) {
+      Log::Error("Cannot complete lulzVPN handshake");
+      goto deleteTcpSSL;
+    }
+
+    pthread_mutex_lock(&Peers::db_mutex);
+    
+    try {
+      newPeer = new Peers::Peer(con, hsOpt->peer_username, peer.sin_addr.s_addr, hsOpt->remoteNets, hsOpt->listeningStatus, accepted);
+    } 
+    catch(const std::bad_alloc) {
+      Log::Fatal("Out of memory");
+    }
+
+    Peers::Register(newPeer);
+
+    inet_ntop(AF_INET, &peer.sin_addr.s_addr, peerAddress, addressLenght);
+    Log::Info("Connection accepted from %s (sd %d)", peerAddress, con.tcpSd);
+
+    /* Set routing */
+    Log::Debug2("Setting Routing");
+    Taps::setSystemRouting(newPeer, hsOpt->allowedNets, addRouting);
+
+    pthread_mutex_unlock(&Peers::db_mutex);
+
+    pthread_create(&connectQueueT, NULL, CheckConnectionsQueue, &hsOpt->userLs);
+    pthread_join(connectQueueT, NULL);
+    UpdateNonListeningPeer(newPeer->user(), newPeer->address());
+    continue;
+
+deleteTcpSSL:
+    SSL_free(con.tcpSSL);
+deleteTcpSd:
+    close(con.tcpSd);
+    delete hsOpt;
   }
   return NULL;
+}
+
+void  
+Network::Server::UdpRecverInit ()
+{
+
+  struct sockaddr_in udpServer;
+  socklen_t addrSize;
+
+  addrSize = sizeof(udpServer);
+
+  udpServer.sin_family = AF_INET;
+  udpServer.sin_port = htons(Options.BindingPort() + 2);
+  udpServer.sin_addr.s_addr = INADDR_ANY;   //(udpServer.opt->binding_address); 
+  memset(&(udpServer.sin_zero), '\0', 8);
+
+  if((udpDataSock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
+     Log::Fatal("cannot create udp socket");
+  Log::Debug2("udpDataSock (sd %d) created", udpDataSock);
+
+  Log::Debug2("Binding udp port %d (data channel)", Options.BindingPort());
+  if (bind(udpDataSock,(struct sockaddr *) &udpServer, addrSize)==-1)
+    Log::Fatal("cannot binding to socket");
+
 }
 
 int
@@ -184,79 +300,135 @@ void
 Network::Client::PeerConnect (int address, short port)
 {
 
-  struct sockaddr_in peer;
-  int peerSock;
-  SSL *peerSsl;
+  struct sockaddr_in tcpPeer;
+  struct sockaddr_in udpPeer;
+  struct sockaddr_in localPeer;
+  Peers::Connection con;
   HandshakeOptionT hsOpt;
+  int udpHandshakeSock;
+  BIO *udpBio;
+  const uChar invalidId = 0xff;
 
   pthread_t connectQueueT;
   Peers::Peer * newPeer;
-  if ((peerSock = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+  socklen_t addrLen;
+
+  addrLen = sizeof(struct sockaddr_in);
+
+  tcpPeer.sin_family = AF_INET;
+  tcpPeer.sin_port = htons(port);
+  tcpPeer.sin_addr.s_addr = address;
+  memset(&(tcpPeer.sin_zero), '\0', 8);
+
+  udpPeer.sin_family = AF_INET;
+  udpPeer.sin_port = htons(port);
+  udpPeer.sin_addr.s_addr = address;
+  memset(&(udpPeer.sin_zero), '\0', 8);
+
+  if ((con.tcpSd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
     Log::Error("cannot create socket", 1);
     return;
   }
 
-  Log::Debug2("peer sock (fd %d) created", peerSock);
-
-  peer.sin_family = AF_INET;
-  peer.sin_port = htons(port ? port : port);
-  peer.sin_addr.s_addr = address;
-  memset(&(peer.sin_zero), '\0', 8);
-
-  if (connect(peerSock, (struct sockaddr *) &peer, sizeof(peer)) == -1) {
+  if (connect(con.tcpSd, (struct sockaddr *) &tcpPeer, sizeof(tcpPeer)) == -1) {
     Log::Error("Cannot connect", 1);
     return;
   }
 
-  Protocol::RecvBanner(peerSock);
-  if ((peerSsl = SSL_new(Network::Client::sslCTX)) != NULL) {
-    SSL_set_fd(peerSsl, peerSock);
-    Log::Debug2("SSL Handshake");
-    if (SSL_connect(peerSsl) > 0) {
-      if (Network::VerifySslCert(peerSsl)) {
-        if (Protocol::Client::Handshake(peerSsl, &hsOpt)) {
-          pthread_mutex_lock(&Peers::db_mutex);
-          
-	  try{
-          newPeer = new Peers::Peer(peerSock, peerSsl, hsOpt.peer_username, address, hsOpt.remoteNets, true);
-	  Peers::Register(newPeer);
-	  } catch(const std::bad_alloc& x){
-	    Log::Fatal("Out of memory");
-	  }
-
-          Log::Info("Connected");
-
-          Log::Debug2("Setting Routing");
-          Taps::setSystemRouting(newPeer, hsOpt.allowedNets, addRouting);
-
-          pthread_mutex_unlock(&Peers::db_mutex);
-
-          pthread_create(&connectQueueT, NULL, Network::CheckConnectionsQueue, &hsOpt.userLs);
-          pthread_join(connectQueueT, NULL);
-
-        }
-        else {
-          Log::Error("Cannot complete lulznet handshake");
-          SSL_free(peerSsl);
-          close(peerSock);
-        }
-      }
-      else {
-        Log::Error("Cannot verify host identity");
-        SSL_free(peerSsl);
-        close(peerSock);
-      }
-    }
-    else {
-      Log::Error("Cannot complete SSL handshake");
-      SSL_free(peerSsl);
-      close(peerSock);
-    }
+  Protocol::RecvBanner(con.tcpSd);
+  if ((con.tcpSSL = SSL_new(Network::Client::TcpSSLCtx)) == NULL) {
+    Log::Fatal("Cannot create new Tcp SSL");
+    goto deleteTcpSd;
   }
-  else {
-    Log::Error("Cannot creane new SSL");
-    close(peerSock);
+
+  SSL_set_fd(con.tcpSSL, con.tcpSd);
+
+  Log::Debug2("SSL Handshake");
+  if (SSL_connect(con.tcpSSL) <= 0) {
+    Log::Fatal("Cannot complete SSL handshake");
+    goto deleteTcpSSL;
   }
+
+  if (!Network::VerifySslCert(con.tcpSSL)) {
+    Log::Fatal("Cannot verify SSL certificate");
+    goto deleteTcpSSL;
+  }
+
+  if((udpHandshakeSock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
+     Log::Fatal("cannot create udp socket");
+     return;
+  }
+
+  if((con.udpSSL = SSL_new(Network::Client::UdpSSLCtx)) == NULL) {
+    Log::Fatal("Cannot create new Udp SSL");
+    goto deleteTcpSSL;
+  }
+
+  SSL_set_verify(con.udpSSL, SSL_VERIFY_NONE, NULL);
+
+  udpBio = BIO_new_dgram(udpHandshakeSock, BIO_NOCLOSE);
+  BIO_ctrl_dgram_connect(udpBio, &udpPeer);
+
+  SSL_set_bio(con.udpSSL,udpBio,udpBio);
+  SSL_set_connect_state(con.udpSSL);
+
+  Log::Debug2("Udp SSL Handshake");
+  if(SSL_do_handshake(con.udpSSL) <= 0) {
+    Log::Fatal("Cannot complete Udp SSL handshake");
+    goto deleteTcpSd;
+  }
+
+  if((con.udpSd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
+     Log::Fatal("cannot create udp socket");
+     return;
+  }
+
+  udpPeer.sin_port = htons(port + 2);
+  udpBio = BIO_new_dgram(con.udpSd, BIO_NOCLOSE);
+  BIO_ctrl_dgram_connect(udpBio, &udpPeer);
+  connect(con.udpSd,(struct sockaddr *)&udpPeer,sizeof(udpPeer));
+  getsockname(con.udpSd,(struct sockaddr *) &localPeer, &addrLen);
+  SSL_write(con.tcpSSL,&localPeer.sin_port,2);
+
+  SSL_set_bio(con.udpSSL,udpBio,udpBio);
+
+  /* Now I send a non sane packet (with an invalid remote id)
+   * just to initialize the router connection in case you are 
+   * behind nat
+   */
+  SSL_write(con.udpSSL,&invalidId,1);
+  
+  if (!Protocol::Client::Handshake(con.tcpSSL, &hsOpt)) {
+      Log::Error("Cannot complete lulzVPN handshake");
+      goto deleteTcpSSL;
+  }
+
+  pthread_mutex_lock(&Peers::db_mutex);
+  try{
+    newPeer = new Peers::Peer(con, hsOpt.peer_username, address, hsOpt.remoteNets, true, connected);
+  } catch(const std::bad_alloc){
+    Log::Fatal("Out of memory");
+  }
+
+  Peers::Register(newPeer);
+  Log::Info("Connected");
+
+  Log::Debug2("Setting Routing");
+  Taps::setSystemRouting(newPeer, hsOpt.allowedNets, addRouting);
+
+  pthread_mutex_unlock(&Peers::db_mutex);
+
+  pthread_create(&connectQueueT, NULL, Network::CheckConnectionsQueue, &hsOpt.userLs);
+  pthread_join(connectQueueT, NULL);
+
+  return;
+
+deleteTcpSSL:
+   SSL_free(con.tcpSSL);
+deleteTcpSd:
+   close(con.tcpSd);
+
+   return;
 }
 
 void
@@ -268,8 +440,9 @@ Network::HandleClosingConnection(Peers::Peer *peer, int *flag)
 }
 
 void
-Network::HandleNewPeerNotify(Packet::Packet *packet)
+Network::HandleNewPeerNotify(Packet::CtrlPacket *packet)
 {
+  std::vector<Peers::Peer *>::iterator peerIt, peerEnd;
   char user[MAX_USERNAME_LEN + 1];
   uInt address;
   pthread_t connectT;
@@ -277,7 +450,14 @@ Network::HandleNewPeerNotify(Packet::Packet *packet)
 
   sscanf((char *) packet->buffer + 1, "%s ", user);
   memcpy((char *) &address, (char *) packet->buffer + 1 + strlen(user) + 1, 4);
-  //check user
+
+  peerEnd = Peers::db.end();
+  for (peerIt = Peers::db.begin(); peerIt < peerEnd; ++peerIt) {
+    if(!(*peerIt)->user().compare(user)){
+      Log::Debug2("User alredy connected");
+      return;
+    }
+  }
 
   host = new PeerAddrPort;
   host->address = address;
@@ -286,96 +466,8 @@ Network::HandleNewPeerNotify(Packet::Packet *packet)
   
 }
 
-void *
-Network::Server::SelectLoop (void __attribute__ ((unused)) * arg)
-{
-  Packet::Packet packet;
-  int ret;
-  int peerClosingFlag;
-  fd_set readSelect;
-  int maxFd;
-  std::vector<Peers::Peer*>::iterator peerIt, peerEnd;
-  std::vector<Taps::Tap*>::iterator tapIt, tapEnd;
-
-  int dont_close_flag = 1;
-  while (dont_close_flag) {
-    pthread_mutex_lock(&Peers::db_mutex);
-    readSelect = Network::master;
-    peerClosingFlag = 0;
-    maxFd = (Peers::maxFd > Taps::maxFd ? Peers::maxFd : Taps::maxFd);
-    pthread_mutex_unlock(&Peers::db_mutex);
-
-    ret = select(maxFd + 1, &readSelect, NULL, NULL, NULL);
-
-    pthread_mutex_lock(&Peers::db_mutex);
-    if (ret == -1) 
-      Log::Fatal("Select Log::Error");
-
-    else {
-      peerEnd = Peers::db.end();
-      for (peerIt = Peers::db.begin(); peerIt < peerEnd; ++peerIt) { 
-        if((*peerIt)->isReadyToRead(&readSelect)) {
-          if ((*peerIt)->isActive()) {
-            if (**peerIt >> &packet) {
-              switch (packet.buffer[0]) {
-              case dataPacket:
-                Network::Server::ForwardToTap(&packet, *peerIt);
-                break;
-              case controlPacket:
-		switch(packet.buffer[1]) {
-                  case closeConnection:
-                    HandleClosingConnection(*peerIt,&peerClosingFlag);
-		    break;
-		  case newPeerNotify:
-		    HandleNewPeerNotify(&packet);
-		    break;
-		  default:
-                    Log::Error("Unknow control flag");
-		}
-	      }
-	    }
-	  }
-	}
-      }
-
-      /* Check if is present some non active peer */
-      if (peerClosingFlag) {
-        Peers::FreeNonActive();
-      }
-
-      tapEnd = Taps::db.end();
-      for (tapIt = Taps::db.begin(); tapIt < tapEnd; ++tapIt) {
-        if ((*tapIt)->isReadyToRead(&readSelect)) {
-          if ((*tapIt)->isActive()) {
-            if (**tapIt >> &packet) {
-              Network::Server::ForwardToPeer(&packet, (uChar) (*tapIt)->id());
-	    }
-	  }
-	}
-      }
-
-    /* When the cycle is end functions can modify the fd_db structure */
-    pthread_mutex_unlock(&Peers::db_mutex);
-    }
-  }
-  return NULL;
-}
-
 void
-Network::Server::RestartSelectLoop ()
-{
-
-  Log::Debug2("Restarting select()");
-  if (Network::Server::select_t != (pthread_t) NULL) {
-    if (pthread_cancel(Network::Server::select_t)) 
-      Log::Fatal("Cannot cancel select thread");
-    else 
-      pthread_create(&Network::Server::select_t, NULL, Network::Server::SelectLoop, NULL);
-  }
-}
-
-inline void
-Network::Server::ForwardToTap (Packet::Packet * packet, Peers::Peer * src)
+Network::ForwardToTap (Packet::DataPacket *packet, Peers::Peer *src)
 {
 
   uChar i;
@@ -384,26 +476,27 @@ Network::Server::ForwardToTap (Packet::Packet * packet, Peers::Peer * src)
   Taps::Tap *tap;
 
   nAddr = Packet::GetDestinationIp(packet);
-  i = packet->buffer[1];
+  i = packet->buffer[0];
+
+  if(i >= Taps::db.size())
+       return;
+
   tap = Taps::db[i];
 
-  if (tap->isActive()) {
-    if (tap->isRoutableAddress(nAddr)) {
-      netEnd = src->nl().end();
-      for (netIt = src->nl().begin(); netIt < netEnd; ++netIt) {
-        if ((*netIt).localId == i) {
-          *tap << packet;
-          break;
-        }
+  if (tap->isActive() && tap->isRoutableAddress(nAddr)) {
+    netEnd = src->nl().end();
+    for (netIt = src->nl().begin(); netIt < netEnd; ++netIt) {
+      if ((*netIt).localId == i) {
+        *tap << packet;
+        break;
       }
     }
   }
-
   Log::Dump(packet->buffer, packet->length);
 }
 
-inline void
-Network::Server::ForwardToPeer (Packet::Packet * packet, uChar localId)
+void
+Network::ForwardToPeer (Packet::DataPacket *packet, uChar localId)
 {
 
   std::vector<Peers::Peer *>::iterator peerIt, peerEnd;
@@ -411,24 +504,20 @@ Network::Server::ForwardToPeer (Packet::Packet * packet, uChar localId)
   int nAddr;
 
   nAddr = Packet::GetDestinationIp(packet);
-  packet->buffer[0] = dataPacket;
-  packet->buffer[1] = localId;
+  packet->buffer[0] = localId;
 
   peerEnd = Peers::db.end();
   for (peerIt = Peers::db.begin(); peerIt < peerEnd; ++peerIt) {
-    if ((*peerIt)->isActive()) {
-      if ((*peerIt)->isRoutableAddress(nAddr)) {
-        netEnd = (*peerIt)->nl().end();
-        for (netIt = (*peerIt)->nl().begin(); netIt < netEnd; ++netIt) {
-          if ((*netIt).localId == localId) {
-            **peerIt << packet;
-            break;
-          }
+    if ((*peerIt)->isActive() && (*peerIt)->isRoutableAddress(nAddr)) {
+      netEnd = (*peerIt)->nl().end();
+      for (netIt = (*peerIt)->nl().begin(); netIt < netEnd; ++netIt) {
+        if ((*netIt).localId == localId) {
+          **peerIt << packet;
+          break;
 	}
       }
     }
   }
-
   Log::Dump(packet->buffer, packet->length);
 }
 
@@ -441,8 +530,8 @@ Network::VerifySslCert (SSL * ssl)
     fingerprint = Auth::Crypt::GetFingerprintFromCtx(ssl);
     std::cout << "Could not verify SSL servers certificate (self signed)." << std::endl;
     std::cout << "Fingerprint is: " << fingerprint << std::endl;
-    std::cout << "Do you want to continue? [y|n]: y\n";
-//    std::cin >> answer;
+    std::cout << "Do you want to continue? [y|n]:\n";
+    std::cin >> answer;
 
     delete[] fingerprint;
 
@@ -469,14 +558,12 @@ Network::CheckConnectionsQueue (void *arg)
   return NULL;
 }
 
-
-
 void
 Network::UpdateNonListeningPeer(std::string user, int address)
 {
 
   std::vector<Peers::Peer *>::iterator peerIt, peerEnd;
-  Packet::Packet *packet;
+  Packet::CtrlPacket *packet;
 
   peerEnd = Peers::db.end();
   for (peerIt = Peers::db.begin(); peerIt < peerEnd; ++peerIt) {
@@ -489,3 +576,4 @@ Network::UpdateNonListeningPeer(std::string user, int address)
     }
   }
 } 
+
