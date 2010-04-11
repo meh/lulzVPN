@@ -27,6 +27,7 @@
 const short port = 7890;
 const int addressLenght= 16;
 const int maxAcceptedConnections = 128;
+
 #define CERT_FILE "/etc/lulzvpn/cert.pem"
 #define KEY_FILE "/etc/lulzvpn/key"
 
@@ -50,7 +51,7 @@ void sslInit ();
 void* PeerConnectThreadWrapper (void *stuff);
 
 /* Function for connecting to a peer */
-void PeerConnect (int address, short port);
+void PeerConnect (int hostname, short port);
 
 }
 

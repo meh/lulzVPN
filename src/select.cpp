@@ -51,10 +51,12 @@ Select::DataChannel::Server::Loop(void __attribute__ ((unused)) *arg) {
   Log::Debug2("Starting server data channel loop");
   while (true) {
 
-    rawPacket.length = recvfrom(udpDataSock, rawPacket.buffer, 4096, 0,(struct sockaddr *) &peer, (socklen_t*)&peerLen);
+    rawPacket.length = recvfrom(udpDataSock, rawPacket.buffer, Packet::PldLen, 0,(struct sockaddr *) &peer, (socklen_t*)&peerLen);
 
-    if (rawPacket.length == -1) 
-      Log::Fatal("Cannot recive from server data channel");
+    if (rawPacket.length <= 0) { 
+      Log::Error("Cannot recv from server data channel");
+      continue;
+    }
 
     peerEnd = Peers::db.end();
     for (peerIt = Peers::db.begin(); peerIt < peerEnd; ++peerIt) { 
@@ -63,6 +65,8 @@ Select::DataChannel::Server::Loop(void __attribute__ ((unused)) *arg) {
 	Log::Debug3("Read %d bytes packet from peer %s",packet->length,(*peerIt)->user().c_str());
 
         Network::ForwardToTap(packet, (*peerIt));
+	delete packet;
+
         break;
       }
     }
@@ -84,17 +88,19 @@ Select::DataChannel::Client::Loop(void __attribute__ ((unused)) *arg) {
     CopySet = Set;
 
     ret = select(Peers::maxUdpFd + 1, &CopySet, NULL, NULL, NULL);
+    printf("DataChannel select returns %d\n",ret);
     if(ret == -1)
       Log::Fatal("Udp Select error");
 
+    int i;
+
     peerEnd = Peers::db.end();
-    for (peerIt = Peers::db.begin(); peerIt < peerEnd; ++peerIt) { 
+    for (peerIt = Peers::db.begin(), i = 0; peerIt < peerEnd; ++peerIt, ++i) { 
+      printf("I: %d peerIt<peerEnd: %d\n",i,  peerIt < peerEnd);
       if((*peerIt)->isReadyToReadFromDataChannel(&CopySet) && (*peerIt)->isActive()) {
-        if (!(**peerIt >> &packet)) { 
-          Log::Error("Cannot read packet");
-	  break;
-	}
-        Network::ForwardToTap(&packet, (*peerIt));
+        if (**peerIt >> &packet) 
+          Network::ForwardToTap(&packet, (*peerIt));
+
 	break;
       }
     }
@@ -121,6 +127,7 @@ Select::CtrlChannel::Loop(void __attribute__ ((unused)) *arg) {
     pthread_mutex_unlock(&Peers::db_mutex);
 
     ret = select(Peers::maxTcpFd + 1, &CopySet, NULL, NULL, NULL);
+    printf("CtrlChannel select returns %d\n",ret);
 
     pthread_mutex_lock(&Peers::db_mutex);
     if (ret == -1) 
@@ -166,6 +173,7 @@ Select::TapChannel::Loop(void __attribute__ ((unused)) *arg) {
 
     CopySet = Set;
     ret = select(Taps::maxFd + 1, &CopySet, NULL, NULL, NULL);
+    printf("TapChannel select returns %d\n",ret);
 
     if (ret == -1) 
       Log::Fatal("Tap Select Error");

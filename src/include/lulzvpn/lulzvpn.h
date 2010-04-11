@@ -86,6 +86,6 @@ void LulzVPNInit ();
 void LulzVPNExit ();
 
 /* Don't close lulzvpn with signal */
-void sigHandler (int signal __attribute__ ((unused)));
+void sigHandler (__attribute__ ((unused)) int signal);
 
 #endif

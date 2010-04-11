@@ -26,10 +26,9 @@ xSSL_read (SSL * ssl, void *buf, int max_len, const char *item)
 {
 
   int rdLen;
-
   rdLen = SSL_read(ssl, buf, max_len);
 
-  if (!rdLen)
+  if (rdLen <= 0)
     Log::Error("cannot recv %s", item);
 
   return rdLen;
@@ -43,7 +42,7 @@ xSSL_write (SSL * ssl, void *buf, int max_len, const char *item)
 
   wr_len = SSL_write(ssl, buf, max_len);
 
-  if (!wr_len)
+  if (wr_len <= 0)
     Log::Error("cannot send %s", item);
 
   return wr_len;

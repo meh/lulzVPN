@@ -109,12 +109,12 @@ Network::Server::ServerLoop (void *arg __attribute__ ((unused)))
 
   tcpServer.sin_family = AF_INET;
   tcpServer.sin_port = htons(Options.BindingPort());
-  tcpServer.sin_addr.s_addr = INADDR_ANY;   /*(tcpServer.opt->binding_address); */
+  tcpServer.sin_addr.s_addr = INADDR_ANY;   /* resolve (tcpServer.opt->binding_address); */
   memset(&(tcpServer.sin_zero), '\0', 8);
 
   udpServer.sin_family = AF_INET;
   udpServer.sin_port = htons(Options.BindingPort());
-  udpServer.sin_addr.s_addr = INADDR_ANY;   //(udpServer.opt->binding_address); 
+  udpServer.sin_addr.s_addr = INADDR_ANY;   /* resolve (tcpServer.opt->binding_address); */
   memset(&(udpServer.sin_zero), '\0', 8);
 
   /* Tcp stuff initialization */
@@ -273,27 +273,35 @@ Network::Server::UdpRecverInit ()
 }
 
 int
-Network::LookupAddress (std::string address)
+Network::LookupAddress (std::string hostname)
 {
+  struct addrinfo hints, *res;
+  int addr;
+  int err;
 
-  struct hostent *host_info;
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_family = AF_INET;
 
-  Log::Debug1("Looking up client %s", address.c_str());
-  host_info = gethostbyname(address.c_str());
-  if (host_info == NULL) {
-    Log::Error("Cannot lookup hostname", 1);
-    return 0;
+  Log::Debug2("Looking up client %s", hostname.c_str());
+  if ((err = getaddrinfo(hostname.c_str(), NULL, &hints, &res)) != 0) {
+    printf("error %d\n", err);
+    return 1;
   }
 
-  return *((int *) host_info->h_addr);
+  addr = ((struct sockaddr_in *)(res->ai_addr))->sin_addr.s_addr;
+  freeaddrinfo(res);
+
+  return addr;
+
 }
 
 void *
 Network::Client::PeerConnectThreadWrapper (void *stuff) {
 
-     PeerAddrPort *host = (PeerAddrPort *) stuff;
-     PeerConnect(host->address, host->port);
-     return NULL;
+  PeerAddrPort *host = (PeerAddrPort *) stuff;
+  PeerConnect(host->address, host->port);
+  return NULL;
 }
 
 void
@@ -530,8 +538,8 @@ Network::VerifySslCert (SSL * ssl)
     fingerprint = Auth::Crypt::GetFingerprintFromCtx(ssl);
     std::cout << "Could not verify SSL servers certificate (self signed)." << std::endl;
     std::cout << "Fingerprint is: " << fingerprint << std::endl;
-    std::cout << "Do you want to continue? [y|n]:";
-    std::cin >> answer;
+    std::cout << "Do you want to continue? [y|n]: y";
+//    std::cin >> answer;
 
     delete[] fingerprint;
 

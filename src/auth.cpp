@@ -24,7 +24,7 @@
 #include <lulzvpn/log.h>
 
 bool
-Auth::DoAuthentication (const std::string& Username, uChar * Hash)
+Auth::DoAuthentication (const std::string& Username, uChar *Hash)
 {
   std::string StrHash;
   std::string LocalHash;
@@ -118,7 +118,7 @@ Auth::Crypt::CalculateMd5 (const std::string& string)
 char *
 Auth::Crypt::GetFingerprintFromCtx (SSL *ssl)
 {
-  uChar digest[SHA_DIGEST_LENGTH];
+  uChar digest[MD5_DIGEST_LENGTH];
   char hex[] = "0123456789ABCDEF";
   char *fp;
   uInt len;

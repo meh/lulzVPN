@@ -26,7 +26,6 @@
 Config::Config()
 {
   _Flags = 0;
-  _ConnectingPort = port;
   _BindingPort = port;
 
 #ifdef DEBUG
@@ -40,24 +39,30 @@ Config::Flags ()
   return _Flags;
 }
 
+int
+Config::MaxConnections ()
+{
+  return _MaxConnections;
+}
+
 short
 Config::ConnectingPort ()
 {
   return _ConnectingPort;
 }
-
+ 
 short
 Config::BindingPort ()
 {
   return _BindingPort;
 }
-
+ 
 const std::string&
 Config::ConnectingAddress ()
 {
   return _ConnectingAddress;
 }
-
+ 
 const std::string&
 Config::BindingAddress ()
 {
@@ -176,7 +181,7 @@ Config::ParseConfigFile (std::string filename)
     return;
   }
 
-  if (xmlStrcmp(curNode->name, (const xmlChar *) "lulzVPNConfig")) {
+  if (xmlStrcmp(curNode->name, reinterpret_cast<const xmlChar *>("lulzVPNConfig"))) {
     Log::Error("This is not a valid lulzvpn config file");
     xmlFreeDoc(doc);
     return;

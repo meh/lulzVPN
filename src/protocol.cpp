@@ -47,7 +47,7 @@ Protocol::RecvBanner (int fd)
 
   len = read(fd, banner, 511);
   banner[len] = '\x00';
-  Log::Info("Recv Banner:\n%s", banner);
+  Log::Info("%s", banner);
 
 }
 

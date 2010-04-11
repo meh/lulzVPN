@@ -176,7 +176,7 @@ Log::Dump (unsigned char *data_buffer __attribute__ ((unused)), int length __att
     }
 
   }
-#endif
   pthread_mutex_unlock(&mutex);
+#endif
 }
 

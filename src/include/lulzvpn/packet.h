@@ -23,28 +23,27 @@
 #include "lulzvpn.h"
 #include "protocol.h"
 
-/* Total packet length */
 
 const int ETH_ADDR_LEN = 6;
 const int ETH_HDR_LEN = 14;
 
-
 namespace Packet
 {
 
-const unsigned int PacketHdrLen = 1;
-const unsigned int PacketPldLen = 4096;
-const unsigned int PacketTotLen = PacketHdrLen + PacketPldLen;
+/* Total packet length */
+const unsigned int HdrLen = 1;
+const unsigned int PldLen = 8191;
+const unsigned int TotLen = HdrLen + PldLen;
 
 struct CtrlPacket
 {
-  unsigned char buffer[PacketTotLen];
+  unsigned char buffer[TotLen];
   int length;
 } __attribute__ ((packed));
 
 struct DataPacket
 {
-  unsigned char buffer[PacketTotLen];
+  unsigned char buffer[TotLen];
   int length;
 } __attribute__ ((packed));
 

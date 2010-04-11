@@ -101,20 +101,27 @@ Peers::Peer::Peer(Connection con, std::string user, int address, std::vector<net
 Peers::Peer::~Peer()
 {
   FD_CLR(_tcpSd, &Select::CtrlChannel::Set);
+  Log::Debug2("Removed fd %d from ctrl channel fd_set", _tcpSd);
+
+  if(_connType == connected) {
+    FD_CLR(_udpSd, &Select::DataChannel::Client::Set);
+    Log::Debug2("Removed fd %d from data channel fd_set", _udpSd);
+  }
 
   SSL_free(_tcpSSL);
   SSL_free(_udpSSL);
 
-  /* @TODO: close ssl connection */
   close(_tcpSd);
 
-  Log::Debug2("Removed fd %d from ctrl channel fd_set", _tcpSd);
+  if(_connType == connected)
+    close(_udpSd);
+
 }
 
 bool
 Peers::Peer::operator>> (Packet::CtrlPacket *packet)
 {
-  if (!(packet->length = xSSL_read(_tcpSSL, packet->buffer, Packet::PacketTotLen, "forwarding data"))) {
+  if ((packet->length = xSSL_read(_tcpSSL, packet->buffer, Packet::TotLen, "forwarding data")) <= 0) {
     _state = closing;
     return FAIL;
   }
@@ -126,7 +133,7 @@ Peers::Peer::operator>> (Packet::CtrlPacket *packet)
 bool
 Peers::Peer::operator<< (Packet::CtrlPacket *packet)
 {
-  if (!xSSL_write(_tcpSSL, packet->buffer, packet->length, "forwarding data")) {
+  if (xSSL_write(_tcpSSL, packet->buffer, packet->length, "forwarding data") <= 0) {
     _state = closing;
     return FAIL;
   }
@@ -138,8 +145,9 @@ Peers::Peer::operator<< (Packet::CtrlPacket *packet)
 bool
 Peers::Peer::operator>> (Packet::DataPacket *packet)
 {
-  if (!(packet->length = xSSL_read(_udpSSL, packet->buffer, Packet::PacketTotLen, "forwarding data"))) {
-    _state = closing;
+
+  if ((packet->length = xSSL_read(_udpSSL, packet->buffer, Packet::TotLen, "forwarding data")) <= 0) {
+//    _state = closing;
     return FAIL;
   }
 
@@ -151,8 +159,9 @@ Peers::Peer::operator>> (Packet::DataPacket *packet)
 bool
 Peers::Peer::operator<< (Packet::DataPacket *packet)
 {
-  if (!xSSL_write(_udpSSL, packet->buffer, packet->length, "forwarding data")) {
-    _state = closing;
+
+  if (xSSL_write(_udpSSL, packet->buffer, packet->length, "forwarding data") <= 0) {
+//    _state = closing;
     return FAIL;
   }
 
@@ -168,7 +177,7 @@ Peers::Peer::decryptRawSSLPacket(Packet::DataPacket *rawPacket) {
   packet = new Packet::DataPacket;
 
   BIO_write(SSL_get_rbio(_udpSSL), rawPacket->buffer, rawPacket->length);
-  packet->length = SSL_read(_udpSSL, packet->buffer, Packet::PacketTotLen);
+  packet->length = SSL_read(_udpSSL, packet->buffer, Packet::TotLen);
 
   return packet;
 }
@@ -180,7 +189,7 @@ Peers::Peer::isRoutableAddress (int address)
   std::vector<networkT>::iterator netIt, netEnd;
 
   netEnd = _nl.end();
-  for (netIt = _nl.begin(); netIt < netEnd; netIt++)
+  for (netIt = _nl.begin(); netIt < netEnd; netIt++) 
     if ((*netIt).network == get_ip_address_network(address, (*netIt).netmask))
       return true;
 
@@ -205,19 +214,13 @@ Peers::Peer::isActive ()
 bool
 Peers::Peer::isReadyToReadFromCtrlChannel (fd_set *rdSel)
 {
-  if (FD_ISSET(_tcpSd, rdSel))
-    return true;
-  else
-    return false;
+  return FD_ISSET(_tcpSd, rdSel)
 }
 
 bool
 Peers::Peer::isReadyToReadFromDataChannel (fd_set *rdSel)
 {
-  if (FD_ISSET(_udpSd, rdSel))
-    return true;
-  else
-    return false;
+  return FD_ISSET(_udpSd, rdSel)
 }
 
 bool

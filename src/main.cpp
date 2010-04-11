@@ -179,7 +179,7 @@ LulzVPNExit ()
 }
 
 void
-sigHandler (int signal __attribute__ ((unused)))
+sigHandler (__attribute__ ((unused) )int signal)
 {
   LulzVPNExit();
 }

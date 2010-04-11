@@ -46,9 +46,12 @@ class Config
 private:
 int _Flags;
 
+int _MaxConnections;
+
 std::string _ConnectingAddress;
-short _ConnectingPort;
 std::string _BindingAddress;
+
+short _ConnectingPort;
 short _BindingPort;
 
 std::string _Username;
@@ -64,6 +67,7 @@ std::vector<UserCredentialT> _UserCredentials;
 public:
 Config ();
 int Flags ();
+int MaxConnections();
 const std::string& ConnectingAddress ();
 const std::string& BindingAddress ();
 short ConnectingPort ();

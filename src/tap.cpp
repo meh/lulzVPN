@@ -147,8 +147,8 @@ Taps::Tap::~Tap()
 bool
 Taps::Tap::operator>> (Packet::DataPacket * packet)
 {
-  if (!(packet->length = (read(_fd, packet->buffer + Packet::PacketHdrLen, Packet::PacketPldLen) + Packet::PacketHdrLen))) {
-    _state = closing;
+  if (!(packet->length = (read(_fd, packet->buffer + Packet::HdrLen, Packet::PldLen) + Packet::HdrLen))) {
+ //   _state = closing;
     return FAIL;
   }
 
@@ -160,8 +160,8 @@ Taps::Tap::operator>> (Packet::DataPacket * packet)
 bool
 Taps::Tap::operator<< (Packet::DataPacket * packet)
 {
-  if (!write(_fd, packet->buffer + Packet::PacketHdrLen, packet->length - Packet::PacketHdrLen)) {
-    _state = closing;
+  if (!write(_fd, packet->buffer + Packet::HdrLen, packet->length - Packet::HdrLen)) {
+  //  _state = closing;
     return FAIL;
   }
 
