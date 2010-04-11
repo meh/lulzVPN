@@ -97,6 +97,10 @@ Select::DataChannel::Client::Loop(void __attribute__ ((unused)) *arg) {
     peerEnd = Peers::db.end();
     for (peerIt = Peers::db.begin(), i = 0; peerIt < peerEnd; ++peerIt, ++i) { 
       printf("I: %d peerIt<peerEnd: %d\n",i,  peerIt < peerEnd);
+
+      if(i == 10)
+	   break;
+
       if((*peerIt)->isReadyToReadFromDataChannel(&CopySet) && (*peerIt)->isActive()) {
         if (**peerIt >> &packet) 
           Network::ForwardToTap(&packet, (*peerIt));

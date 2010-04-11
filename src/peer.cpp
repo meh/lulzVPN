@@ -214,13 +214,13 @@ Peers::Peer::isActive ()
 bool
 Peers::Peer::isReadyToReadFromCtrlChannel (fd_set *rdSel)
 {
-  return FD_ISSET(_tcpSd, rdSel)
+  return FD_ISSET(_tcpSd, rdSel);
 }
 
 bool
 Peers::Peer::isReadyToReadFromDataChannel (fd_set *rdSel)
 {
-  return FD_ISSET(_udpSd, rdSel)
+  return FD_ISSET(_udpSd, rdSel);
 }
 
 bool
